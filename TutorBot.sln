@@ -1,0 +1,36 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.6.33815.320
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TutorBot.Cli", "TutorBot.Cli\TutorBot.Cli.csproj", "{B8C3A4AF-0E26-4CD4-803A-3DB38832CBB4}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TutorBot.Tests", "TutorBot.Tests\TutorBot.Tests.csproj", "{059CD4C9-2C38-4B81-A6F9-4D719B5CB332}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{BDEFA212-F9DC-4025-BB0D-E802CCC1274A}"
+	ProjectSection(SolutionItems) = preProject
+		.gitignore = .gitignore
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B8C3A4AF-0E26-4CD4-803A-3DB38832CBB4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B8C3A4AF-0E26-4CD4-803A-3DB38832CBB4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B8C3A4AF-0E26-4CD4-803A-3DB38832CBB4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B8C3A4AF-0E26-4CD4-803A-3DB38832CBB4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{059CD4C9-2C38-4B81-A6F9-4D719B5CB332}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{059CD4C9-2C38-4B81-A6F9-4D719B5CB332}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{059CD4C9-2C38-4B81-A6F9-4D719B5CB332}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{059CD4C9-2C38-4B81-A6F9-4D719B5CB332}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {FAA765E1-943D-42B4-9E96-D20593C131F5}
+	EndGlobalSection
+EndGlobal
