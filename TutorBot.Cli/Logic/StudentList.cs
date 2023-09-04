@@ -14,24 +14,27 @@ public class StudentList : IEnumerable<Student>
   {
     var studentList = new StudentList();
 
-    await foreach (List<string> line in CsvParser.Parse(rosterStream))
+    await foreach (List<string> line in CsvParser.Parse(rosterStream, ignoreFirstLine: true))
     {
       if (line.Count < 3)
       {
         throw new RosterFormatException($"Invalid roster line: \"{line}\"");
       }
 
-      Match match = Regex.Match(line[1], Constants.STUDENT_DATA_PATTERN);
+      var identifier = line[0]; // e.g. "Doe John (G9/S999999999)"
+      var githubUsername = line[1];
+
+      Match match = Regex.Match(identifier, Constants.STUDENT_DATA_PATTERN);
 
       if (match.Success)
       {
-        studentList.students.Add(line[2], new Student
+        studentList.students.Add(githubUsername, new Student
         {
           FirstName = match.Groups["FirstName"].Value,
           LastName = match.Groups["LastName"].Value,
           MatNr = match.Groups["MatNr"].Value,
           GroupNr = int.Parse(match.Groups["GroupNr"].Value),
-          GitHubUsername = line[2]
+          GitHubUsername = githubUsername
         });
       }
       else

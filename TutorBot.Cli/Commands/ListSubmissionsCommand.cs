@@ -29,7 +29,8 @@ internal class ListSubmissionsCommand : Command
       foreach (var submission in assignment.Submissions)
       {
         var reviewers = string.Join(", ", submission.Reviewers.Select(r => r.FullName));
-        Console.WriteLine($"{submission.RepositoryName,-25} {submission.Student.FullName,-20} {submission.Student.MatNr,-12} {reviewers}");
+        Console.WriteLine($"{submission.RepositoryName,-25} {submission.Student.FullName,-20} " +
+                          $"{submission.Student.MatNr,-12} {reviewers}");
       }
     }
     catch (FileNotFoundException)
@@ -42,7 +43,8 @@ internal class ListSubmissionsCommand : Command
     }
   }
 
-  public ListSubmissionsCommand(IGitHubClient client, ConfigurationHelper configuration, ILogger<ListSubmissionsCommand> logger) : base("list-submissions", "List all submissions of an assignment")
+  public ListSubmissionsCommand(IGitHubClient client, ConfigurationHelper configuration, ILogger<ListSubmissionsCommand> logger) : 
+    base("list-submissions", "List all submissions of an assignment")
   {
     this.client = client;
     this.configuration = configuration;
