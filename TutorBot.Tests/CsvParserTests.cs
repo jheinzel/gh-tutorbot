@@ -6,6 +6,25 @@ namespace TutorBot.Tests;
 public class CsvParserTests
 {
   [Fact]
+  public void ParseCsv_FirstLine_ShouldBeIgnored()
+  {
+    // Arrange
+    var csvData = "Last,First\nAlice,Bob";
+    using var memoryStream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(csvData));
+
+    // Act
+    var parsedCsvData = CsvParser.Parse(memoryStream, ignoreFirstLine: true).ToBlockingEnumerable();
+
+    // Assert
+    var expectedData = new List<List<string>>
+    {
+        new List<string> { "Alice", "Bob" }
+    };
+
+    parsedCsvData.Should().BeEquivalentTo(expectedData);
+  }
+
+  [Fact]
   public void ParseCsv_WithCommaSeparator_ShouldParseCorrectly()
   {
     // Arrange
@@ -35,7 +54,7 @@ public class CsvParserTests
     char separator = ';';
 
     // Act
-    var parsedCsvData = CsvParser.Parse(memoryStream, separator).ToBlockingEnumerable();
+    var parsedCsvData = CsvParser.Parse(memoryStream, separator: separator).ToBlockingEnumerable();
 
     // Assert
     var expectedData = new List<List<string>>

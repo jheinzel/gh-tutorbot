@@ -4,17 +4,21 @@ namespace TutorBot.Utility;
 
 public static class CsvParser
 {
-  public static async IAsyncEnumerable<List<string>> Parse(Stream stream, char separator = ',')
+  public static async IAsyncEnumerable<List<string>> Parse(Stream stream, bool ignoreFirstLine = false, char separator = ',')
   {
-    using (var reader = new StreamReader(stream))
+    using var reader = new StreamReader(stream);
+    
+    if (!reader.EndOfStream && ignoreFirstLine)
     {
-      while (!reader.EndOfStream)
+      await reader.ReadLineAsync();
+    }
+
+    while (!reader.EndOfStream)
+    {
+      var line = await reader.ReadLineAsync();
+      if (!string.IsNullOrEmpty(line))
       {
-        var line = await reader.ReadLineAsync();
-        if (!string.IsNullOrEmpty(line))
-        {
-          yield return ParseLine(line, separator);
-        }
+        yield return ParseLine(line, separator);
       }
     }
   }
