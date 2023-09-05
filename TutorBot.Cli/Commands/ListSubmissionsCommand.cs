@@ -2,6 +2,9 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Octokit;
+using TutorBot.Infrastructure;
+using TutorBot.Infrastructure.Exceptions;
+using TutorBot.Infrastructure.OctokitExtensions;
 using TutorBot.Logic;
 using TutorBot.Logic.Exceptions;
 using TutorBot.Utility;
@@ -13,37 +16,37 @@ internal class ListSubmissionsCommand : Command
   private readonly IGitHubClient client;
   private readonly ConfigurationHelper configuration;
 
-  private readonly Argument<string> assignmentArgument = new("assignment", "Assignment name");
-  private readonly Option<string> organizationOption = new("--organization", "Organization name");
+  private readonly Argument<string> assignmentArgument = new("assignment", "assignment name");
+  private readonly Option<string> classroomOption = new("--classroom", "classroom name");
 
-
-  private async Task HandleAsync(string assignmentName, string organization)
+  private async Task HandleAsync(string assignmentName, string classroomName)
   {
-    Console.WriteLine($"{"REPOSITORY",-25} {"STUDENT",-20} {"MAT.NR.",-12} {"REVIEWER(S)"}");
+    var printer = new TablePrinter();
+    printer.AddRow("STUDENT", "MAT.NR.", "REVIEWER(S)", "REPOSITORY-URL");
 
     try
     {
       var studentList = await StudentList.FromRoster(File.OpenRead(Constants.ROSTER_FILE_PATH));
-      var assignment = await Assignment.FromGitHub(client, studentList, organization, assignmentName);
+      var classroom = await client.Classroom().GetByName(classroomName);
+      var assignment = await Assignment.FromGitHub(client, studentList, classroom.Id, assignmentName);
 
       foreach (var submission in assignment.Submissions)
       {
         var reviewers = string.Join(", ", submission.Reviewers.Select(r => r.FullName));
-        Console.WriteLine($"{submission.RepositoryName,-25} {submission.Student.FullName,-20} " +
-                          $"{submission.Student.MatNr,-12} {reviewers}");
+        printer.AddRow(submission.Student.FullName, submission.Student.MatNr, reviewers, submission.RepositoryUrl);
       }
+
+      printer.Print();
     }
-    catch (FileNotFoundException)
+    catch (Exception ex) when (ex is LogicException || ex is InfrastrucureException)
     {
-      Console.Error.WriteLine($"Roster file \"{Constants.ROSTER_FILE_PATH}\" not found.");
-    }
-    catch (LogicException le)
-    {
-      Console.Error.WriteLine($"{le.Message}");
+      Console.ForegroundColor = ConsoleColor.Red;
+      Console.Error.WriteLine($"{ex.Message}");
+      Console.ResetColor();
     }
   }
 
-  public ListSubmissionsCommand(IGitHubClient client, ConfigurationHelper configuration, ILogger<ListSubmissionsCommand> logger) : 
+  public ListSubmissionsCommand(IGitHubClient client, ConfigurationHelper configuration, ILogger<ListSubmissionsCommand> logger) :
     base("list-submissions", "List all submissions of an assignment")
   {
     this.client = client;
@@ -51,13 +54,13 @@ internal class ListSubmissionsCommand : Command
 
     AddArgument(assignmentArgument);
 
-    organizationOption.AddAlias("-o");
-    organizationOption.SetDefaultValue(configuration.DefaultOrganization);
-    AddOption(organizationOption);
+    classroomOption.AddAlias("-c");
+    classroomOption.SetDefaultValue(configuration.DefaultClassroom);
+    AddOption(classroomOption);
 
     AddAlias("ls");
 
-    this.SetHandler(HandleAsync, assignmentArgument, organizationOption);
+    this.SetHandler(HandleAsync, assignmentArgument, classroomOption);
   }
 }
 
