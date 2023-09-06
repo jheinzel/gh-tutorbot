@@ -1,17 +1,17 @@
 ﻿using System.CommandLine;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Octokit;
 using TutorBot.Infrastructure;
 using TutorBot.Infrastructure.Exceptions;
 using TutorBot.Infrastructure.OctokitExtensions;
+using TutorBot.Infrastructure.StringExtensions;
 using TutorBot.Logic;
 using TutorBot.Logic.Exceptions;
 using TutorBot.Utility;
 
 namespace TutorBot.Commands;
 
-internal class ListSubmissionsCommand : Command
+internal class RemoveReviewersCommand : Command
 {
   private readonly IGitHubClient client;
   private readonly ConfigurationHelper configuration;
@@ -21,22 +21,14 @@ internal class ListSubmissionsCommand : Command
 
   private async Task HandleAsync(string assignmentName, string classroomName)
   {
-    var printer = new TablePrinter();
-    printer.AddRow("STUDENT", "MAT.NR.", "REVIEWER(S)", "REPOSITORY-URL");
-
     try
     {
       var studentList = await StudentList.FromRoster(File.OpenRead(Constants.ROSTER_FILE_PATH));
       var classroom = await client.Classroom().GetByName(classroomName);
       var assignment = await Assignment.FromGitHub(client, studentList, classroom.Id, assignmentName);
+      await assignment.RemoveReviewers();
 
-      foreach (var submission in assignment.Submissions)
-      {
-        var reviewers = string.Join(", ", submission.Reviewers.Select(r => r.FullName));
-        printer.AddRow(submission.Owner.FullName, submission.Owner.MatNr, reviewers, submission.RepositoryUrl);
-      }
-
-      printer.Print();
+      var assignments = await client.Classroom().Assignment.GetAll(classroom.Id);
     }
     catch (Exception ex) when (ex is LogicException || ex is InfrastrucureException)
     {
@@ -46,8 +38,8 @@ internal class ListSubmissionsCommand : Command
     }
   }
 
-  public ListSubmissionsCommand(IGitHubClient client, ConfigurationHelper configuration, ILogger<ListSubmissionsCommand> logger) :
-    base("list-submissions", "List all submissions of an assignment")
+  public RemoveReviewersCommand(IGitHubClient client, ConfigurationHelper configuration, ILogger<ListAssignmentsCommand> logger) : 
+    base("remove-reviewers", "Remove reviewers from assignments")
   {
     this.client = client;
     this.configuration = configuration;
@@ -58,7 +50,7 @@ internal class ListSubmissionsCommand : Command
     classroomOption.SetDefaultValue(configuration.DefaultClassroom);
     AddOption(classroomOption);
 
-    AddAlias("ls");
+    AddAlias("rr");
 
     this.SetHandler(HandleAsync, assignmentArgument, classroomOption);
   }

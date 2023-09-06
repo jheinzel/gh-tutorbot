@@ -1,15 +1,21 @@
-﻿using System.Text.RegularExpressions;
-
-namespace TutorBot.Logic;
+﻿namespace TutorBot.Logic;
 
 public class Student
 {
-  public required string GitHubUsername { get; init; }
-  public required string LastName { get; init; }
-  public required string FirstName { get; init; }
-  public required string MatNr { get; init; }
-  public required int GroupNr { get; init; }
+  public Student(string gitHubUsername, string lastName, string firstName, string matNr, int groupNr)
+  {
+    GitHubUsername = gitHubUsername;
+    LastName = lastName;
+    FirstName = firstName;
+    MatNr = matNr;
+    GroupNr = groupNr;
+  }
 
-  public string FullName => $"{LastName} {FirstName} ";
+  public string GitHubUsername { get; init; }
+  public string LastName { get; init; }
+  public string FirstName { get; init; }
+  public string MatNr { get; init; }
+  public int GroupNr { get; init; }
 
+  public virtual string FullName => $"{LastName} {FirstName}";
 }

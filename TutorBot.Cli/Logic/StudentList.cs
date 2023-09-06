@@ -29,13 +29,13 @@ public class StudentList : IEnumerable<Student>
       if (match.Success)
       {
         studentList.students.Add(githubUsername, new Student
-        {
-          FirstName = match.Groups["FirstName"].Value,
-          LastName = match.Groups["LastName"].Value,
-          MatNr = match.Groups["MatNr"].Value,
-          GroupNr = int.Parse(match.Groups["GroupNr"].Value),
-          GitHubUsername = githubUsername
-        });
+        (
+          firstName: match.Groups["FirstName"].Value,
+          lastName: match.Groups["LastName"].Value,
+          matNr: match.Groups["MatNr"].Value,
+          groupNr: int.Parse(match.Groups["GroupNr"].Value),
+          gitHubUsername: githubUsername
+        ));
       }
       else
       {

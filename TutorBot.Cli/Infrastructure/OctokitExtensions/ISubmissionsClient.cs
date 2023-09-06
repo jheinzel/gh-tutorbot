@@ -9,5 +9,5 @@ namespace TutorBot.Infrastructure.OctokitExtensions;
 
 public interface ISubmissionsClient
 {
-  Task<IReadOnlyList<Repository>> GetAll(long assignmentId);
+  Task<IReadOnlyList<SubmissionDto>> GetAll(long assignmentId);
 }

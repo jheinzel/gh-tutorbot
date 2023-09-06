@@ -2,7 +2,7 @@
   "profiles": {
     "gh-tutorbot": {
       "commandName": "Project",
-      "commandLineArgs": "list-assignments --classroom 29785"
+      "commandLineArgs": "clone-assignment ue01 --directory ue01-5"
     }
   }
 }

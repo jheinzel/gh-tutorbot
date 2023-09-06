@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 
 namespace TutorBot.Logic.Exceptions;
 
-public class RepositoryException : LogicException
+public class SubmissionException : LogicException
 {
-  public RepositoryException(string message) : base(message)
+  public SubmissionException(string message) : base(message)
   {
   }
 }

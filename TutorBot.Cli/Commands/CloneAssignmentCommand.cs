@@ -1,42 +1,36 @@
 ﻿using System.CommandLine;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Octokit;
 using TutorBot.Infrastructure;
 using TutorBot.Infrastructure.Exceptions;
 using TutorBot.Infrastructure.OctokitExtensions;
+using TutorBot.Infrastructure.StringExtensions;
 using TutorBot.Logic;
 using TutorBot.Logic.Exceptions;
 using TutorBot.Utility;
 
 namespace TutorBot.Commands;
 
-internal class ListSubmissionsCommand : Command
+internal class CloneAssignmentCommand : Command
 {
   private readonly IGitHubClient client;
   private readonly ConfigurationHelper configuration;
 
   private readonly Argument<string> assignmentArgument = new("assignment", "assignment name");
   private readonly Option<string> classroomOption = new("--classroom", "classroom name");
+  private readonly Option<string> directoryOption = new("--directory", "directory repositories will be cloned to");
 
-  private async Task HandleAsync(string assignmentName, string classroomName)
+  private async Task HandleAsync(string assignmentName, string classroomName, string? directory)
   {
-    var printer = new TablePrinter();
-    printer.AddRow("STUDENT", "MAT.NR.", "REVIEWER(S)", "REPOSITORY-URL");
-
     try
     {
       var studentList = await StudentList.FromRoster(File.OpenRead(Constants.ROSTER_FILE_PATH));
       var classroom = await client.Classroom().GetByName(classroomName);
       var assignment = await Assignment.FromGitHub(client, studentList, classroom.Id, assignmentName);
-
-      foreach (var submission in assignment.Submissions)
-      {
-        var reviewers = string.Join(", ", submission.Reviewers.Select(r => r.FullName));
-        printer.AddRow(submission.Owner.FullName, submission.Owner.MatNr, reviewers, submission.RepositoryUrl);
-      }
-
-      printer.Print();
+      
+      await assignment.CloneRepositories(directory ?? assignment.Name, 
+        successAction: (repoName) => Console.Error.WriteLine($"Cloned repository \"{repoName}\""),
+        failureAction: (repoName, exitCode) => Console.Error.WriteLine($"Problems cloning repository \"{repoName}\", exit code = {exitCode}"));
     }
     catch (Exception ex) when (ex is LogicException || ex is InfrastrucureException)
     {
@@ -46,8 +40,8 @@ internal class ListSubmissionsCommand : Command
     }
   }
 
-  public ListSubmissionsCommand(IGitHubClient client, ConfigurationHelper configuration, ILogger<ListSubmissionsCommand> logger) :
-    base("list-submissions", "List all submissions of an assignment")
+  public CloneAssignmentCommand(IGitHubClient client, ConfigurationHelper configuration, ILogger<ListAssignmentsCommand> logger) : 
+    base("clone-assignment", "Clone all repositories of an assignment")
   {
     this.client = client;
     this.configuration = configuration;
@@ -58,9 +52,13 @@ internal class ListSubmissionsCommand : Command
     classroomOption.SetDefaultValue(configuration.DefaultClassroom);
     AddOption(classroomOption);
 
-    AddAlias("ls");
+    directoryOption.AddAlias("-d");
+    directoryOption.SetDefaultValue(null);
+    AddOption(directoryOption);
 
-    this.SetHandler(HandleAsync, assignmentArgument, classroomOption);
+    AddAlias("ca");
+
+    this.SetHandler(HandleAsync, assignmentArgument, classroomOption, directoryOption);
   }
 }
 
