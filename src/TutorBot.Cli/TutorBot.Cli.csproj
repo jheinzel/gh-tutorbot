@@ -6,6 +6,7 @@
     <RootNamespace>TutorBot</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <AssemblyName>gh-tutorbot</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>
@@ -25,4 +26,9 @@
     </None>
   </ItemGroup>
 
+  <PropertyGroup>
+    <DefaultItemExcludes>$(DefaultItemExcludes);appsettings.json;classroom_roster.csv</DefaultItemExcludes>
+  </PropertyGroup>
+
+  
 </Project>

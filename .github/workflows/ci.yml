@@ -50,8 +50,8 @@ jobs:
         run: dotnet build src/TutorBot.sln
       - name: dotnet publish
         run: |
-          dotnet publish src/TutorBot.Cli/TutorBot.Cli.csproj -c Release -r win10-x64 --self-contained -o dist/win-x64 --no-restore -p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true
-          # dotnet publish src/TutorBot.Cli/TutorBot.Cli.csproj -c Release -r linux-x64 --self-contained -o dist/linux-x64 --no-restore -p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true
+          dotnet publish src/TutorBot.Cli/TutorBot.Cli.csproj --configuration Release --self-contained --runtime win-x64 --no-restore -p:PublishSingleFile=true --output dist/win-x64 /p:IncludeNativeLibrariesForSelfExtract=true
+          # dotnet publish src/TutorBot.Cli/TutorBot.Cli.csproj --configuration Release --self-contained --runtime linux-x64 --no-restore -p:PublishSingleFile=true --output dist/linux-x64 /p:IncludeNativeLibrariesForSelfExtract=true
       - name: prepare staging
         run: |
           mkdir -p ${{ runner.temp }}/staging
