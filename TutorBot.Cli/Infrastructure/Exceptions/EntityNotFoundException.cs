@@ -1,11 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using TutorBot.Infrastructure.Exceptions;
-
-namespace TutorBot.Logic.Exceptions;
+﻿namespace TutorBot.Infrastructure.Exceptions;
 
 public class EntityNotFoundException : InfrastrucureException
 {

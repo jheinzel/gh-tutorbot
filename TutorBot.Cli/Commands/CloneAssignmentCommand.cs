@@ -29,8 +29,9 @@ internal class CloneAssignmentCommand : Command
       var assignment = await Assignment.FromGitHub(client, studentList, classroom.Id, assignmentName);
       
       await assignment.CloneRepositories(directory ?? assignment.Name, 
-        successAction: (repoName) => Console.Error.WriteLine($"Cloned repository \"{repoName}\""),
-        failureAction: (repoName, exitCode) => Console.Error.WriteLine($"Problems cloning repository \"{repoName}\", exit code = {exitCode}"));
+        successAction: (repoName) => Console.WriteLine($"Cloned repository \"{repoName}\""),
+        failureAction: (repoName, errorMessage, _) => 
+                         Console.Error.WriteLine($"Problems cloning repository \"{repoName}\":\n{errorMessage.Trim().Indent(2)}"));
     }
     catch (Exception ex) when (ex is LogicException || ex is InfrastrucureException)
     {

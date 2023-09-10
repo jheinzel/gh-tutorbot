@@ -1,35 +1,45 @@
-﻿using System.Diagnostics;
+﻿using System.ComponentModel;
+using System.Diagnostics;
+using TutorBot.Infrastructure.Exceptions;
 
 namespace TutorBot.Infrastructure;
 
 public static class ProcessHelper
 {
-  public static Task<(string? result, int exitCode)> RunProcessAsync(string programPath, string argString)
+  public static Task<(string? Result, string? ErrorResult, int ExitCode)> RunProcessAsync(string programPath, string argString)
   {
-    var tcs = new TaskCompletionSource<(string? result, int exitCode)>();
-
-    var process = new Process
+    try
     {
-      StartInfo = new ProcessStartInfo
+      var tcs = new TaskCompletionSource<(string?, string?, int)>();
+
+      var process = new Process
       {
-        FileName = programPath,
-        Arguments = argString,
-        RedirectStandardOutput = true,
-        RedirectStandardError = true,
-        UseShellExecute = false,
-        CreateNoWindow = true
-      },
-      EnableRaisingEvents = true
-    };
+        StartInfo = new ProcessStartInfo
+        {
+          FileName = programPath,
+          Arguments = argString,
+          RedirectStandardOutput = true,
+          RedirectStandardError = true,
+          UseShellExecute = false,
+          CreateNoWindow = true
+        },
+        EnableRaisingEvents = true
+      };
 
-    process.Exited += async (sender, args) =>
+      process.Exited += async (sender, args) =>
+      {
+        tcs.SetResult((await process.StandardOutput.ReadToEndAsync(), await process.StandardError.ReadToEndAsync(), process.ExitCode));
+        process.Dispose();
+      };
+
+      process.Start();
+
+      return tcs.Task;
+
+    }
+    catch (Win32Exception)
     {
-      tcs.SetResult((await process.StandardOutput.ReadLineAsync(), process.ExitCode));
-      process.Dispose();
-    };
-
-    process.Start();
-
-    return tcs.Task;
+      throw new CommandNotFoundException(programPath);
+    }
   }
 }

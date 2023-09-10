@@ -153,20 +153,20 @@ public class Assignment
     }
   }
 
-  public async Task CloneRepositories(string directory, Action<string> successAction, Action<string, int> failureAction)
+  public async Task CloneRepositories(string directory, Action<string> successAction, Action<string, string, int> failureAction)
   {
     foreach (var submission in Submissions)
     {
       try
       {
-        var (result, exitCode) = await ProcessHelper.RunProcessAsync("gh", $"repo clone {submission.RepositoryFullName} {directory}/{submission.RepositoryName}");
+        var (result, errorResult, exitCode) = await ProcessHelper.RunProcessAsync("gh", $"repo clone {submission.RepositoryFullName} {directory}/{submission.RepositoryName}");
         if (exitCode == 0)
         {
           successAction(submission.RepositoryFullName);
         }
         else
         {
-          failureAction(submission.RepositoryFullName, exitCode);
+          failureAction(submission.RepositoryFullName, errorResult ?? "", exitCode);
         }
       }
       catch (Win32Exception)
