@@ -55,8 +55,8 @@ jobs:
       - name: prepare staging
         run: |
           mkdir -p ${{ runner.temp }}/staging
-          cp dist/win-x64/gh-actions-importer.exe ${{ runner.temp }}/staging/actions-importer-windows-amd64.exe
-          # cp dist/linux-x64/gh-actions-importer ${{ runner.temp }}/staging/actions-importer-linux-amd64
+          cp dist/win-x64/gh-tutorbot.exe ${{ runner.temp }}/staging/tutorbot-windows-amd64.exe
+          # cp dist/linux-x64/gh-tutorbot ${{ runner.temp }}/staging/tutorbot-linux-amd64
 
       - name: publish artifacts
         uses: actions/upload-artifact@v3
@@ -97,5 +97,5 @@ jobs:
           generate_release_notes: true
           fail_on_unmatched_files: true
           files: |
-            ${{ runner.temp }}/dist/actions-importer-windows-amd64.exe
-            # ${{ runner.temp }}/dist/actions-importer-linux-amd64
+            ${{ runner.temp }}/dist/tutorbot-windows-amd64.exe
+            # ${{ runner.temp }}/dist/tutorbot-linux-amd64
