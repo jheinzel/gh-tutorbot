@@ -20,7 +20,7 @@ jobs:
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
  
-  unit-test:
+  test:
     runs-on: ubuntu-latest
     permissions:
       checks: write
@@ -35,13 +35,7 @@ jobs:
       - name: dotnet build
         run: dotnet build src/TutorBot.sln
       - name: dotnet test
-        run: dotnet test src/TutorBot.Tests/TutorBot.Tests.csproj --no-build --no-restore --logger "junit;LogFilePath=unit-tests.xml"
-      - name: publish test results
-        uses: EnricoMi/publish-unit-test-result-action@v2
-        if: always()
-        with:
-          files: "**/*-tests.xml"
-          check_name: "Unit Test Results"
+        run: dotnet test src/TutorBot.Tests/TutorBot.Tests.csproj --no-restore --verbosity normal
 
   build:
     runs-on: ubuntu-latest
@@ -56,8 +50,8 @@ jobs:
         run: dotnet build src/TutorBot.sln
       - name: dotnet publish
         run: |
-          dotnet publish src/TutorBot/TutorBot.csproj -c Release -r win10-x64 --self-contained -o dist/win-x64 --no-restore -p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true
-          # dotnet publish src/TutorBot/TutorBot.csproj -c Release -r linux-x64 --self-contained -o dist/linux-x64 --no-restore -p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true
+          dotnet publish src/TutorBot.Cli/TutorBot.Cli.csproj -c Release -r win10-x64 --self-contained -o dist/win-x64 --no-restore -p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true
+          # dotnet publish src/TutorBot.Cli/TutorBot.Cli.csproj -c Release -r linux-x64 --self-contained -o dist/linux-x64 --no-restore -p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true
       - name: prepare staging
         run: |
           mkdir -p ${{ runner.temp }}/staging
