@@ -1,22 +1,22 @@
-﻿# GitHub Tutorbot
+﻿# GitHub TutorBot
 
-*GitHub Tutorbot* is a simple command line tool that helps programming tutors at the University of Applied Sciences in Hagenberg
+*GitHub TutorBot* is a simple command line tool that helps programming tutors at the University of Applied Sciences in Hagenberg
 by automating repetitive tasks.
 
 
 ## Installation
 
-1. Tutorbot is an extension for the [GitHub CLI](https://cli.github.com/), so you need to install it first. Installation instructions
+1. TutorBot is an extension for the [GitHub CLI](https://cli.github.com/), so you need to install it first. Installation instructions
    can be found [here](https://github.com/cli/cli#installation). Prepackaged binaries can be found [here](https://github.com/cli/cli/releases/).
 
-2. Install the Tutorbot extension by running the following command:
+2. Install the TutorBot extension by running the following command:
    ```shell
    gh extension install https://github.com/jheinzel/gh-tutorbot
    ```
 
 ## Commands
 
-Tutorbot comes with the following range of commands:
+TutorBot comes with the following range of commands:
 
 * List all classrooms the user is a member of:
   ```shell
@@ -62,7 +62,7 @@ Tutorbot comes with the following range of commands:
   The roster file can be downloaded from the classroom page on GitHub in the following way: Classroom page → Students → Download.
   Place the file in your working directory and name it `classroom_roster.cvs`.
 
-* `appsettings.json`: This configuration file contains general settings for the .NET application and Tutorbot specific settings.
+* `appsettings.json`: This configuration file contains general settings for the .NET application and TutorBot specific settings.
   ```json
   {
   "Logging": {
@@ -77,11 +77,11 @@ Tutorbot comes with the following range of commands:
   + `default-classroom`: The default value for the `--classroom` option.
 
 
-## Working with Tutorbot
+## Working with TutorBot
 
 1. Check if you are a member with admin permissions in the classroom you want to work with. 
    If not, ask the classroom owner to add you as a member with the needed permissions.
-2. Install GitHub CLI and Tutorbot as described above.
+2. Install GitHub CLI and TutorBot as described above.
 3. Download the roster file to your working directory. Create the configuration file `appsettings.json` and define the default classroom.
 4. Authenticate with GitHub CLI:
    ```shell
@@ -91,5 +91,5 @@ Tutorbot comes with the following range of commands:
    ```shell
    gh auth status
    ```
-   Tutorbot will use the generated security token to access the GitHub API.
+   TutorBot will use the generated security token to access the GitHub API.
 5. Apply the commands described above to your classroom.
