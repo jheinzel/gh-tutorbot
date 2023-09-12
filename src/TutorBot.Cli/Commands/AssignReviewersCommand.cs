@@ -11,6 +11,7 @@ using TutorBot.Utility;
 
 namespace TutorBot.Commands;
 
+
 internal class AssignReviewersCommand : Command
 {
   private readonly IGitHubClient client;
@@ -23,7 +24,7 @@ internal class AssignReviewersCommand : Command
   {
     try
     {
-      var studentList = await StudentList.FromRoster(File.OpenRead(Constants.ROSTER_FILE_PATH));
+      var studentList = await StudentList.FromRoster(Constants.ROSTER_FILE_PATH);
       var classroom = await client.Classroom().GetByName(classroomName);
       var assignment = await Assignment.FromGitHub(client, studentList, classroom.Id, assignmentName);
       await assignment.AssignReviewers();

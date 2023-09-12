@@ -10,6 +10,18 @@ public class StudentList : IEnumerable<Student>
 {
   private readonly IDictionary<string, Student> students = new Dictionary<string, Student>();
 
+  public static async Task<StudentList> FromRoster(string filePath)
+  {
+    try
+    {
+      return await FromRoster(File.OpenRead(filePath));
+    }
+    catch (FileNotFoundException)
+    {
+      throw new RosterFileNotFoundException($"Roster file \"{filePath}\" not found");
+    }
+  }
+
   public static async Task<StudentList> FromRoster(Stream rosterStream)
   {
     var studentList = new StudentList();
