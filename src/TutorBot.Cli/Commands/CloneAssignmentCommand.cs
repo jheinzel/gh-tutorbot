@@ -5,6 +5,7 @@ using TutorBot.Infrastructure;
 using TutorBot.Infrastructure.Exceptions;
 using TutorBot.Infrastructure.OctokitExtensions;
 using TutorBot.Infrastructure.StringExtensions;
+using TutorBot.Infrastructure.TextWriterExtensions;
 using TutorBot.Logic;
 using TutorBot.Logic.Exceptions;
 using TutorBot.Utility;
@@ -35,9 +36,7 @@ internal class CloneAssignmentCommand : Command
     }
     catch (Exception ex) when (ex is LogicException || ex is InfrastrucureException)
     {
-      Console.ForegroundColor = ConsoleColor.Red;
-      Console.Error.WriteLine($"{ex.Message}");
-      Console.ResetColor();
+      Console.Error.WriteRedLine($"{ex.Message}");
     }
   }
 

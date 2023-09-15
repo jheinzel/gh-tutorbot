@@ -51,6 +51,12 @@ TutorBot comes with the following range of commands:
   gh-tutorbot clone-assignment <assignment> [--directory <directory>] [--classroom <classroom>]
   ```
 
+* Download student's self assessments: Collect self assessment data from all submissions and write it
+  to a CSV file. The CSV file is named `<assignment>-assessments.csv` and placed in the current working directory.
+  ```shell
+  gh-tutorbot download-assessments <assignment> [--classroom <classroom>]
+  ```
+
 * Getting help
   ```shell
   gh-tutorbot [<command>] --help
