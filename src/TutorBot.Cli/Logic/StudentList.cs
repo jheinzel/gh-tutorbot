@@ -63,9 +63,9 @@ public class StudentList : IEnumerable<Student>
     return students.Values.GetEnumerator();
   }
 
-  public bool TryGetValue(string matNr, [MaybeNullWhen(false)] out Student student)
+  public bool TryGetValue(string gitHubUserName, [MaybeNullWhen(false)] out Student student)
   {
-    return students.TryGetValue(matNr, out student);
+    return students.TryGetValue(gitHubUserName, out student);
   }
 
   IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();

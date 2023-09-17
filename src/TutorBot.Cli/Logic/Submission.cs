@@ -2,10 +2,19 @@
 using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
+using System.Dynamic;
 using Octokit;
+using TutorBot.Infrastructure.StringExtensions;
 using TutorBot.Logic.Exceptions;
 
 namespace TutorBot.Logic;
+
+public class ReviewStatistics {
+  public int NumReviews { get; set; }
+  public int NumComments { get; set; } 
+  public int NumWords { get; set; }
+  public DateTimeOffset LastReviewDate { get; set; }
+}
 
 public class Submission
 {
@@ -110,5 +119,60 @@ public class Submission
     }
 
     return assessmentList.AsReadOnly();
+  }
+
+  public async Task GetReviewStatistics(IGitHubClient client, StudentList students, Action<string, ReviewStatistics> successAction)
+  {
+    var reviews = await client.Repository.PullRequest.Review.GetAll(RepositoryId, Constants.FEEDBACK_PULLREQUEST_ID);
+    
+    var userReviewStats = new Dictionary<string, ReviewStatistics>();
+
+    foreach (var review in reviews)
+    {
+      ReviewStatistics? stats;
+      if (!userReviewStats.TryGetValue(review.User.Login, out stats))
+      {
+        stats = new ReviewStatistics();
+        userReviewStats.Add(review.User.Login, stats);
+      }
+
+      var reviewDate = review.SubmittedAt;
+      if (reviewDate > stats.LastReviewDate)
+      {
+        stats.LastReviewDate = reviewDate;
+      }
+
+      stats.NumReviews++;
+      stats.NumWords += review.Body.WordCount();
+    }
+
+    var comments = await client.Repository.PullRequest.ReviewComment.GetAll(RepositoryId, Constants.FEEDBACK_PULLREQUEST_ID);
+    foreach (var comment in comments)
+    {
+      ReviewStatistics? stats;
+      if (!userReviewStats.TryGetValue(comment.User.Login, out stats))
+      {
+        stats = new ReviewStatistics();
+        userReviewStats.Add(comment.User.Login, stats);
+      }
+
+      stats.NumComments++;
+      stats.NumWords += comment.Body.WordCount();
+    }
+
+    userReviewStats.Remove(Owner.GitHubUsername);
+
+    foreach (var (user, stats) in userReviewStats)
+    {
+      if (students.TryGetValue(user, out var student))
+      {
+        successAction(student.FullName, stats);
+      }
+      else
+      {
+        successAction(user, stats);
+      }
+    }
+
   }
 }
