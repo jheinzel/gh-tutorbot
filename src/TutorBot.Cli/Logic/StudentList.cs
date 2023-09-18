@@ -68,5 +68,10 @@ public class StudentList : IEnumerable<Student>
     return students.TryGetValue(gitHubUserName, out student);
   }
 
+  public bool Contains(string gitHubUserName)
+  {
+    return students.ContainsKey(gitHubUserName);
+  }
+
   IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();
 }

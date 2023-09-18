@@ -1,20 +1,10 @@
-﻿using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Collections.ObjectModel;
-using System.Diagnostics.CodeAnalysis;
-using System.Dynamic;
-using Octokit;
+﻿using Octokit;
 using TutorBot.Infrastructure.StringExtensions;
 using TutorBot.Logic.Exceptions;
 
 namespace TutorBot.Logic;
 
-public class ReviewStatistics {
-  public int NumReviews { get; set; }
-  public int NumComments { get; set; } 
-  public int NumWords { get; set; }
-  public DateTimeOffset LastReviewDate { get; set; }
-}
+using ReviewStatistics = IDictionary<(string Owner, string Reviewer), ReviewStatisticsItem>;
 
 public class Submission
 {
@@ -38,7 +28,7 @@ public class Submission
     }
     catch (Octokit.NotFoundException)
     {
-      throw new AssessmentFileException($"\"{RepositoryName}\": No assessment file found in");
+      throw new AssessmentFileException($"\"{RepositoryName}\": No assessment file found");
     }
   }
 
@@ -121,19 +111,15 @@ public class Submission
     return assessmentList.AsReadOnly();
   }
 
-  public async Task GetReviewStatistics(IGitHubClient client, StudentList students, Action<string, ReviewStatistics> successAction)
+  public async Task AddReviewStatistics(IGitHubClient client, StudentList students, ReviewStatistics reviewStats)
   {
     var reviews = await client.Repository.PullRequest.Review.GetAll(RepositoryId, Constants.FEEDBACK_PULLREQUEST_ID);
-    
-    var userReviewStats = new Dictionary<string, ReviewStatistics>();
-
-    foreach (var review in reviews)
+    foreach (var review in reviews.Where(r => students.Contains(r.User.Login)))
     {
-      ReviewStatistics? stats;
-      if (!userReviewStats.TryGetValue(review.User.Login, out stats))
+      if (!reviewStats.TryGetValue((Owner.GitHubUsername, review.User.Login), out Logic.ReviewStatisticsItem? stats))
       {
-        stats = new ReviewStatistics();
-        userReviewStats.Add(review.User.Login, stats);
+        stats = new Logic.ReviewStatisticsItem();
+        reviewStats.Add((Owner.GitHubUsername, review.User.Login), stats);
       }
 
       var reviewDate = review.SubmittedAt;
@@ -147,32 +133,18 @@ public class Submission
     }
 
     var comments = await client.Repository.PullRequest.ReviewComment.GetAll(RepositoryId, Constants.FEEDBACK_PULLREQUEST_ID);
-    foreach (var comment in comments)
+    foreach (var comment in comments.Where(r => students.Contains(r.User.Login)))
     {
-      ReviewStatistics? stats;
-      if (!userReviewStats.TryGetValue(comment.User.Login, out stats))
+      if (!reviewStats.TryGetValue((Owner.GitHubUsername, comment.User.Login), out Logic.ReviewStatisticsItem? stats))
       {
-        stats = new ReviewStatistics();
-        userReviewStats.Add(comment.User.Login, stats);
+        stats = new Logic.ReviewStatisticsItem();
+        reviewStats.Add((Owner.GitHubUsername, comment.User.Login), stats);
       }
 
       stats.NumComments++;
       stats.NumWords += comment.Body.WordCount();
     }
 
-    userReviewStats.Remove(Owner.GitHubUsername);
-
-    foreach (var (user, stats) in userReviewStats)
-    {
-      if (students.TryGetValue(user, out var student))
-      {
-        successAction(student.FullName, stats);
-      }
-      else
-      {
-        successAction(user, stats);
-      }
-    }
-
+    reviewStats.Remove((Owner.GitHubUsername, Owner.GitHubUsername));
   }
 }

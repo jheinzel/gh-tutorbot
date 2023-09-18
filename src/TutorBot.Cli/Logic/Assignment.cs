@@ -1,4 +1,5 @@
-﻿using System.ComponentModel;
+﻿using System.Collections.Generic;
+using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Xml.Xsl;
 using Octokit;
@@ -9,6 +10,8 @@ using TutorBot.Infrastructure.StringExtensions;
 using TutorBot.Logic.Exceptions;
 
 namespace TutorBot.Logic;
+
+using ReviewStatistics = IDictionary<(string Owner, string Reviewer), ReviewStatisticsItem>;
 
 public class Assignment
 {
@@ -174,5 +177,18 @@ public class Assignment
         throw new LogicException("Error: Command \"gh\" (GitHub CLI) not found");
       }
     }
+  }
+
+
+  public async Task<ReviewStatistics> GetReviewStatistics(IGitHubClient client, StudentList students)
+  {
+    var reviewStats = new Dictionary<(string Owner, string Reviewer), Logic.ReviewStatisticsItem>();
+    
+    foreach (var submission in Submissions)
+    {
+      await submission.AddReviewStatistics(client, students, reviewStats);
+    }
+
+    return reviewStats;
   }
 }

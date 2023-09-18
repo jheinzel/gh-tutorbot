@@ -4,7 +4,6 @@ using Octokit;
 using TutorBot.Infrastructure;
 using TutorBot.Infrastructure.Exceptions;
 using TutorBot.Infrastructure.OctokitExtensions;
-using TutorBot.Infrastructure.StringExtensions;
 using TutorBot.Infrastructure.TextWriterExtensions;
 using TutorBot.Logic.Exceptions;
 using TutorBot.Utility;
