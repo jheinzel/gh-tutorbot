@@ -18,7 +18,7 @@ public class StudentList : IEnumerable<Student>
     }
     catch (FileNotFoundException)
     {
-      throw new RosterFileNotFoundException($"Roster file \"{filePath}\" not found");
+      throw new RosterFileException($"Roster file \"{filePath}\" not found");
     }
   }
 
@@ -33,21 +33,30 @@ public class StudentList : IEnumerable<Student>
         throw new RosterFormatException($"Invalid roster line: \"{line}\"");
       }
 
-      var identifier = line[0]; // e.g. "Doe John (G9/S999999999)"
       var githubUsername = line[1];
 
+      if (string.IsNullOrEmpty(githubUsername)) // ignore unlinked students
+      {
+        continue;
+      }
+
+      var identifier = line[0]; // e.g. "Doe John (G9/S999999999)"
       Match match = Regex.Match(identifier, Constants.STUDENT_DATA_PATTERN);
 
       if (match.Success)
       {
-        studentList.students.Add(githubUsername, new Student
-        (
-          firstName: match.Groups["FirstName"].Value,
-          lastName: match.Groups["LastName"].Value,
-          matNr: match.Groups["MatNr"].Value,
-          groupNr: int.Parse(match.Groups["GroupNr"].Value),
-          gitHubUsername: githubUsername
-        ));
+        if (!studentList.students.TryAdd(githubUsername,
+          new Student
+          (
+            firstName: match.Groups["FirstName"].Value,
+            lastName: match.Groups["LastName"].Value,
+            matNr: match.Groups["MatNr"].Value,
+            groupNr: int.Parse(match.Groups["GroupNr"].Value),
+            gitHubUsername: githubUsername
+          )))
+        {
+          throw new RosterFileException($"Duplicate GitHub username \"{githubUsername}\" in roster file");
+        }
       }
       else
       {

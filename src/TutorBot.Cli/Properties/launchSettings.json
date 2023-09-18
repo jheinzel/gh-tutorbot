@@ -2,7 +2,7 @@
   "profiles": {
     "gh-tutorbot": {
       "commandName": "Project",
-      "commandLineArgs": "download-assessments ue01"
+      "commandLineArgs": "list-submissions ue01"
     }
   }
 }
