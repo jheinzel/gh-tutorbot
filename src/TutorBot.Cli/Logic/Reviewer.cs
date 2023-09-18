@@ -1,6 +1,4 @@
-﻿using System.Text.RegularExpressions;
-
-namespace TutorBot.Logic;
+﻿namespace TutorBot.Logic;
 
 public class Reviewer : Student
 {

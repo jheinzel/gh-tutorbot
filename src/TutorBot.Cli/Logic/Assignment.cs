@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
-using System.Xml.Xsl;
+﻿using System.ComponentModel;
 using Octokit;
 using TutorBot.Infrastructure;
 using TutorBot.Infrastructure.ListExtensions;

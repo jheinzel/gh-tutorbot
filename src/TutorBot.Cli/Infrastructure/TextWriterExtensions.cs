@@ -1,7 +1,4 @@
-﻿using System.Globalization;
-using System.Text;
-
-namespace TutorBot.Infrastructure.TextWriterExtensions;
+﻿namespace TutorBot.Infrastructure.TextWriterExtensions;
 
 public static class TextWriteExtensions 
 {

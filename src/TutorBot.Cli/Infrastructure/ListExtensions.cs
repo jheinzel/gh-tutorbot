@@ -1,6 +1,4 @@
-﻿using System.Globalization;
-
-namespace TutorBot.Infrastructure.ListExtensions;
+﻿namespace TutorBot.Infrastructure.ListExtensions;
 
 public static class ListExtensions
 {

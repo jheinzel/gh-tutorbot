@@ -1,5 +1,4 @@
 ﻿using System.CommandLine;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Octokit;
 using TutorBot.Infrastructure;

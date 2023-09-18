@@ -1,6 +1,5 @@
 ﻿using System.Net;
 using Octokit;
-using TutorBot.Logic.Exceptions;
 
 namespace TutorBot.Infrastructure.OctokitExtensions;
 

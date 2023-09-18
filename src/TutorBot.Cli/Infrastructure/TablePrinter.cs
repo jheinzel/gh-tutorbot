@@ -1,6 +1,4 @@
-﻿using System.ComponentModel;
-
-namespace TutorBot.Infrastructure;
+﻿namespace TutorBot.Infrastructure;
 
 public class TablePrinter
 {
