@@ -8,6 +8,6 @@ internal static class Constants
   // "LastName FirstName1 FirstName2 ... (G9/S999999999)";
   public const string GITHUB_READ_ROLE = "read";
   public const string GITHUB_WRITE_ROLE = "write";
-  public const string ASSESSMENT_FILE_NAME = "assessment.md";
+  public const string ASSESSMENT_FILE_NAME = "ASSESSMENT.md";
   public const string ASSESSMENTS_DOWNLOAD_FILE_NAME = "{0}-assessments.csv"; // {0} = assignment name
 }

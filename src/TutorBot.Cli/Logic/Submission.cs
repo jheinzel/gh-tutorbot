@@ -17,7 +17,7 @@ public class Submission
 
   public IList<Reviewer> Reviewers { get; set; } = new List<Reviewer>();
 
-  public record AssessmentLine(string Exercise, int[] Gradings);
+  public record AssessmentLine(string Exercise, int Weight, int[] Gradings);
 
 
   public async Task<IReadOnlyList<AssessmentLine>> GetAssessment(IGitHubClient client)
@@ -92,21 +92,27 @@ public class Submission
     while (index < content.Length)
     {
       index = ReadTableLine(content, index, out string[] values);
-      if (values.Length != 4)
+      if (values.Length != 5)
+      {
+        throw new AssessmentFileException($"\"{RepositoryName}\": Invalid assessment file format");
+      }
+
+      int weight = 0;
+      if (!int.TryParse(values[1], out weight) || weight < 0 || weight > 100)
       {
         throw new AssessmentFileException($"\"{RepositoryName}\": Invalid assessment file format");
       }
 
       int[] gradings = new int[values.Length - 1];
-      for (int i = 1; i < values.Length; i++)
+      for (int i = 2; i < values.Length; i++)
       {
-        if (!int.TryParse(values[i], out gradings[i - 1]) || gradings[i - 1] < 0 || gradings[i - 1] > 100)
+        if (!int.TryParse(values[i], out gradings[i - 2]) || gradings[i - 2] < 0 || gradings[i - 2] > 100)
         {
           throw new AssessmentFileException($"\"{RepositoryName}\": Invalid assessment file format");
         }
       }
 
-      assessmentList.Add(new AssessmentLine(values[0], gradings));
+      assessmentList.Add(new AssessmentLine(values[0], weight, gradings));
     }
 
     return assessmentList.AsReadOnly();
