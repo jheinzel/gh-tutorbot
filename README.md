@@ -57,6 +57,11 @@ TutorBot comes with the following range of commands:
   gh tutorbot download-assessments <assignment> [--classroom <classroom>]
   ```
 
+* List review statistics: Get statistical data about the activity of the reviewers.
+  ```shell
+  gh tutorbot list-review-statistics <assignment> [--classroom <classroom>] [--sort-by (Reviewer|CommentLength|ReviewDate)]
+  ```
+
 * Getting help
   ```shell
   gh tutorbot [<command>] --help

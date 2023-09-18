@@ -1,11 +1,10 @@
-﻿using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Collections.ObjectModel;
-using System.Diagnostics.CodeAnalysis;
-using Octokit;
+﻿using Octokit;
+using TutorBot.Infrastructure.StringExtensions;
 using TutorBot.Logic.Exceptions;
 
 namespace TutorBot.Logic;
+
+using ReviewStatistics = IDictionary<(string Owner, string Reviewer), ReviewStatisticsItem>;
 
 public class Submission
 {
@@ -29,7 +28,7 @@ public class Submission
     }
     catch (Octokit.NotFoundException)
     {
-      throw new AssessmentFileException($"\"{RepositoryName}\": No assessment file found in");
+      throw new AssessmentFileException($"\"{RepositoryName}\": No assessment file found");
     }
   }
 
@@ -116,5 +115,42 @@ public class Submission
     }
 
     return assessmentList.AsReadOnly();
+  }
+
+  public async Task AddReviewStatistics(IGitHubClient client, StudentList students, ReviewStatistics reviewStats)
+  {
+    var reviews = await client.Repository.PullRequest.Review.GetAll(RepositoryId, Constants.FEEDBACK_PULLREQUEST_ID);
+    foreach (var review in reviews.Where(r => students.Contains(r.User.Login)))
+    {
+      if (!reviewStats.TryGetValue((Owner.GitHubUsername, review.User.Login), out Logic.ReviewStatisticsItem? stats))
+      {
+        stats = new Logic.ReviewStatisticsItem();
+        reviewStats.Add((Owner.GitHubUsername, review.User.Login), stats);
+      }
+
+      var reviewDate = review.SubmittedAt;
+      if (reviewDate > stats.LastReviewDate)
+      {
+        stats.LastReviewDate = reviewDate;
+      }
+
+      stats.NumReviews++;
+      stats.NumWords += review.Body.WordCount();
+    }
+
+    var comments = await client.Repository.PullRequest.ReviewComment.GetAll(RepositoryId, Constants.FEEDBACK_PULLREQUEST_ID);
+    foreach (var comment in comments.Where(r => students.Contains(r.User.Login)))
+    {
+      if (!reviewStats.TryGetValue((Owner.GitHubUsername, comment.User.Login), out Logic.ReviewStatisticsItem? stats))
+      {
+        stats = new Logic.ReviewStatisticsItem();
+        reviewStats.Add((Owner.GitHubUsername, comment.User.Login), stats);
+      }
+
+      stats.NumComments++;
+      stats.NumWords += comment.Body.WordCount();
+    }
+
+    reviewStats.Remove((Owner.GitHubUsername, Owner.GitHubUsername));
   }
 }
