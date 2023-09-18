@@ -10,5 +10,6 @@ internal static class Constants
   public const string GITHUB_WRITE_ROLE = "write";
   public const string ASSESSMENT_FILE_NAME = "ASSESSMENT.md";
   public const string ASSESSMENTS_DOWNLOAD_FILE_NAME = "{0}-assessments.csv"; // {0} = assignment name
+  public const string EFFORT_PREFIX = "Aufwand"; // {0} = assignment name
   public const int FEEDBACK_PULLREQUEST_ID = 1;
 }

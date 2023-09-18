@@ -1,4 +1,5 @@
 ﻿using System.CommandLine;
+using System.Globalization;
 using Microsoft.Extensions.Logging;
 using Octokit;
 using TutorBot.Infrastructure.Exceptions;
@@ -22,7 +23,7 @@ internal class DownloadAssessmentsCommand : Command
   {
     void WriteHeader(StreamWriter writer, IEnumerable<string> exercises)
     {
-      writer.Write($"\"Name\",\"Mat.Nr.\"");
+      writer.Write($"\"Name\",\"Mat.Nr.\",\"Aufwand\"");
       foreach (var exercise in exercises)
       {
         foreach (var gradingType in new[] { "L", "I", "T" })
@@ -51,11 +52,11 @@ internal class DownloadAssessmentsCommand : Command
 
           if (i == 0)
           {
-            WriteHeader(assessmentsFile, assessment.Select(line => line.Exercise));
+            WriteHeader(assessmentsFile, assessment.Lines.Select(line => line.Exercise));
           }
 
-          assessmentsFile.Write($"\"{submission.Owner.FullName}\",{submission.Owner.MatNr}");
-          foreach (var line in assessment)
+          assessmentsFile.Write($"\"{submission.Owner.FullName}\",{submission.Owner.MatNr},{assessment.Effort.ToString(CultureInfo.InvariantCulture)}");
+          foreach (var line in assessment.Lines)
           {
             assessmentsFile.Write($",{line.Gradings[0]},{line.Gradings[1]},{line.Gradings[2]}");
           }

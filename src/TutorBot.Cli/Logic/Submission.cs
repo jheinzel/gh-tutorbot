@@ -1,10 +1,16 @@
-﻿using Octokit;
+﻿using System.Globalization;
+using System.Text.RegularExpressions;
+using Octokit;
 using TutorBot.Infrastructure.StringExtensions;
 using TutorBot.Logic.Exceptions;
 
 namespace TutorBot.Logic;
 
 using ReviewStatistics = IDictionary<(string Owner, string Reviewer), ReviewStatisticsItem>;
+
+public record AssessmentLine(string Exercise, int Weight, int[] Gradings);
+
+public record Assessment(double Effort, IReadOnlyList<AssessmentLine> Lines);
 
 public class Submission
 {
@@ -16,10 +22,8 @@ public class Submission
 
   public IList<Reviewer> Reviewers { get; set; } = new List<Reviewer>();
 
-  public record AssessmentLine(string Exercise, int Weight, int[] Gradings);
-
-
-  public async Task<IReadOnlyList<AssessmentLine>> GetAssessment(IGitHubClient client)
+ 
+  public async Task<Assessment> GetAssessment(IGitHubClient client)
   {
     try
     {
@@ -32,11 +36,11 @@ public class Submission
     }
   }
 
-  public IReadOnlyList<AssessmentLine> ParseMarkdownTable(string content)
+  public Assessment ParseMarkdownTable(string content)
   {
-    int FindTableIndex(string content)
+    int FindTableIndex(string content, int from)
     {
-      for (int i = 0; i < content.Length; i++)
+      for (int i = from; i < content.Length; i++)
       {
         if (content[i] == '|')
         {
@@ -58,7 +62,7 @@ public class Submission
       return index + 1;
     }
 
-    int ReadTableLine(string content, int from, out string[] values)
+    int ReadLine(string content, int from, out string line)
     {
       int index = from;
       while (index < content.Length && content[index] != '\n')
@@ -66,15 +70,57 @@ public class Submission
         index++;
       }
 
-      values = content[from..index].Split('|', StringSplitOptions.RemoveEmptyEntries);
+      line = content[from..index];
+      return index + 1;
+    }
+
+    int ReadTableLine(string content, int from, out string[] values)
+    {
+      int index = ReadLine(content, from, out string line);
+
+      values = line.Split('|', StringSplitOptions.RemoveEmptyEntries);
       values = values.Select(value => value.Trim()).ToArray();
 
-      return index + 1;
+      return index;
+    }
+
+    int ParseLabeledNumber(string content, string label, int from, out double number)
+    {
+      string pattern = $@"{label}[^:]*:\s*(?<number>[+-]?(\d*[.])?\d+)";
+
+      number = 0;
+      int index = from;
+      while ((index = ReadLine(content, index, out string line)) < content.Length)
+      {
+        Match match = Regex.Match(line, pattern);
+        if (!match.Success)
+        {
+          continue;
+        }
+
+        Group numberGroup = match.Groups["number"];
+        if (double.TryParse(numberGroup.Value, CultureInfo.InvariantCulture, out number))
+        {
+          return index;
+        }
+        else
+        {
+          return -1;
+        }
+      }
+
+      return -1;
     }
 
     var assessmentList = new List<AssessmentLine>();
 
-    int index = FindTableIndex(content);
+    int index = ParseLabeledNumber(content, Constants.EFFORT_PREFIX, 0, out double effort);
+    if (index == -1)
+    {
+      throw new AssessmentFileException($"\"{RepositoryName}\": Invalid assessment file format");
+    }
+
+    index = FindTableIndex(content, index);
     if (index == -1)
     {
       throw new AssessmentFileException($"\"{RepositoryName}\": Invalid assessment file format");
@@ -114,7 +160,7 @@ public class Submission
       assessmentList.Add(new AssessmentLine(values[0], weight, gradings));
     }
 
-    return assessmentList.AsReadOnly();
+    return new Assessment(effort, assessmentList.AsReadOnly());
   }
 
   public async Task AddReviewStatistics(IGitHubClient client, StudentList students, ReviewStatistics reviewStats)
