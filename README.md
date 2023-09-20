@@ -62,6 +62,17 @@ TutorBot comes with the following range of commands:
   gh tutorbot list-review-statistics <assignment> [--classroom <classroom>] [--sort-by (Reviewer|CommentLength|ReviewDate)]
   ```
 
+* Check for plagiarism: Perform a plagiarism check using JPlag on all submissions of an assignment. 
+  The assigment must be clone before (`clone-assignment`). The generated report is placed in the assignment directory.
+  It contains JSON files describing the result of the plagiarism check. The results can be viewed with the report viewer at 
+  <https://jplag.github.io/JPlag>.
+  ```shell
+  gh tutorbot check-plagiarism <root-directory> [--language (cpp|java)] [--report-file <report-file>]
+  ```
+  + `root-directory` is the path of the directory containing all submissions.
+  + `--language` can be used to specify the programming langugage of the submissions.
+  + `--report-file` can be used to specify the base name of the report file.
+
 * Getting help
   ```shell
   gh tutorbot [<command>] --help

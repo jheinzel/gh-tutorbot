@@ -3,13 +3,19 @@
 internal static class Constants
 {
   public const string APP_NAME = "gh-tutorbot";
+  
   public const string ROSTER_FILE_PATH = @"./classroom_roster.csv";
   public const string STUDENT_DATA_PATTERN = @"^(?<LastName>[\w\.\-]+)\s+(?<FirstName>([\w\.\-\s]*[\w\.\-]))\s*\(G(?<GroupNr>\d)/(?<MatNr>S\d+)\)$";
   // "LastName FirstName1 FirstName2 ... (G9/S999999999)";
+  
   public const string GITHUB_READ_ROLE = "read";
   public const string GITHUB_WRITE_ROLE = "write";
+  
   public const string ASSESSMENT_FILE_NAME = "ASSESSMENT.md";
   public const string ASSESSMENTS_DOWNLOAD_FILE_NAME = "{0}-assessments.csv"; // {0} = assignment name
   public const string EFFORT_PREFIX = "Aufwand"; // {0} = assignment name
   public const int FEEDBACK_PULLREQUEST_ID = 1;
+
+  public const string JPLAG_ARGS = "-l {0} -r \"{1}\" \"{2}\""; // {0} = language, {1} = report file, {2} = root directory
+  public const string DEFAULT_REPORT_FILE = "plagiarism-report";
 }
