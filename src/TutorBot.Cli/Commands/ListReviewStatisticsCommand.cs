@@ -11,13 +11,6 @@ using TutorBot.Utility;
 
 namespace TutorBot.Commands;
 
-internal enum SortOptions
-{
-  Reviewer,
-  CommentLength,
-  ReviewDate
-}
-
 internal class ListReviewStatisticsCommand : Command
 {
   private readonly IGitHubClient client;
@@ -25,11 +18,10 @@ internal class ListReviewStatisticsCommand : Command
 
   private readonly Argument<string> assignmentArgument = new("assignment", "assignment name");
   private readonly Option<string> classroomOption = new("--classroom", "classroom name");
-  private readonly Option<SortOptions> sortOption = new("--sort-by", "sorting criteria");
+  private readonly Option<string> sortOption = new("--sort-by", "sorting criteria");
 
-  private async Task HandleAsync(string assignmentName, string classroomName, SortOptions sortOption)
+  private async Task HandleAsync(string assignmentName, string classroomName, string sortOption)
   {
-
     var printer = new TablePrinter();
     printer.AddRow("REVIEWER", "OWNER", "#REVIEWS", "#COMMENTS", "#WORDS", "LASTREVIEWDATE");
 
@@ -44,9 +36,9 @@ internal class ListReviewStatisticsCommand : Command
       var sortedReviewStats =
         sortOption switch
         {
-          SortOptions.Reviewer => reviewStats.OrderBy(rs => rs.Key.Reviewer),
-          SortOptions.ReviewDate => reviewStats.OrderByDescending(rs => rs.Value.LastReviewDate),
-          SortOptions.CommentLength => reviewStats.OrderByDescending(rs => rs.Value.NumComments),
+          "reviewer" => reviewStats.OrderBy(rs => rs.Key.Reviewer),
+          "review-date" => reviewStats.OrderByDescending(rs => rs.Value.LastReviewDate),
+          "comment-length" => reviewStats.OrderByDescending(rs => rs.Value.NumComments),
           _ => throw new LogicException($"Unknown sort option \"{sortOption}\"")
         };
 
@@ -88,7 +80,8 @@ internal class ListReviewStatisticsCommand : Command
     AddOption(classroomOption);
 
     sortOption.AddAlias("-s");
-    sortOption.SetDefaultValue(SortOptions.Reviewer);
+    sortOption.FromAmong("reviewer", "comment-length", "review-date")
+              .SetDefaultValue("reviewer");
     AddOption(sortOption);
 
     AddAlias("lr");
