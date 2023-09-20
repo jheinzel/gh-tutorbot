@@ -6,7 +6,8 @@ using TutorBot.Infrastructure.OctokitExtensions;
 using TutorBot.Infrastructure.StringExtensions;
 using TutorBot.Logic.Exceptions;
 
-namespace TutorBot.Logic;
+namespace TutorBot.Logic
+  ;
 
 using ReviewStatistics = IDictionary<(string Owner, string Reviewer), ReviewStatisticsItem>;
 
