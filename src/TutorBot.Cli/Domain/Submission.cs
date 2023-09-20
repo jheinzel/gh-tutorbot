@@ -9,14 +9,6 @@ namespace TutorBot.Logic;
 
 using ReviewStatistics = IDictionary<(string Owner, string Reviewer), ReviewStatisticsItem>;
 
-public enum AssessmentState
-{
-  Loaded,
-  NotLoaded,
-  NotFound,
-  InvalidFormat
-}
-
 public class Submission
 {
   private IGitHubClient client;
@@ -30,32 +22,13 @@ public class Submission
 
   public IList<Reviewer> Reviewers { get; set; } = new List<Reviewer>();
 
-  public Assessment? Assessment { get; private set; }
-  public AssessmentState AssessmentState { get; private set; } = AssessmentState.NotLoaded;
+  public Assessment Assessment { get; private set; } = new Assessment();
 
   public Submission(IGitHubClient client, Repository repository, Student owner)
   {
     this.client = client;
     this.repository = repository;
     this.Owner = owner;
-  }
-
-  public async Task LoadAssessment()
-  {
-    try
-    {
-      var contentList = await client.Repository.Content.GetAllContents(repository.Id, Constants.ASSESSMENT_FILE_NAME);
-      Assessment = Assessment.FromString(contentList.Single().Content);
-      AssessmentState = AssessmentState.Loaded;
-    }
-    catch (Octokit.NotFoundException)
-    {
-      AssessmentState = AssessmentState.NotFound;
-    }
-    catch (AssessmentFormatException)
-    {
-      AssessmentState = AssessmentState.InvalidFormat;
-    }
   }
 
   public async Task AddReviewStatistics(StudentList students, ReviewStatistics reviewStats)

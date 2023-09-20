@@ -104,7 +104,7 @@ public class Assignment
       var submission = new Submission(client, repository, owner);
       if (loadAssessments)
       {
-        await submission.LoadAssessment();
+        await submission.Assessment.Load(client, repository.Id);
       }
       submissions.Add(submission);
     }

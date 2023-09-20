@@ -1,18 +1,50 @@
 ﻿using System.Globalization;
 using System.Text.RegularExpressions;
+using Octokit;
 using TutorBot.Logic.Exceptions;
 
 namespace TutorBot.Domain;
+
+public enum AssessmentState
+{
+  Loaded,
+  NotLoaded,
+  NotFound,
+  InvalidFormat
+}
 
 public record AssessmentLine(string Exercise, double Weight, double[] Gradings);
 
 public class Assessment
 {
-  public required double Effort { get; init; }
-  public required IReadOnlyList<AssessmentLine> Lines { get; init; }
+  public double Effort { get; init; }
+  public IReadOnlyList<AssessmentLine> Lines { get; private set; } = new List<AssessmentLine>();
   public double Value { get; internal set; } = 100.0;
+  public AssessmentState State { get; private set; } = AssessmentState.NotLoaded;
 
-  public static Assessment FromString(string content)
+  public Assessment()
+  {
+  }
+
+  public async Task Load(IGitHubClient client, long repositoryId)
+  {
+    try
+    {
+      var contentList = await client.Repository.Content.GetAllContents(repositoryId, Constants.ASSESSMENT_FILE_NAME);
+      LoadFromString(contentList.Single().Content);
+      State = AssessmentState.Loaded;
+    }
+    catch (Octokit.NotFoundException)
+    {
+      State = AssessmentState.NotFound;
+    }
+    catch (AssessmentFormatException)
+    {
+      State = AssessmentState.InvalidFormat;
+    }
+  }
+
+  public void LoadFromString(string content)
   {
     int FindTableIndex(string content, int from)
     {
@@ -88,7 +120,7 @@ public class Assessment
       return -1;
     }
 
-    int index = ParseLabeledNumber(content, Constants.EFFORT_PREFIX, 0, out double effort);
+    int index = ParseLabeledNumber(content, Constants.EFFORT_PREFIX, 0, out var Effort);
     if (index == -1)
     {
       throw new AssessmentFormatException($"Cannot parse effort entry");
@@ -108,36 +140,36 @@ public class Assessment
       throw new AssessmentFormatException($"Table not complete");
     }
 
-    var assessmentList = new List<AssessmentLine>();
+    var lines = new List<AssessmentLine>();
 
     while (index < content.Length)
     {
       index = ReadTableLine(content, index, out string[] values);
       if (values.Length != 5)
       {
-        throw new AssessmentFormatException($"Table row {assessmentList.Count+1} does not contain 5 rows");
+        throw new AssessmentFormatException($"Table row {lines.Count + 1} does not contain 5 rows");
       }
 
       double weight = 0;
       if (!double.TryParse(values[1], CultureInfo.InvariantCulture, out weight)
           || weight < 0 || weight > 100)
       {
-        throw new AssessmentFormatException($"Invalid weight in table row {assessmentList.Count + 1}");
+        throw new AssessmentFormatException($"Invalid weight in table row {lines.Count + 1}");
       }
 
       var gradings = new double[values.Length - 1];
       for (int i = 2; i < values.Length; i++)
       {
-        if (!double.TryParse(values[i], CultureInfo.InvariantCulture, out gradings[i - 2]) 
+        if (!double.TryParse(values[i], CultureInfo.InvariantCulture, out gradings[i - 2])
             || gradings[i - 2] < 0 || gradings[i - 2] > 100)
         {
-          throw new AssessmentFormatException($"Invalid entry in column {i+1} of row {assessmentList.Count + 1}");
+          throw new AssessmentFormatException($"Invalid entry in column {i + 1} of row {lines.Count + 1}");
         }
       }
 
-      assessmentList.Add(new AssessmentLine(values[0], weight, gradings));
+      lines.Add(new AssessmentLine(values[0], weight, gradings));
     }
 
-    return new Assessment { Effort = effort, Lines = assessmentList.AsReadOnly() };
+    Lines = lines.AsReadOnly();
   }
 }

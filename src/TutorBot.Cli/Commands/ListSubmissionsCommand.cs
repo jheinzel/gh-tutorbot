@@ -2,6 +2,7 @@
 using System.Globalization;
 using Microsoft.Extensions.Logging;
 using Octokit;
+using TutorBot.Domain;
 using TutorBot.Infrastructure;
 using TutorBot.Infrastructure.Exceptions;
 using TutorBot.Infrastructure.OctokitExtensions;
@@ -34,7 +35,7 @@ internal class ListSubmissionsCommand : Command
       foreach (var submission in assignment.Submissions)
       {
         var reviewers = string.Join(", ", submission.Reviewers.Select(r => r.FullName));
-        var assessmentInfo = submission.AssessmentState == AssessmentState.Loaded ? submission.Assessment!.Value.ToString("F1", CultureInfo.InvariantCulture) : submission.AssessmentState.ToString();
+        var assessmentInfo = submission.Assessment.State == AssessmentState.Loaded ? submission.Assessment!.Value.ToString("F1", CultureInfo.InvariantCulture) : submission.Assessment.State.ToString();
         printer.AddRow(submission.Owner.FullName, submission.Owner.MatNr, reviewers, assessmentInfo, submission.RepositoryUrl);
       }
 
@@ -43,6 +44,10 @@ internal class ListSubmissionsCommand : Command
     catch (Exception ex) when (ex is LogicException || ex is InfrastrucureException)
     {
       Console.Error.WriteRedLine($"{ex.Message}");
+    }
+    catch (ApiException apiEx)
+    {
+      Console.Error.WriteRedLine($"HTTP {(int)apiEx.StatusCode}: {apiEx.Message} ({apiEx.ApiError.DocumentationUrl})");
     }
   }
 

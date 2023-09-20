@@ -66,6 +66,10 @@ internal class CheckPlagiarismCommand : Command
     {
       Console.Error.WriteRedLine($"{ex.Message}");
     }
+    catch (ApiException apiEx)
+    {
+      Console.Error.WriteRedLine($"HTTP {(int)apiEx.StatusCode}: {apiEx.Message} ({apiEx.ApiError.DocumentationUrl})");
+    }
   }
 
 

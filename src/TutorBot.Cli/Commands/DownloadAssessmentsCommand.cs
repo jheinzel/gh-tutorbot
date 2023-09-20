@@ -2,6 +2,7 @@
 using System.Globalization;
 using Microsoft.Extensions.Logging;
 using Octokit;
+using TutorBot.Domain;
 using TutorBot.Infrastructure.Exceptions;
 using TutorBot.Infrastructure.OctokitExtensions;
 using TutorBot.Infrastructure.TextWriterExtensions;
@@ -44,7 +45,7 @@ internal class DownloadAssessmentsCommand : Command
       using var assessmentsFile = new StreamWriter(assessmentsFileName, append: false);
 
       int i = 0;
-      foreach (var submission in assignment.Submissions.Where(s => s.AssessmentState == AssessmentState.Loaded))
+      foreach (var submission in assignment.Submissions.Where(s => s.Assessment.State == AssessmentState.Loaded))
       {
         try
         {
@@ -75,6 +76,10 @@ internal class DownloadAssessmentsCommand : Command
     catch (Exception ex) when (ex is LogicException || ex is InfrastrucureException)
     {
       Console.Error.WriteRedLine($"{ex.Message}");
+    }
+    catch (ApiException apiEx)
+    {
+      Console.Error.WriteRedLine($"HTTP {(int)apiEx.StatusCode}: {apiEx.Message} ({apiEx.ApiError.DocumentationUrl})");
     }
   }
 

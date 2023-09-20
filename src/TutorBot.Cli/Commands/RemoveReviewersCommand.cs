@@ -33,6 +33,10 @@ internal class RemoveReviewersCommand : Command
     {
       Console.Error.WriteRedLine($"{ex.Message}");
     }
+    catch (ApiException apiEx)
+    {
+      Console.Error.WriteRedLine($"HTTP {(int)apiEx.StatusCode}: {apiEx.Message} ({apiEx.ApiError.DocumentationUrl})");
+    }
   }
 
   public RemoveReviewersCommand(IGitHubClient client, ConfigurationHelper configuration, ILogger<ListAssignmentsCommand> logger) : 
