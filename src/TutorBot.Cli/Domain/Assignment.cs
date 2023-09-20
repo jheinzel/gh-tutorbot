@@ -1,13 +1,13 @@
 ﻿using System.ComponentModel;
 using Octokit;
+using TutorBot.Domain;
 using TutorBot.Infrastructure;
 using TutorBot.Infrastructure.ListExtensions;
 using TutorBot.Infrastructure.OctokitExtensions;
 using TutorBot.Infrastructure.StringExtensions;
 using TutorBot.Logic.Exceptions;
 
-namespace TutorBot.Logic
-  ;
+namespace TutorBot.Logic;
 
 using ReviewStatistics = IDictionary<(string Owner, string Reviewer), ReviewStatisticsItem>;
 
@@ -28,7 +28,7 @@ public class Assignment
     Submissions = submissions ?? throw new ArgumentNullException(nameof(submissions));
   }
 
-  public static async Task<Assignment> FromGitHub(IGitHubClient client, StudentList students, long classroomId, string assignmentName)
+  public static async Task<Assignment> FromGitHub(IGitHubClient client, StudentList students, long classroomId, string assignmentName, bool loadAssessments = false)
   {
     var submissions = new List<Submission>();
 
@@ -54,7 +54,7 @@ public class Assignment
         throw new SubmissionException($"No repository assign to submission with ID \"{submissionDto.Id}\"");
       }
 
-      var repo = await client.Repository.Get(submissionDto.Repository.Id);
+      var repository = await client.Repository.Get(submissionDto.Repository.Id);
 
       if (submissionDto.Students.Count == 0)
       {
@@ -62,7 +62,7 @@ public class Assignment
       }
       if (submissionDto.Students.Count > 1)
       {
-        throw new SubmissionException($"More than one owner assigned to repository \"{repo.Name}\".");
+        throw new SubmissionException($"More than one owner assigned to repository \"{repository.Name}\".");
       }
       if (!students.TryGetValue(submissionDto.Students[0].Login, out var owner))
       {
@@ -71,7 +71,7 @@ public class Assignment
 
       var reviewers = new List<Reviewer>();
 
-      var readOnlyCollaborators = (await client.Repository.Collaborator.GetAll(repo.Id))
+      var readOnlyCollaborators = (await client.Repository.Collaborator.GetAll(repository.Id))
                                     .Where(c => c.Permissions.Maintain is not null &&
                                                 c.Permissions.Maintain == false &&
                                                 c.RoleName == Constants.GITHUB_READ_ROLE)
@@ -88,7 +88,7 @@ public class Assignment
         }
       }
 
-      var invitations = (await client.Repository.Invitation.GetAllForRepository(repo.Id)).ToList();
+      var invitations = (await client.Repository.Invitation.GetAllForRepository(repository.Id)).ToList();
       foreach (var invitation in invitations.Where(i => i.Permissions == Constants.GITHUB_READ_ROLE))
       {
         if (students.TryGetValue(invitation.Invitee.Login, out var reviewer))
@@ -101,19 +101,17 @@ public class Assignment
         }
       }
 
-      submissions.Add(new Submission
+      var submission = new Submission(client, repository, owner);
+      if (loadAssessments)
       {
-        RepositoryId = repo.Id,
-        RepositoryName = repo.Name,
-        RepositoryFullName = repo.FullName,
-        RepositoryUrl = repo.HtmlUrl,
-        Owner = owner,
-        Reviewers = reviewers
-      });
+        await submission.LoadAssessment();
+      }
+      submissions.Add(submission);
     }
 
     return new Assignment(client, assignmentDto.Title, assignmentDto.Deadline?.ToDateTime(), submissions);
   }
+
 
   public async Task AssignReviewers()
   {
@@ -178,13 +176,13 @@ public class Assignment
   }
 
 
-  public async Task<ReviewStatistics> GetReviewStatistics(IGitHubClient client, StudentList students)
+  public async Task<ReviewStatistics> GetReviewStatistics(StudentList students)
   {
     var reviewStats = new Dictionary<(string Owner, string Reviewer), Logic.ReviewStatisticsItem>();
     
     foreach (var submission in Submissions)
     {
-      await submission.AddReviewStatistics(client, students, reviewStats);
+      await submission.AddReviewStatistics(students, reviewStats);
     }
 
     return reviewStats;

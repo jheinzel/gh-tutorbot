@@ -31,7 +31,7 @@ internal class ListReviewStatisticsCommand : Command
       var classroom = await client.Classroom().GetByName(classroomName);
       var assignment = await Assignment.FromGitHub(client, studentList, classroom.Id, assignmentName);
 
-      var reviewStats = await assignment.GetReviewStatistics(client, studentList);
+      var reviewStats = await assignment.GetReviewStatistics(studentList);
 
       var sortedReviewStats =
         sortOption switch

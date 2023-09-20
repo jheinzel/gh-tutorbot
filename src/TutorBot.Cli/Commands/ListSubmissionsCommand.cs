@@ -1,4 +1,5 @@
 ﻿using System.CommandLine;
+using System.Globalization;
 using Microsoft.Extensions.Logging;
 using Octokit;
 using TutorBot.Infrastructure;
@@ -22,18 +23,19 @@ internal class ListSubmissionsCommand : Command
   private async Task HandleAsync(string assignmentName, string classroomName)
   {
     var printer = new TablePrinter();
-    printer.AddRow("STUDENT", "MAT.NR.", "REVIEWER(S)", "REPOSITORY-URL");
+    printer.AddRow("STUDENT", "MAT.NR.", "REVIEWER(S)", "ASSESSMENT", "REPOSITORY-URL");
 
     try
     {
       var studentList = await StudentList.FromRoster(Constants.ROSTER_FILE_PATH);
       var classroom = await client.Classroom().GetByName(classroomName);
-      var assignment = await Assignment.FromGitHub(client, studentList, classroom.Id, assignmentName);
+      var assignment = await Assignment.FromGitHub(client, studentList, classroom.Id, assignmentName, loadAssessments: true);
 
       foreach (var submission in assignment.Submissions)
       {
         var reviewers = string.Join(", ", submission.Reviewers.Select(r => r.FullName));
-        printer.AddRow(submission.Owner.FullName, submission.Owner.MatNr, reviewers, submission.RepositoryUrl);
+        var assessmentInfo = submission.AssessmentState == AssessmentState.Loaded ? submission.Assessment!.Value.ToString("F1", CultureInfo.InvariantCulture) : submission.AssessmentState.ToString();
+        printer.AddRow(submission.Owner.FullName, submission.Owner.MatNr, reviewers, assessmentInfo, submission.RepositoryUrl);
       }
 
       printer.Print();

@@ -27,7 +27,7 @@ internal class AssignReviewersCommand : Command
     {
       var studentList = await StudentList.FromRoster(Constants.ROSTER_FILE_PATH);
       var classroom = await client.Classroom().GetByName(classroomName);
-      var assignment = await Assignment.FromGitHub(client, studentList, classroom.Id, assignmentName);
+      var assignment = await Assignment.FromGitHub(client, studentList, classroom.Id, assignmentName, loadAssessments: true);
       await assignment.AssignReviewers();
 
       var assignments = await client.Classroom().Assignment.GetAll(classroom.Id);

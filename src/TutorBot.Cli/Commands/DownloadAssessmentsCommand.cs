@@ -38,17 +38,17 @@ internal class DownloadAssessmentsCommand : Command
     {
       var studentList = await StudentList.FromRoster(Constants.ROSTER_FILE_PATH);
       var classroom = await client.Classroom().GetByName(classroomName);
-      var assignment = await Assignment.FromGitHub(client, studentList, classroom.Id, assignmentName);
+      var assignment = await Assignment.FromGitHub(client, studentList, classroom.Id, assignmentName, loadAssessments: true);
 
       var assessmentsFileName = string.Format(Constants.ASSESSMENTS_DOWNLOAD_FILE_NAME, assignment.Name);
       using var assessmentsFile = new StreamWriter(assessmentsFileName, append: false);
 
       int i = 0;
-      foreach (var submission in assignment.Submissions)
+      foreach (var submission in assignment.Submissions.Where(s => s.AssessmentState == AssessmentState.Loaded))
       {
         try
         {
-          var assessment = await submission.GetAssessment(client);
+          var assessment = submission.Assessment ?? throw new InvalidOperationException($"Inconsitent Assessment state in sumbission {submission.RepositoryName}");
 
           if (i == 0)
           {
