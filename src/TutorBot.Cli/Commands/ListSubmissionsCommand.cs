@@ -41,13 +41,9 @@ internal class ListSubmissionsCommand : Command
 
       printer.Print();
     }
-    catch (Exception ex) when (ex is LogicException || ex is InfrastrucureException)
+    catch (Exception ex)
     {
-      Console.Error.WriteRedLine($"{ex.Message}");
-    }
-    catch (ApiException apiEx)
-    {
-      Console.Error.WriteRedLine($"HTTP {(int)apiEx.StatusCode}: {apiEx.Message} ({apiEx.ApiError.DocumentationUrl})");
+      ExceptionHelper.HandleException(ex);
     }
   }
 

@@ -26,9 +26,9 @@ internal class ListClassroomsCommand : Command
 
       printer.Print();
     }
-    catch (ApiException apiEx)
+    catch (Exception ex)
     {
-      Console.Error.WriteRedLine($"HTTP {(int)apiEx.StatusCode}: {apiEx.Message} ({apiEx.ApiError.DocumentationUrl})");
+      ExceptionHelper.HandleException(ex);
     }
   }
 

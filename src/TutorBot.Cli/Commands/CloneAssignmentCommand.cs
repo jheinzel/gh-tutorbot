@@ -34,13 +34,9 @@ internal class CloneAssignmentCommand : Command
         failureAction: (repoName, errorMessage, _) => 
                          Console.Error.WriteLine($"Problems cloning repository \"{repoName}\":\n{errorMessage.Trim().Indent(2)}"));
     }
-    catch (Exception ex) when (ex is LogicException || ex is InfrastrucureException)
+    catch (Exception ex)
     {
-      Console.Error.WriteRedLine($"{ex.Message}");
-    }
-    catch (ApiException apiEx)
-    {
-      Console.Error.WriteRedLine($"HTTP {(int)apiEx.StatusCode}: {apiEx.Message} ({apiEx.ApiError.DocumentationUrl})");
+      ExceptionHelper.HandleException(ex);
     }
   }
 
