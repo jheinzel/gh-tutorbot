@@ -1,8 +1,12 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using System.Net;
+using System.Reflection.PortableExecutable;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Octokit;
+using Octokit.Internal;
 using TutorBot;
 using TutorBot.Commands;
+using TutorBot.Infrastructure.OctokitExtensions;
 using TutorBot.Utility;
 
 var accessToken = await AuthHelper.GetPersonalAccessTokenAsync();
@@ -19,10 +23,7 @@ await host.Services.GetService<App>()!.RunAsync(args);
 
 void RegisterServices(IServiceCollection services)
 {
-  GitHubClient client = new GitHubClient(new ProductHeaderValue(Constants.APP_NAME));
-  client.Credentials = new Credentials(accessToken);
-
-  services.AddSingleton<IGitHubClient>(client);
+  services.AddSingleton<IGitHubClient>(OctokitExtensions.GetGitHubClient(Constants.APP_NAME, accessToken));
   services.AddSingleton<ConfigurationHelper>();
   services.RegisterCommands(typeof(Program).Assembly);
 }
