@@ -20,15 +20,16 @@ public class Submission
   public string RepositoryUrl => repository.HtmlUrl;
   public Student Owner { get; init; }
 
-  public IList<Reviewer> Reviewers { get; set; } = new List<Reviewer>();
+  public IList<Reviewer> Reviewers { get; set; }
 
   public Assessment Assessment { get; private set; } = new Assessment();
 
-  public Submission(IGitHubClient client, Repository repository, Student owner)
+  public Submission(IGitHubClient client, Repository repository, Student owner, IList<Reviewer> reviewers)
   {
     this.client = client;
     this.repository = repository;
     this.Owner = owner;
+    this.Reviewers = reviewers;
   }
 
   public async Task AddReviewStatistics(StudentList students, ReviewStatistics reviewStats)

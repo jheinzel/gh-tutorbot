@@ -2,7 +2,7 @@
   "profiles": {
     "gh-tutorbot": {
       "commandName": "Project",
-      "commandLineArgs": "list-submissions ue01",
+      "commandLineArgs": "assign-reviewers ue01",
       "workingDirectory": "C:\\Users\\p20058\\Documents\\FH\\Lehre\\Tools\\gh-tutorbot\\test"
     }
   }
