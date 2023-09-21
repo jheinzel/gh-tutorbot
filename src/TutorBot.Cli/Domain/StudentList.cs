@@ -6,9 +6,10 @@ using TutorBot.Utility;
 
 namespace TutorBot.Logic;
 
-public class StudentList : IEnumerable<Student>
+public class StudentList
 {
   private readonly IDictionary<string, Student> students = new Dictionary<string, Student>();
+  private readonly IList<Student> unlinkedStudents = new List<Student>();
 
   public static async Task<StudentList> FromRoster(string filePath)
   {
@@ -35,25 +36,25 @@ public class StudentList : IEnumerable<Student>
 
       var githubUsername = line[1];
 
-      if (string.IsNullOrEmpty(githubUsername)) // ignore unlinked students
-      {
-        continue;
-      }
-
       var identifier = line[0]; // e.g. "Doe John (G9/S999999999)"
       Match match = Regex.Match(identifier, Constants.STUDENT_DATA_PATTERN);
 
       if (match.Success)
       {
-        if (!studentList.students.TryAdd(githubUsername,
-          new Student
+        var newStudent = new Student
           (
             firstName: match.Groups["FirstName"].Value,
             lastName: match.Groups["LastName"].Value,
             matNr: match.Groups["MatNr"].Value,
             groupNr: int.Parse(match.Groups["GroupNr"].Value),
             gitHubUsername: githubUsername
-          )))
+          );
+
+        if (string.IsNullOrEmpty(githubUsername))
+        {
+          studentList.unlinkedStudents.Add(newStudent);
+        }
+        else if (!studentList.students.TryAdd(githubUsername, newStudent))
         {
           throw new RosterFileException($"Duplicate GitHub username \"{githubUsername}\" in roster file");
         }
@@ -67,10 +68,9 @@ public class StudentList : IEnumerable<Student>
     return studentList;
   }
 
-  public IEnumerator<Student> GetEnumerator()
-  {
-    return students.Values.GetEnumerator();
-  }
+  public IEnumerable<Student> LinkedStudents => students.Values;
+
+  public IEnumerable<Student> UnlinkedStudents => unlinkedStudents;
 
   public bool TryGetValue(string gitHubUserName, [MaybeNullWhen(false)] out Student student)
   {
@@ -82,5 +82,4 @@ public class StudentList : IEnumerable<Student>
     return students.ContainsKey(gitHubUserName);
   }
 
-  IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();
 }

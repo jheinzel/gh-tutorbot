@@ -39,7 +39,7 @@ internal class ListReviewStatisticsCommand : Command
           "reviewer" => reviewStats.OrderBy(rs => rs.Key.Reviewer),
           "review-date" => reviewStats.OrderByDescending(rs => rs.Value.LastReviewDate),
           "comment-length" => reviewStats.OrderByDescending(rs => rs.Value.NumComments),
-          _ => throw new LogicException($"Unknown sort option \"{sortOption}\"")
+          _ => throw new LogicException($"Unknown sort option \"{sortOption}\".")
         };
 
       sortedReviewStats = reviewStats.OrderBy(rs => rs.Key.Reviewer);
@@ -48,12 +48,12 @@ internal class ListReviewStatisticsCommand : Command
       {
         if (! studentList.TryGetValue(ownerName, out var owner))
         {
-          throw new LogicException($"Unknown student \"{ownerName}\"");
+          throw new LogicException($"Unknown student \"{ownerName}\".");
         }
 
         if (!studentList.TryGetValue(reviewerName, out var reviewer))
         {
-          throw new LogicException($"Unknown student \"{reviewerName}\"");
+          throw new LogicException($"Unknown student \"{reviewerName}\".");
         }
 
         printer.AddRow(reviewer.FullName, owner.FullName, stats.NumReviews.ToString(), stats.NumComments.ToString(), stats.NumWords.ToString(), stats.LastReviewDate.ToLocalTime().ToString("yyyy-MM-dd HH:mm"));

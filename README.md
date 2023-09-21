@@ -18,6 +18,11 @@ by automating repetitive tasks.
 
 TutorBot comes with the following range of commands:
 
+* List all students. The list is extrected from the roster file (`classroom_roster.cvs`)
+  ```shell
+  gh tutorbot list-students
+  ```
+
 * List all classrooms the user is a member of:
   ```shell
   gh tutorbot list-classrooms

@@ -36,6 +36,9 @@ internal class ListClassroomsCommand : Command
   base("list-classrooms", "List all classrooms")
   {
     this.client = client;
+
+    AddAlias("lc");
+
     this.SetHandler(HandleAsync);
   }
 }

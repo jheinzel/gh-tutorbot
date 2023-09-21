@@ -54,7 +54,7 @@ public class ClassroomsClient : ApiClient, IClassroomsClient
     var classroom = (await GetAll()).SingleOrDefault(c => c.Name == classroomName);
     if (classroom is null)
     {
-      throw new EntityNotFoundException(typeof(ClassroomDto), classroomName);
+      throw new ClassroomNotFoundException(classroomName);
     }
 
     return classroom;

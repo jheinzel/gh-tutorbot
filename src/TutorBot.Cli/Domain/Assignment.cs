@@ -41,7 +41,7 @@ public class Assignment
     {
       if (submissionDto.Repository is null)
       {
-        throw new SubmissionException($"No repository assign to submission with ID \"{submissionDto.Id}\"");
+        throw new SubmissionException($"No repository assign to submission with ID \"{submissionDto.Id}\".");
       }
 
       var repository = await client.Repository.Get(submissionDto.Repository.Id);
@@ -56,7 +56,7 @@ public class Assignment
       }
       if (!students.TryGetValue(submissionDto.Students[0].Login, out var owner))
       {
-        throw new SubmissionException($"No student assigned to GitHub user \"{submissionDto.Students[0].Login}\".");
+        throw new SubmissionException($"No student assigned to GitHub user \"{submissionDto.Students[0].Login}\". Download the students roster file again.");
       }
 
       var reviewers = new List<Reviewer>();
@@ -103,7 +103,7 @@ public class Assignment
   }
 
 
-  public async Task AssignReviewers()
+  public async Task AssignReviewers(Action<Student, Student> successAction)
   {
     await RemoveReviewers();
 
@@ -130,9 +130,11 @@ public class Assignment
       var invitation = await client.Repository.Collaborator.Add(validSubmissions[i].RepositoryId, reviewer.GitHubUsername, readRequest);
       if (invitation is null)
       {
-        throw new LogicException($"Cannot assign reviewer \"{reviewer.GitHubUsername}\" to \"{owner.GitHubUsername}\"");
+        throw new LogicException($"Cannot assign reviewer \"{reviewer.FullName}\" to \"{owner.FullName}\".");
       }
       validSubmissions[i].Reviewers.Add(new Reviewer(reviewer, invitation.Id));
+
+      successAction(owner, reviewer);
     }
   }
 
@@ -174,7 +176,7 @@ public class Assignment
       }
       catch (Win32Exception)
       {
-        throw new LogicException("Error: Command \"gh\" (GitHub CLI) not found");
+        throw new LogicException("Error: Command \"gh\" (GitHub CLI) not found.");
       }
     }
   }

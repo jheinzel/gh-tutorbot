@@ -49,14 +49,14 @@ internal class DownloadAssessmentsCommand : Command
       {
         try
         {
-          var assessment = submission.Assessment ?? throw new InvalidOperationException($"Inconsitent Assessment state in sumbission {submission.RepositoryName}");
+          var assessment = submission.Assessment ?? throw new InvalidOperationException($"Inconsitent Assessment state in sumbission {submission.RepositoryName}.");
 
           if (i == 0)
           {
             WriteHeader(assessmentsFile, assessment.Lines.Select(line => line.Exercise));
           }
 
-          assessmentsFile.Write($"\"{submission.Owner.FullName}\",{submission.Owner.MatNr},{assessment.Effort.ToString(CultureInfo.InvariantCulture)}");
+          assessmentsFile.Write($"\"{submission.Owner.FullName}\",{submission.Owner.MatNr},{assessment.Effort.ToString(CultureInfo.InvariantCulture)}.");
           foreach (var line in assessment.Lines)
           {
             assessmentsFile.Write($",{line.Gradings[0]},{line.Gradings[1]},{line.Gradings[2]}");

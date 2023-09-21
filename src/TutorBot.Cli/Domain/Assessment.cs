@@ -19,14 +19,14 @@ public record AssessmentLine(string Exercise, double Weight, IReadOnlyList<doubl
 
 public class Assessment
 {
-  public double Effort { get; init; }
+  public double Effort { get; private set; }
 
   public IReadOnlyList<double> ColumnWeights { get; private set; } = new List<double>();
 
   public IReadOnlyList<AssessmentLine> Lines { get; private set; } = new List<AssessmentLine>();
   public AssessmentState State { get; private set; } = AssessmentState.NotLoaded;
 
-  public double TotalGrading => State == AssessmentState.Loaded ? totalGrading : throw new LogicException("Invalid AssessmentState");
+  public double TotalGrading => State == AssessmentState.Loaded ? totalGrading : throw new LogicException("Invalid AssessmentState.");
 
   private double totalGrading;
 
@@ -59,7 +59,6 @@ public class Assessment
     {
       var contentList = await client.Repository.Content.GetAllContents(repositoryId, Constants.ASSESSMENT_FILE_NAME);
       LoadFromString(contentList.Single().Content);
-      State = AssessmentState.Loaded;
     }
     catch (Octokit.NotFoundException)
     {
@@ -113,7 +112,7 @@ public class Assessment
     {
       int index = ReadLine(content, from, out string line);
 
-      values = line.Split('|', StringSplitOptions.RemoveEmptyEntries);
+      values = line.Trim().Split('|', StringSplitOptions.RemoveEmptyEntries);
       values = values.Select(value => value.Trim()).ToArray();
 
       return index;
@@ -166,16 +165,16 @@ public class Assessment
     // LoadFromString implementation
     //
 
-    int index = ParseLabeledNumber(content, Constants.EFFORT_PREFIX, 0, out var Effort);
+    int index = ParseLabeledNumber(content, Constants.EFFORT_PREFIX, 0, out var effort);
     if (index == -1)
     {
-      throw new AssessmentFormatException($"Cannot parse effort entry");
+      throw new AssessmentFormatException($"Cannot parse effort entry.");
     }
 
     index = FindTableIndex(content, index);
     if (index == -1)
     {
-      throw new AssessmentFormatException($"Cannot find assessment table");
+      throw new AssessmentFormatException($"Cannot find assessment table.");
     }
 
     // process header
@@ -184,7 +183,7 @@ public class Assessment
 
     if (headerValues.Length != 5)
     {
-      throw new AssessmentFormatException($"Table header {headerValues.Length + 1} does not contain 5 rows");
+      throw new AssessmentFormatException($"Table header does not contain 5 rows.");
     }
 
     var weights = new double[headerValues.Length - 2];
@@ -193,7 +192,7 @@ public class Assessment
       if (!TryParseHeaderEntry(headerValues[i], out weights[i - 2])
           || weights[i - 2] < 0 || weights[i - 2] > 100)
       {
-        throw new AssessmentFormatException($"Invalid entry in column {i + 1} of table header");
+        throw new AssessmentFormatException($"Invalid entry in column {i + 1} of table header.");
       }
     }
 
@@ -204,7 +203,7 @@ public class Assessment
 
     if (index == content.Length)
     {
-      throw new AssessmentFormatException($"Table not complete");
+      throw new AssessmentFormatException($"Table not complete.");
     }
 
     // process table rows
@@ -216,14 +215,14 @@ public class Assessment
       index = ReadTableLine(content, index, out string[] values);
       if (values.Length != 5)
       {
-        throw new AssessmentFormatException($"Table row {lines.Count + 1} does not contain 5 rows");
+        throw new AssessmentFormatException($"Table row {lines.Count + 1} does not contain 5 rows.");
       }
 
       double weight = 0;
       if (!double.TryParse(values[1], CultureInfo.InvariantCulture, out weight)
           || weight < 0 || weight > 100)
       {
-        throw new AssessmentFormatException($"Invalid weight in table row {lines.Count + 1}");
+        throw new AssessmentFormatException($"Invalid weight in table row {lines.Count + 1}.");
       }
 
       var gradings = new double[values.Length - 2];
@@ -232,14 +231,16 @@ public class Assessment
         if (!double.TryParse(values[i], CultureInfo.InvariantCulture, out gradings[i - 2])
             || gradings[i - 2] < 0 || gradings[i - 2] > 100)
         {
-          throw new AssessmentFormatException($"Invalid entry in column {i + 1} of row {lines.Count + 1}");
+          throw new AssessmentFormatException($"Invalid entry in column {i + 1} of row {lines.Count + 1}.");
         }
       }
 
       lines.Add(new AssessmentLine(values[0], weight, gradings));
     }
 
+    Effort = effort;
     Lines = lines.AsReadOnly();
+    State = AssessmentState.Loaded;
 
     UpdateTotalGrading();
   }

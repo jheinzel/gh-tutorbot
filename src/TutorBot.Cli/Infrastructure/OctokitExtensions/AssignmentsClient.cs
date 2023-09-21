@@ -30,7 +30,7 @@ public class AssignmentsClient : ApiClient, IAssignmentsClient
     var assignment = (await GetAll(classroomId)).SingleOrDefault(a => a.Title == assignmentName);
     if (assignment is null)
     {
-      throw new EntityNotFoundException(typeof(AssignmentDto), assignmentName);
+      throw new AssignmentNotFoundException(assignmentName);
     }
 
     return assignment;
