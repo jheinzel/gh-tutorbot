@@ -3,11 +3,14 @@
 internal static class Constants
 {
   public const string APP_NAME = "gh-tutorbot";
-  
+
+  public const string DOUBLE_PATTERN = @"(?<number>[+-]?(\d*[.])?\d+)";
   public const string ROSTER_FILE_PATH = @"./classroom_roster.csv";
   public const string STUDENT_DATA_PATTERN = @"^(?<LastName>[\w\.\-]+)\s+(?<FirstName>([\w\.\-\s]*[\w\.\-]))\s*\(G(?<GroupNr>\d)/(?<MatNr>S\d+)\)$";
-  // "LastName FirstName1 FirstName2 ... (G9/S999999999)";
-  
+    // "LastName FirstName1 FirstName2 ... (G9/S999999999)";
+  public const string ASSESSMENT_HEADER_ENTRY_PATTERN = $@"\(\s*(?<Value>{DOUBLE_PATTERN})\s*\%\s*\)";
+    // "(99.9%)", " xxx (99.9%) xxx", "(99.9 % )", "( 99.9 %)", ...
+
   public const string GITHUB_READ_ROLE = "read";
   public const string GITHUB_WRITE_ROLE = "write";
   

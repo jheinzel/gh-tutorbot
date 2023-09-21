@@ -1,5 +1,6 @@
 ﻿using TutorBot.Infrastructure;
 using TutorBot.Infrastructure.Exceptions;
+using TutorBot.Infrastructure.TextWriterExtensions;
 
 namespace TutorBot.Utility;
 
@@ -12,14 +13,14 @@ public static class AuthHelper
       var (result, _, exitCode) = await ProcessHelper.RunProcessAsync("gh", "auth token");
       if (exitCode != 0 || result is null)
       {
-        Console.WriteLine("No personal access token defined. Use \"gh auth login\"");
+        Console.Error.WriteRedLine("No personal access token defined: Use \"gh auth login\" to login");
         Environment.Exit(2);
       }
       return result.Trim();
     }
     catch (InfrastrucureException)
     {
-      Console.Error.WriteLine("Error: Command \"gh\" (GitHub CLI) not found");
+      Console.Error.WriteRedLine("Error: Command \"gh\" (GitHub CLI) not found");
       Environment.Exit(1);
     }
 

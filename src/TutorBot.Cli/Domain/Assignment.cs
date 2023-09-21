@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+using System.Linq;
 using Octokit;
 using TutorBot.Domain;
 using TutorBot.Infrastructure;
@@ -36,19 +37,8 @@ public class Assignment
     var submissionDtos = await client.Classroom().Submissions.GetAll(assignmentDto.Id);
 
 
-    //var repositoryIds = response.Body.Where(s => s.Repository is not null)
-    //                                 .Select(s => s.Repository!.Id).ToList();
-
-
-    //await Task.WhenAll(repositoryIds.Select(id => this.Repository.Get(id)));
-
     foreach (var submissionDto in submissionDtos)
     {
-      //var collaborators = (await client.Repository.Collaborator.GetAll(repo.Id))
-      //                      .Where(c => c.Permissions.Maintain is not null && c.Permissions.Maintain == false)
-      //                      .ToList();
-      // var collaboratorsWithWriteAccess = collaborators.Where(c => c.RoleName == Constants.GITHUB_WRITE_ROLE).ToList();
-
       if (submissionDto.Repository is null)
       {
         throw new SubmissionException($"No repository assign to submission with ID \"{submissionDto.Id}\"");
@@ -101,7 +91,7 @@ public class Assignment
         }
       }
 
-      var submission = new Submission(client, repository, owner);
+      var submission = new Submission(client, repository, owner, reviewers);
       if (loadAssessments)
       {
         await submission.Assessment.Load(client, repository.Id);
@@ -117,18 +107,32 @@ public class Assignment
   {
     await RemoveReviewers();
 
-    if (Submissions.Count() == 0)
+    // create a shallow copy of the submissions list
+    // only consider submissions with a valid assessment
+    // (i.e. assessment file exists, has the correct format
+    // and the total grading is greater than 0)
+    var validSubmissions = Submissions.Where(s => s.Assessment.IsValid()).ToList();
+    if (validSubmissions.Count() <= 1)
     {
       return;
     }
 
-    var submissions = Submissions.ToList(); // create a shallow copy of the submissions list
-    submissions.Shuffle();
-    for (int i = 0; i < submissions.Count; i++)
+    validSubmissions.Shuffle();
+
+    var readRequest = new CollaboratorRequest(Constants.GITHUB_READ_ROLE);
+
+    for (int i = 0; i < validSubmissions.Count; i++)
     {
-      int j = (i + 1) % submissions.Count;
-      var invitation = await client.Repository.Collaborator.Add(submissions[i].RepositoryId, submissions[j].Owner.GitHubUsername, new CollaboratorRequest(Constants.GITHUB_READ_ROLE));
-      submissions[i].Reviewers.Add(new Reviewer(submissions[j].Owner, invitation.Id));
+      int j = (i + 1) % validSubmissions.Count;
+      var owner = validSubmissions[i].Owner;
+      var reviewer = validSubmissions[j].Owner;
+
+      var invitation = await client.Repository.Collaborator.Add(validSubmissions[i].RepositoryId, reviewer.GitHubUsername, readRequest);
+      if (invitation is null)
+      {
+        throw new LogicException($"Cannot assign reviewer \"{reviewer.GitHubUsername}\" to \"{owner.GitHubUsername}\"");
+      }
+      validSubmissions[i].Reviewers.Add(new Reviewer(reviewer, invitation.Id));
     }
   }
 

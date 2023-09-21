@@ -1,6 +1,8 @@
-﻿using System.Globalization;
+﻿using System.Collections.Generic;
+using System.Globalization;
 using System.Text.RegularExpressions;
 using Octokit;
+using TutorBot.Infrastructure;
 using TutorBot.Logic.Exceptions;
 
 namespace TutorBot.Domain;
@@ -13,17 +15,42 @@ public enum AssessmentState
   InvalidFormat
 }
 
-public record AssessmentLine(string Exercise, double Weight, double[] Gradings);
+public record AssessmentLine(string Exercise, double Weight, IReadOnlyList<double> Gradings);
 
 public class Assessment
 {
   public double Effort { get; init; }
+
+  public IReadOnlyList<double> ColumnWeights { get; private set; } = new List<double>();
+
   public IReadOnlyList<AssessmentLine> Lines { get; private set; } = new List<AssessmentLine>();
-  public double Value { get; internal set; } = 100.0;
   public AssessmentState State { get; private set; } = AssessmentState.NotLoaded;
+
+  public double TotalGrading => State == AssessmentState.Loaded ? totalGrading : throw new LogicException("Invalid AssessmentState");
+
+  private double totalGrading;
 
   public Assessment()
   {
+  }
+
+  private void UpdateTotalGrading()
+  {
+    totalGrading = 0.0;
+    var sumColumnWeights = ColumnWeights.Sum();
+    var sumLineWeights = Lines.Sum(line => line.Weight);
+
+    foreach (var line in Lines)
+    {
+      var lineGrading = 0.0;
+      for (int i = 0; i < line.Gradings.Count; i++)
+      {
+        lineGrading += line.Gradings[i] * ColumnWeights[i] / sumColumnWeights;
+      }
+
+      totalGrading += lineGrading * line.Weight / sumLineWeights;
+    }
+
   }
 
   public async Task Load(IGitHubClient client, long repositoryId)
@@ -94,7 +121,7 @@ public class Assessment
 
     int ParseLabeledNumber(string content, string label, int from, out double number)
     {
-      string pattern = $@"{label}[^:]*:\s*(?<number>[+-]?(\d*[.])?\d+)";
+      string pattern = $@"{label}[^:]*:\s*{Constants.DOUBLE_PATTERN}";
 
       number = 0;
       int index = from;
@@ -120,6 +147,25 @@ public class Assessment
       return -1;
     }
 
+    bool TryParseHeaderEntry(string entry, out double weight)
+    {
+      weight = 0;
+      var match = Regex.Match(entry, Constants.ASSESSMENT_HEADER_ENTRY_PATTERN);
+
+      if (match.Success)
+      {
+        return double.TryParse(match.Groups["Value"].Value, CultureInfo.InvariantCulture, out weight);
+      }
+      else
+      {
+        return false;
+      }
+    }
+
+    //
+    // LoadFromString implementation
+    //
+
     int index = ParseLabeledNumber(content, Constants.EFFORT_PREFIX, 0, out var Effort);
     if (index == -1)
     {
@@ -132,13 +178,36 @@ public class Assessment
       throw new AssessmentFormatException($"Cannot find assessment table");
     }
 
-    index = IgnoreLine(content, index); // ignore header
-    index = IgnoreLine(content, index); // ignore separator
+    // process header
+
+    index = ReadTableLine(content, index, out string[] headerValues);
+
+    if (headerValues.Length != 5)
+    {
+      throw new AssessmentFormatException($"Table header {headerValues.Length + 1} does not contain 5 rows");
+    }
+
+    var weights = new double[headerValues.Length - 2];
+    for (int i = 2; i < headerValues.Length; i++)
+    {
+      if (!TryParseHeaderEntry(headerValues[i], out weights[i - 2])
+          || weights[i - 2] < 0 || weights[i - 2] > 100)
+      {
+        throw new AssessmentFormatException($"Invalid entry in column {i + 1} of table header");
+      }
+    }
+
+    ColumnWeights = weights.AsReadOnly();
+
+    // igore separator
+    index = IgnoreLine(content, index);
 
     if (index == content.Length)
     {
       throw new AssessmentFormatException($"Table not complete");
     }
+
+    // process table rows
 
     var lines = new List<AssessmentLine>();
 
@@ -157,7 +226,7 @@ public class Assessment
         throw new AssessmentFormatException($"Invalid weight in table row {lines.Count + 1}");
       }
 
-      var gradings = new double[values.Length - 1];
+      var gradings = new double[values.Length - 2];
       for (int i = 2; i < values.Length; i++)
       {
         if (!double.TryParse(values[i], CultureInfo.InvariantCulture, out gradings[i - 2])
@@ -171,5 +240,12 @@ public class Assessment
     }
 
     Lines = lines.AsReadOnly();
+
+    UpdateTotalGrading();
+  }
+
+  public bool IsValid()
+  {
+    return State == AssessmentState.Loaded && TotalGrading.IsPositive();
   }
 }
