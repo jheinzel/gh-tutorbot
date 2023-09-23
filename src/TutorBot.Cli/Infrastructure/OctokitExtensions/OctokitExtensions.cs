@@ -10,18 +10,21 @@ public static class OctokitExtensions
   {
     // Adapt the HttpClient, so that it sends an Accept-Encoding header without the gzip value.
     // gzip causes an HTTP 500 error, starting with September 20, 2023.
-    HttpClientAdapter adapter = new HttpClientAdapter(() => new HttpClientHandler
-    {
-      AutomaticDecompression = DecompressionMethods.Deflate | DecompressionMethods.Brotli
-    });
+    //HttpClientAdapter adapter = new HttpClientAdapter(() => new HttpClientHandler
+    //{
+    //  AutomaticDecompression = DecompressionMethods.Deflate | DecompressionMethods.Brotli
+    //});
 
-    var connection = new Connection(new ProductHeaderValue(appName),
-      new HttpClientAdapter(() => new HttpClientHandler
-      {
-        AutomaticDecompression = DecompressionMethods.Deflate | DecompressionMethods.Brotli
-      }));
+    //var connection = new Connection(new ProductHeaderValue(appName),
+    //  new HttpClientAdapter(() => new HttpClientHandler
+    //  {
+    //    AutomaticDecompression = DecompressionMethods.Deflate | DecompressionMethods.Brotli
+    //  }));
 
-    var client = new GitHubClient(connection);
+    //var client = new GitHubClient(connection);
+
+    // Turn on gzip encoding, since the Github API gzip bug was fixed on September 22, 2023. 
+    var client = new GitHubClient(new ProductHeaderValue(appName));
     client.Credentials = new Credentials(accessToken);
 
     return client;
