@@ -69,3 +69,16 @@ public class Submission
     reviewStats.Remove((Owner.GitHubUsername, Owner.GitHubUsername));
   }
 }
+
+public class UnlinkedSubmission
+{
+  private Repository repository;
+
+  public long RepositoryId => repository.Id;
+  public string RepositoryName => repository.Name;
+  public string RepositoryFullName => repository.FullName;
+  public string RepositoryUrl => repository.HtmlUrl;
+  public string  GitHubUsername => repository.Owner.Login;
+
+  public UnlinkedSubmission(Repository repository) => this.repository = repository;
+}

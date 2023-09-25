@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using Octokit;
 using TutorBot.Infrastructure;
+using TutorBot.Infrastructure.CollectionExtensions;
 using TutorBot.Infrastructure.Exceptions;
 using TutorBot.Infrastructure.OctokitExtensions;
 using TutorBot.Infrastructure.StringExtensions;
@@ -20,17 +21,27 @@ internal class AssignReviewersCommand : Command
 
   private readonly Argument<string> assignmentArgument = new("assignment", "assignment name");
   private readonly Option<string> classroomOption = new("--classroom", "classroom name");
+  private readonly Option<bool> forceOption = new("--force", "force assignment although there are unlinked submissions");
 
-  private async Task HandleAsync(string assignmentName, string classroomName)
+  private async Task HandleAsync(string assignmentName, string classroomName, bool force)
   {
     try
     {
       var studentList = await StudentList.FromRoster(Constants.ROSTER_FILE_PATH);
       var classroom = await client.Classroom().GetByName(classroomName);
       var assignment = await Assignment.FromGitHub(client, studentList, classroom.Id, assignmentName, loadAssessments: true);
-      await assignment.AssignReviewers(successAction: (owner, reviewer) => Console.WriteLine($"{owner.FullName} <- {reviewer.FullName}"));
 
-      var assignments = await client.Classroom().Assignment.GetAll(classroom.Id);
+      if (assignment.UnlinkedSubmissions.Count == 0 || force)
+      {
+        int maxLength = studentList.LinkedStudents.Max(s => s.FullName.Length);
+        await assignment.AssignReviewers(successAction: (owner, reviewer) => Console.WriteLine($"{owner.FullName.PadRight(maxLength, ' ')} <- {reviewer.FullName}"));
+      }
+      else
+      {
+        var unlinkedSubmissions = assignment.UnlinkedSubmissions.Select(s => s.RepositoryName).ToStringWithSeparator();
+        Console.Error.WriteRedLine($"The following submissions are not linked: {unlinkedSubmissions}");
+        Console.Error.WriteRedLine("Use --force to ignore unlinked submissions and force assigning of reviewers");
+      }
     }
     catch (Exception ex)
     {
@@ -38,7 +49,7 @@ internal class AssignReviewersCommand : Command
     }
   }
 
-  public AssignReviewersCommand(IGitHubClient client, ConfigurationHelper configuration, ILogger<ListAssignmentsCommand> logger) : 
+  public AssignReviewersCommand(IGitHubClient client, ConfigurationHelper configuration, ILogger<ListAssignmentsCommand> logger) :
     base("assign-reviewers", "Assign reviewers to assignments randomly")
   {
     this.client = client;
@@ -50,9 +61,13 @@ internal class AssignReviewersCommand : Command
     classroomOption.SetDefaultValue(configuration.DefaultClassroom);
     AddOption(classroomOption);
 
+    forceOption.AddAlias("-f");
+    forceOption.SetDefaultValue(false);
+    AddOption(forceOption);
+
     AddAlias("ar");
 
-    this.SetHandler(HandleAsync, assignmentArgument, classroomOption);
+    this.SetHandler(HandleAsync, assignmentArgument, classroomOption, forceOption);
   }
 }
 

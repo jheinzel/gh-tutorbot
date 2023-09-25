@@ -3,7 +3,7 @@ using System.Linq;
 using Octokit;
 using TutorBot.Domain;
 using TutorBot.Infrastructure;
-using TutorBot.Infrastructure.ListExtensions;
+using TutorBot.Infrastructure.CollectionExtensions;
 using TutorBot.Infrastructure.OctokitExtensions;
 using TutorBot.Infrastructure.StringExtensions;
 using TutorBot.Logic.Exceptions;
@@ -19,19 +19,23 @@ public class Assignment
   public string Name { get; init; }
   public DateTime? Deadline { get; init; }
 
-  public IEnumerable<Submission> Submissions { get; init; }
+  public IReadOnlyList<Submission> Submissions { get; init; }
 
-  private Assignment(IGitHubClient client, string name, DateTime? deadline, IEnumerable<Submission> submissions)
+  public IReadOnlyList<UnlinkedSubmission> UnlinkedSubmissions { get; init; }
+
+  private Assignment(IGitHubClient client, string name, DateTime? deadline, IReadOnlyList<Submission> submissions, IReadOnlyList<UnlinkedSubmission> unlinkedSubmissions)
   {
     this.client = client ?? throw new ArgumentNullException(nameof(client));
     Name = name ?? throw new ArgumentNullException(nameof(name));
     Deadline = deadline;
     Submissions = submissions ?? throw new ArgumentNullException(nameof(submissions));
+    UnlinkedSubmissions = unlinkedSubmissions ?? throw new ArgumentNullException(nameof(unlinkedSubmissions));
   }
 
   public static async Task<Assignment> FromGitHub(IGitHubClient client, StudentList students, long classroomId, string assignmentName, bool loadAssessments = false)
   {
     var submissions = new List<Submission>();
+    var unlinkedSubmission = new List<UnlinkedSubmission>();
 
     var assignmentDto = await client.Classroom().Assignment.GetByName(classroomId, assignmentName);
     var submissionDtos = await client.Classroom().Submissions.GetAll(assignmentDto.Id);
@@ -56,7 +60,8 @@ public class Assignment
       }
       if (!students.TryGetValue(submissionDto.Students[0].Login, out var owner))
       {
-        throw new SubmissionException($"No student assigned to GitHub user \"{submissionDto.Students[0].Login}\". Download the students roster file again.");
+        unlinkedSubmission.Add(new UnlinkedSubmission(repository));
+        continue;
       }
 
       var reviewers = new List<Reviewer>();
@@ -66,6 +71,7 @@ public class Assignment
                                                 c.Permissions.Maintain == false &&
                                                 c.RoleName == Constants.GITHUB_READ_ROLE)
                                     .ToList();
+
       foreach (var collaborator in readOnlyCollaborators)
       {
         if (students.TryGetValue(collaborator.Login, out var reviewer))
@@ -99,7 +105,7 @@ public class Assignment
       submissions.Add(submission);
     }
 
-    return new Assignment(client, assignmentDto.Title, assignmentDto.Deadline?.ToDateTime(), submissions);
+    return new Assignment(client, assignmentDto.Title, assignmentDto.Deadline?.ToDateTime(), submissions, unlinkedSubmission);
   }
 
 
@@ -128,11 +134,11 @@ public class Assignment
       var reviewer = validSubmissions[j].Owner;
 
       var invitation = await client.Repository.Collaborator.Add(validSubmissions[i].RepositoryId, reviewer.GitHubUsername, readRequest);
-      if (invitation is null)
-      {
-        throw new LogicException($"Cannot assign reviewer \"{reviewer.FullName}\" to \"{owner.FullName}\".");
-      }
-      validSubmissions[i].Reviewers.Add(new Reviewer(reviewer, invitation.Id));
+      //if (invitation is null)
+      //{
+      //  throw new LogicException($"Cannot assign reviewer \"{reviewer.FullName}\" to \"{owner.FullName}\".");
+      //}
+      validSubmissions[i].Reviewers.Add(new Reviewer(reviewer, invitation?.Id));
 
       successAction(owner, reviewer);
     }
@@ -185,7 +191,7 @@ public class Assignment
   public async Task<ReviewStatistics> GetReviewStatistics(StudentList students)
   {
     var reviewStats = new Dictionary<(string Owner, string Reviewer), Logic.ReviewStatisticsItem>();
-    
+
     foreach (var submission in Submissions)
     {
       await submission.AddReviewStatistics(students, reviewStats);

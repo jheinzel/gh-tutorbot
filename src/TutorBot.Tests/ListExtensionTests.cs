@@ -1,5 +1,5 @@
 ﻿using FluentAssertions;
-using TutorBot.Infrastructure.ListExtensions;
+using TutorBot.Infrastructure.CollectionExtensions;
 using TutorBot.Utility;
 
 namespace TutorBot.Tests;

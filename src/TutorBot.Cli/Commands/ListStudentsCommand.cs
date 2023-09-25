@@ -13,7 +13,7 @@ internal class ListStudentsCommand : Command
   private async Task HandleAsync()
   {
     var printer = new TablePrinter();
-    printer.AddRow("LASTNAME", "FIRSTNAME", "MAT.NR.", "GITHUBNAME", "GROUPNR.");
+    printer.AddRow("LASTNAME", "FIRSTNAME", "STUD.ID", "GITHUBNAME", "GROUPNR.");
 
     try
     {

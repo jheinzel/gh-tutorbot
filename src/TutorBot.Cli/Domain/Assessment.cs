@@ -26,7 +26,7 @@ public class Assessment
   public IReadOnlyList<AssessmentLine> Lines { get; private set; } = new List<AssessmentLine>();
   public AssessmentState State { get; private set; } = AssessmentState.NotLoaded;
 
-  public double TotalGrading => State == AssessmentState.Loaded ? totalGrading : throw new LogicException("Invalid AssessmentState.");
+  public double Total => State == AssessmentState.Loaded ? totalGrading : throw new LogicException("Invalid AssessmentState.");
 
   private double totalGrading;
 
@@ -126,7 +126,7 @@ public class Assessment
       int index = from;
       while ((index = ReadLine(content, index, out string line)) < content.Length)
       {
-        Match match = Regex.Match(line, pattern);
+        var match = Regex.Match(line, pattern);
         if (!match.Success)
         {
           continue;
@@ -247,6 +247,6 @@ public class Assessment
 
   public bool IsValid()
   {
-    return State == AssessmentState.Loaded && TotalGrading.IsPositive();
+    return State == AssessmentState.Loaded && Total.IsPositive();
   }
 }

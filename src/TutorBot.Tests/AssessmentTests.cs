@@ -98,7 +98,7 @@ public class AssessmentTests
 
     assessment.State.Should().Be(AssessmentState.Loaded);
     assessment.Effort.Should().BeApproximately(10.5, 0.01);
-    assessment.TotalGrading.Should().BeApproximately(50.57, 0.01);
+    assessment.Total.Should().BeApproximately(50.57, 0.01);
   }
 
   [Theory]
@@ -114,7 +114,7 @@ public class AssessmentTests
 
     assessment.State.Should().Be(AssessmentState.Loaded);
     assessment.Effort.Should().BeApproximately(effort, 0.01);
-    assessment.TotalGrading.Should().BeApproximately(totalGrading, 0.01);
+    assessment.Total.Should().BeApproximately(totalGrading, 0.01);
   }
 
   [Theory]

@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Octokit;
 using TutorBot.Domain;
 using TutorBot.Infrastructure;
+using TutorBot.Infrastructure.CollectionExtensions;
 using TutorBot.Infrastructure.Exceptions;
 using TutorBot.Infrastructure.OctokitExtensions;
 using TutorBot.Infrastructure.TextWriterExtensions;
@@ -24,7 +25,7 @@ internal class ListSubmissionsCommand : Command
   private async Task HandleAsync(string assignmentName, string classroomName)
   {
     var printer = new TablePrinter();
-    printer.AddRow("STUDENT", "MAT.NR.", "REVIEWER(S)", "ASSESSMENT", "REPOSITORY-URL");
+    printer.AddRow("STUDENT", "STUD.ID", "REVIEWER(S)", "EFFORT", "ASSESSMENT", "REPOSITORY URL");
 
     try
     {
@@ -34,16 +35,49 @@ internal class ListSubmissionsCommand : Command
 
       foreach (var submission in assignment.Submissions)
       {
-        var reviewers = string.Join(", ", submission.Reviewers.Select(r => r.FullName));
-        var assessmentInfo = submission.Assessment.State == AssessmentState.Loaded ? submission.Assessment.TotalGrading.ToString("F1", CultureInfo.InvariantCulture) : submission.Assessment.State.ToString();
-        printer.AddRow(submission.Owner.FullName, submission.Owner.MatNr, reviewers, assessmentInfo, submission.RepositoryUrl);
+        var reviewers = submission.Reviewers.Select(r => r.FullName).ToStringWithSeparator();
+        var effortInfo = submission.Assessment.State == AssessmentState.Loaded ? FormattableString.Invariant($"{submission.Assessment.Effort,6:F1}") : $"{"   -",-6}";
+        var assessmentInfo = submission.Assessment.State == AssessmentState.Loaded ? FormattableString.Invariant($"{submission.Assessment.Total,9:F1}") : $"{submission.Assessment.State,-9}";
+        printer.AddRow(submission.Owner.FullName, submission.Owner.MatNr, reviewers, effortInfo, assessmentInfo, submission.RepositoryUrl);
       }
 
       printer.Print();
+
+      PrintStatistics(assignment);
+      PrintUnlinked(assignment);
     }
     catch (Exception ex)
     {
       ExceptionHelper.HandleException(ex);
+    }
+  }
+
+
+  private static void PrintStatistics(Assignment assignment)
+  {
+    if (assignment.Submissions.Any())
+    {
+      var validSubmissions = assignment.Submissions.Where(s => s.Assessment.IsValid());
+      
+      Console.WriteLine();
+      Console.WriteLine($"#submissions:       {assignment.Submissions.Count}");
+      Console.WriteLine($"#valid submissions: {validSubmissions.Count()}");
+      Console.WriteLine($"avarge effort:      {validSubmissions.Average(s => s.Assessment.Effort).ToString("F1", CultureInfo.InvariantCulture)}");
+      Console.WriteLine($"averge assessment:  {validSubmissions.Average(s => s.Assessment.Total).ToString("F1", CultureInfo.InvariantCulture)}");
+    }
+    else
+    {
+      Console.WriteLine($"No submission for this assignment.");
+    }
+  }
+
+  private static void PrintUnlinked(Assignment assignment)
+  {
+    if (assignment.UnlinkedSubmissions.Any())
+    {
+      Console.WriteLine();
+      var unlinkedSubmissions = assignment.UnlinkedSubmissions.Select(s => s.RepositoryName).ToStringWithSeparator();
+      Console.Out.WriteRedLine($"Unlinked submissions: {unlinkedSubmissions}. Check if the student roster file is up-to-date!");
     }
   }
 

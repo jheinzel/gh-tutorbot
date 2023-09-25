@@ -1,6 +1,6 @@
-﻿namespace TutorBot.Infrastructure.ListExtensions;
+﻿namespace TutorBot.Infrastructure.CollectionExtensions;
 
-public static class ListExtensions
+public static class CollectionExtensions
 {
   public static void Shuffle<T>(this IList<T> list)
   {
@@ -12,4 +12,6 @@ public static class ListExtensions
       (list[k], list[i]) = (list[i], list[k]);
     }
   }
+
+  public static string ToStringWithSeparator<T>(this IEnumerable<T> list, string separator = ", ") => string.Join(separator, list);
 }
