@@ -33,11 +33,11 @@ internal class ListSubmissionsCommand : Command
       var classroom = await client.Classroom().GetByName(classroomName);
       var assignment = await Assignment.FromGitHub(client, studentList, classroom.Id, assignmentName, loadAssessments: true);
 
-      foreach (var submission in assignment.Submissions)
+      foreach (var submission in assignment.Submissions.OrderBy(s => s.Owner.FullName))
       {
         var reviewers = submission.Reviewers.Select(r => r.FullName).ToStringWithSeparator();
         var effortInfo = submission.Assessment.State == AssessmentState.Loaded ? FormattableString.Invariant($"{submission.Assessment.Effort,6:F1}") : $"{"   -",-6}";
-        var assessmentInfo = submission.Assessment.State == AssessmentState.Loaded ? FormattableString.Invariant($"{submission.Assessment.Total,9:F1}") : $"{submission.Assessment.State,-9}";
+        var assessmentInfo = submission.Assessment.State == AssessmentState.Loaded ? FormattableString.Invariant($"{submission.Assessment.Total,10:F1}") : $"{submission.Assessment.State,-10}";
         printer.AddRow(submission.Owner.FullName, submission.Owner.MatNr, reviewers, effortInfo, assessmentInfo, submission.RepositoryUrl);
       }
 

@@ -55,6 +55,7 @@ internal class CheckPlagiarismCommand : Command
       }
       else
       {
+        Console.WriteLine(result);
         Console.Error.WriteRedLine($"{errorResult}");
       }
     }

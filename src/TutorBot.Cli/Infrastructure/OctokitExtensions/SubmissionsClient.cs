@@ -17,16 +17,27 @@ public class SubmissionsClient : ApiClient, ISubmissionsClient
 
   public async Task<IReadOnlyList<SubmissionDto>> GetAll(long assignmentId)
   {
-    var endpoint = new Uri($"assignments/{assignmentId}/accepted_assignments", UriKind.Relative);
-    var parameters = new Dictionary<string, string>();
+    var pagingOptions = new PagingOptions { Page = 1, PerPage = Constants.SUBMISSIONS_PAGE_SIZE };
 
-    var response = await Connection.Get<IReadOnlyList<SubmissionDto>>(endpoint, parameters);
+    var submissions = new List<SubmissionDto>();
+    bool hasNextPage = true;
 
-    if (response.HttpResponse.StatusCode != HttpStatusCode.OK)
+    while (hasNextPage)
     {
-      throw new ApiException($"Error retrieving submissions", response.HttpResponse.StatusCode);
+      var endpoint = new Uri($"assignments/{assignmentId}/accepted_assignments", UriKind.Relative);
+      var response = await Connection.Get<List<SubmissionDto>>(endpoint, pagingOptions.ToDictionary());
+
+      if (response.HttpResponse.StatusCode != HttpStatusCode.OK)
+      {
+        throw new ApiException($"Error retrieving submissions", response.HttpResponse.StatusCode);
+      }
+
+      submissions.AddRange(response.Body);
+
+      pagingOptions.IncrementPage();
+      hasNextPage = response.Body.Count >= pagingOptions.PerPage;
     }
 
-    return response.Body;
+    return submissions;
   }
 }
