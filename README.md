@@ -41,8 +41,10 @@ TutorBot comes with the following range of commands:
 * Assign reviewers to an assignment: One reviewer per submission is assigned in a random fashion.
   The reviewer gets read access to the submission repository and gets an invitation via email.
   ```shell
-  gh tutorbot assign-reviewers <assignment> [--classroom <classroom>]
+  gh tutorbot assign-reviewers <assignment> [--classroom <classroom>] [--force] [--dry-run]
   ```
+  + `--force` can be used to force a reassignment of reviewers, although there are unlinked submissions.
+  + `--dry-run` simulates the exection of the command without actually assigning reviewers.
 
 * Assign reviewers from an assignment: 
   ```shell
@@ -72,11 +74,12 @@ TutorBot comes with the following range of commands:
   It contains JSON files describing the result of the plagiarism check. The results can be viewed with the report viewer at 
   <https://jplag.github.io/JPlag>.
   ```shell
-  gh tutorbot check-plagiarism <root-directory> [--language (cpp|java)] [--report-file <report-file>]
+  gh tutorbot check-plagiarism <root-directory> [--language (cpp|java)] [--report-file <report-file>] [--refresh]
   ```
   + `root-directory` is the path of the directory containing all submissions.
   + `--language` can be used to specify the programming langugage of the submissions.
   + `--report-file` can be used to specify the base name of the report file.
+  + `--refresh` can be used to force a plagiarism check even if the results file already exists.
 
 * Getting help
   ```shell

@@ -5,11 +5,9 @@ using Octokit;
 using TutorBot.Domain;
 using TutorBot.Infrastructure;
 using TutorBot.Infrastructure.CollectionExtensions;
-using TutorBot.Infrastructure.Exceptions;
 using TutorBot.Infrastructure.OctokitExtensions;
 using TutorBot.Infrastructure.TextWriterExtensions;
 using TutorBot.Logic;
-using TutorBot.Logic.Exceptions;
 using TutorBot.Utility;
 
 namespace TutorBot.Commands;

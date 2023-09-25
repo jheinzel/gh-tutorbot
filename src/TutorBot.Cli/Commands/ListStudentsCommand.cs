@@ -1,9 +1,5 @@
 ﻿using System.CommandLine;
-using Microsoft.Extensions.Logging;
-using Octokit;
 using TutorBot.Infrastructure;
-using TutorBot.Infrastructure.OctokitExtensions;
-using TutorBot.Infrastructure.TextWriterExtensions;
 using TutorBot.Logic;
 
 namespace TutorBot.Commands;

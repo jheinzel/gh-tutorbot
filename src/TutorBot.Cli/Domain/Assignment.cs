@@ -109,9 +109,12 @@ public class Assignment
   }
 
 
-  public async Task AssignReviewers(Action<Student, Student> successAction)
+  public async Task AssignReviewers(bool dryRun, Action<Student, Student> successAction)
   {
-    await RemoveReviewers();
+    if (!dryRun)
+    {
+      await RemoveReviewers();
+    }
 
     // create a shallow copy of the submissions list
     // only consider submissions with a valid assessment
@@ -133,11 +136,11 @@ public class Assignment
       var owner = validSubmissions[i].Owner;
       var reviewer = validSubmissions[j].Owner;
 
-      var invitation = await client.Repository.Collaborator.Add(validSubmissions[i].RepositoryId, reviewer.GitHubUsername, readRequest);
-      //if (invitation is null)
-      //{
-      //  throw new LogicException($"Cannot assign reviewer \"{reviewer.FullName}\" to \"{owner.FullName}\".");
-      //}
+      RepositoryInvitation? invitation = null;
+      if (!dryRun)
+      {
+        invitation = await client.Repository.Collaborator.Add(validSubmissions[i].RepositoryId, reviewer.GitHubUsername, readRequest);
+      }
       validSubmissions[i].Reviewers.Add(new Reviewer(reviewer, invitation?.Id));
 
       successAction(owner, reviewer);
@@ -163,30 +166,6 @@ public class Assignment
       submission.Reviewers.Clear();
     }
   }
-
-  public async Task CloneRepositories(string directory, Action<string> successAction, Action<string, string, int> failureAction)
-  {
-    foreach (var submission in Submissions)
-    {
-      try
-      {
-        var (result, errorResult, exitCode) = await ProcessHelper.RunProcessAsync("gh", $"repo clone {submission.RepositoryFullName} {directory}/{submission.RepositoryName}");
-        if (exitCode == 0)
-        {
-          successAction(submission.RepositoryFullName);
-        }
-        else
-        {
-          failureAction(submission.RepositoryFullName, errorResult ?? "", exitCode);
-        }
-      }
-      catch (Win32Exception)
-      {
-        throw new LogicException("Error: Command \"gh\" (GitHub CLI) not found.");
-      }
-    }
-  }
-
 
   public async Task<ReviewStatistics> GetReviewStatistics(StudentList students)
   {

@@ -3,7 +3,6 @@ using Microsoft.Extensions.Logging;
 using Octokit;
 using TutorBot.Infrastructure;
 using TutorBot.Infrastructure.OctokitExtensions;
-using TutorBot.Infrastructure.TextWriterExtensions;
 
 namespace TutorBot.Commands;
 

@@ -22,8 +22,9 @@ internal class AssignReviewersCommand : Command
   private readonly Argument<string> assignmentArgument = new("assignment", "assignment name");
   private readonly Option<string> classroomOption = new("--classroom", "classroom name");
   private readonly Option<bool> forceOption = new("--force", "force assignment although there are unlinked submissions");
+  private readonly Option<bool> dryRunOption = new("--dry-run", "sumulate the execution of the command");
 
-  private async Task HandleAsync(string assignmentName, string classroomName, bool force)
+  private async Task HandleAsync(string assignmentName, string classroomName, bool dryRun, bool force)
   {
     try
     {
@@ -34,7 +35,7 @@ internal class AssignReviewersCommand : Command
       if (assignment.UnlinkedSubmissions.Count == 0 || force)
       {
         int maxLength = studentList.LinkedStudents.Max(s => s.FullName.Length);
-        await assignment.AssignReviewers(successAction: (owner, reviewer) => Console.WriteLine($"{owner.FullName.PadRight(maxLength, ' ')} <- {reviewer.FullName}"));
+        await assignment.AssignReviewers(dryRun, successAction: (owner, reviewer) => Console.WriteLine($"{owner.FullName.PadRight(maxLength, ' ')} <- {reviewer.FullName}"));
       }
       else
       {
@@ -61,13 +62,17 @@ internal class AssignReviewersCommand : Command
     classroomOption.SetDefaultValue(configuration.DefaultClassroom);
     AddOption(classroomOption);
 
+    dryRunOption.AddAlias("-dr");
+    dryRunOption.SetDefaultValue(false);
+    AddOption(dryRunOption);
+
     forceOption.AddAlias("-f");
     forceOption.SetDefaultValue(false);
     AddOption(forceOption);
 
     AddAlias("ar");
 
-    this.SetHandler(HandleAsync, assignmentArgument, classroomOption, forceOption);
+    this.SetHandler(HandleAsync, assignmentArgument, classroomOption, dryRunOption, forceOption);
   }
 }
 

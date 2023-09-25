@@ -3,7 +3,6 @@ using System.Globalization;
 using Microsoft.Extensions.Logging;
 using Octokit;
 using TutorBot.Domain;
-using TutorBot.Infrastructure.Exceptions;
 using TutorBot.Infrastructure.OctokitExtensions;
 using TutorBot.Infrastructure.TextWriterExtensions;
 using TutorBot.Logic;
