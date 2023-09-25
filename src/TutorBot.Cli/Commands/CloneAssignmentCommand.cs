@@ -1,4 +1,5 @@
 ﻿using System.CommandLine;
+using System.ComponentModel;
 using Microsoft.Extensions.Logging;
 using Octokit;
 using TutorBot.Infrastructure;
@@ -27,12 +28,35 @@ internal class CloneAssignmentCommand : Command
     {
       var studentList = await StudentList.FromRoster(Constants.ROSTER_FILE_PATH);
       var classroom = await client.Classroom().GetByName(classroomName);
-      var assignment = await Assignment.FromGitHub(client, studentList, classroom.Id, assignmentName);
-      
-      await assignment.CloneRepositories(directory ?? assignment.Name, 
-        successAction: (repoName) => Console.WriteLine($"Cloned repository \"{repoName}\""),
-        failureAction: (repoName, errorMessage, _) => 
-                         Console.Error.WriteLine($"Problems cloning repository \"{repoName}\":\n{errorMessage.Trim().Indent(2)}"));
+      var assignment = await Assignment.FromGitHub(client, studentList, classroom.Id, assignmentName, loadAssessments: true);
+
+      foreach (var submission in assignment.Submissions.Where(s => s.Assessment.IsValid())
+                                                       .OrderBy(s => s.Owner.FullName))
+      {
+        try
+        {
+          directory ??= assignment.Name;
+          var localDirName = submission.Owner.FullName.Replace(" ", "_");
+          var ownerName = submission.Owner.FullName;
+          var repoFullName = submission.RepositoryFullName;
+
+          var (result, errorResult, exitCode) = await ProcessHelper.RunProcessAsync("gh", $"repo clone {repoFullName} {directory}/{localDirName}");
+          
+          if (exitCode == 0)
+          {
+            Console.WriteLine($"Cloned repository of \"{ownerName}\"");
+          }
+          else
+          {
+            var errorMessage = (errorResult ?? "").Trim().Indent(2);
+            Console.Error.WriteLine($"Problems cloning repository of \"{ownerName}\":\n{errorMessage}");
+          }
+        }
+        catch (Win32Exception)
+        {
+          throw new LogicException("Error: Command \"gh\" (GitHub CLI) not found.");
+        }
+      }
     }
     catch (Exception ex)
     {

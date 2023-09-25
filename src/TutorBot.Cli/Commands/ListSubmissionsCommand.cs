@@ -52,7 +52,6 @@ internal class ListSubmissionsCommand : Command
     }
   }
 
-
   private static void PrintStatistics(Assignment assignment)
   {
     if (assignment.Submissions.Any())

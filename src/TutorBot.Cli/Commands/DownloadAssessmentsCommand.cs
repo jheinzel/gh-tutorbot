@@ -45,7 +45,8 @@ internal class DownloadAssessmentsCommand : Command
       using var assessmentsFile = new StreamWriter(assessmentsFileName, append: false);
 
       int i = 0;
-      foreach (var submission in assignment.Submissions.Where(s => s.Assessment.State == AssessmentState.Loaded))
+      foreach (var submission in assignment.Submissions.Where(s => s.Assessment.State == AssessmentState.Loaded)
+                                                       .OrderBy(s => s.Owner.FullName))
       {
         try
         {
