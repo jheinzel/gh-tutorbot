@@ -11,7 +11,7 @@ public class ConfigurationHelper
   }
 
   public const string KEY_DEFAULT_CLASSROOM = "default-classroom";
-  private const string DEFAULT_CLASSROOM = "swo3";
+  private const string DEFAULT_CLASSROOM = "my-classroom";
 
   public string DefaultClassroom { get => configuration[KEY_DEFAULT_CLASSROOM] ?? DEFAULT_CLASSROOM; }
 

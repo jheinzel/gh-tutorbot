@@ -1,9 +1,7 @@
-﻿using System.Net;
-using System.Reflection.PortableExecutable;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Octokit;
-using Octokit.Internal;
 using TutorBot;
 using TutorBot.Commands;
 using TutorBot.Infrastructure.OctokitExtensions;
@@ -14,7 +12,7 @@ var accessToken = await AuthHelper.GetPersonalAccessTokenAsync();
 using IHost host = Host.CreateDefaultBuilder(args)
   .ConfigureServices(RegisterServices)
   .ConfigureServices(services => services
-                       .AddLogging()
+                       .AddLogging(config => config.SetMinimumLevel(LogLevel.Error))
                        .AddSingleton<App>())
   .Build();
 
