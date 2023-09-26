@@ -2,5 +2,5 @@
 
 public interface ISubmissionsClient
 {
-  Task<IReadOnlyList<SubmissionDto>> GetAll(long assignmentId);
+  Task<IReadOnlyList<SubmissionDto>> GetAll(long assignmentId, IProgress? progress = null);
 }

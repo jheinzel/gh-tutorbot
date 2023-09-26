@@ -7,10 +7,13 @@ using TutorBot.Infrastructure.CollectionExtensions;
 using TutorBot.Infrastructure.OctokitExtensions;
 using TutorBot.Infrastructure.StringExtensions;
 using TutorBot.Domain.Exceptions;
+using System.Threading;
 
 namespace TutorBot.Domain;
 
 using ReviewStatistics = IDictionary<(string Owner, string Reviewer), ReviewStatisticsItem>;
+
+public record AssigmentParameters(long ClassroomId, string AssignmentName, bool LoadAssessments = false);
 
 public class Assignment
 {
@@ -32,14 +35,14 @@ public class Assignment
     UnlinkedSubmissions = unlinkedSubmissions ?? throw new ArgumentNullException(nameof(unlinkedSubmissions));
   }
 
-  public static async Task<Assignment> FromGitHub(IGitHubClient client, StudentList students, long classroomId, string assignmentName, bool loadAssessments = false)
+  public static async Task<Assignment> FromGitHub(IGitHubClient client, StudentList students, AssigmentParameters parameters, IProgress? progress = null)
   {
     var submissions = new List<Submission>();
     var unlinkedSubmission = new List<UnlinkedSubmission>();
 
-    var assignmentDto = await client.Classroom().Assignment.GetByName(classroomId, assignmentName);
-    var submissionDtos = await client.Classroom().Submissions.GetAll(assignmentDto.Id);
-
+    var assignmentDto = await client.Classroom().Assignment.GetByName(parameters.ClassroomId, parameters.AssignmentName);
+    progress?.Init(assignmentDto.Accepted * 2);
+    var submissionDtos = await client.Classroom().Submissions.GetAll(assignmentDto.Id, progress);
 
     foreach (var submissionDto in submissionDtos)
     {
@@ -61,6 +64,7 @@ public class Assignment
       if (!students.TryGetValue(submissionDto.Students[0].Login, out var owner))
       {
         unlinkedSubmission.Add(new UnlinkedSubmission(repository));
+        progress?.Increment();
         continue;
       }
 
@@ -98,11 +102,13 @@ public class Assignment
       }
 
       var submission = new Submission(client, repository, owner, reviewers);
-      if (loadAssessments)
+      if (parameters.LoadAssessments)
       {
         await submission.Assessment.Load(client, repository.Id);
       }
       submissions.Add(submission);
+
+      progress?.Increment();
     }
 
     return new Assignment(client, assignmentDto.Title, assignmentDto.Deadline?.ToDateTime(), submissions, unlinkedSubmission);

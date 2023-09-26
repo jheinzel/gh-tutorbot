@@ -4,6 +4,7 @@ using Octokit;
 using TutorBot.Infrastructure.OctokitExtensions;
 using TutorBot.Domain;
 using TutorBot.Utility;
+using TutorBot.Infrastructure;
 
 namespace TutorBot.Commands;
 
@@ -21,7 +22,12 @@ internal class RemoveReviewersCommand : Command
     {
       var studentList = await StudentList.FromRoster(Constants.ROSTER_FILE_PATH);
       var classroom = await client.Classroom().GetByName(classroomName);
-      var assignment = await Assignment.FromGitHub(client, studentList, classroom.Id, assignmentName);
+
+      var progress = new ProgressBar();
+      var parameters = new AssigmentParameters(classroom.Id, assignmentName);
+      var assignment = await Assignment.FromGitHub(client, studentList, parameters, progress);
+      progress.Dispose();
+
       await assignment.RemoveReviewers();
 
       var assignments = await client.Classroom().Assignment.GetAll(classroom.Id);

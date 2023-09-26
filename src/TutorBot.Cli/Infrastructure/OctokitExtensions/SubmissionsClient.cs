@@ -15,10 +15,10 @@ public class SubmissionsClient : ApiClient, ISubmissionsClient
   public IRepositoriesClient Repository => repositoriesClient;
 
 
-  public async Task<IReadOnlyList<SubmissionDto>> GetAll(long assignmentId)
+  public async Task<IReadOnlyList<SubmissionDto>> GetAll(long assignmentId, IProgress? progress)
   {
     var pagingOptions = new PagingOptions { Page = 1, PerPage = Constants.SUBMISSIONS_PAGE_SIZE };
-
+    
     var submissions = new List<SubmissionDto>();
     bool hasNextPage = true;
 
@@ -33,6 +33,8 @@ public class SubmissionsClient : ApiClient, ISubmissionsClient
       }
 
       submissions.AddRange(response.Body);
+
+      progress?.Increment(response.Body.Count);
 
       pagingOptions.IncrementPage();
       hasNextPage = response.Body.Count >= pagingOptions.PerPage;

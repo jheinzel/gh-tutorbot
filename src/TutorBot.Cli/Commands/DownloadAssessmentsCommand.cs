@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Octokit;
 using TutorBot.Domain;
 using TutorBot.Domain.Exceptions;
+using TutorBot.Infrastructure;
 using TutorBot.Infrastructure.OctokitExtensions;
 using TutorBot.Infrastructure.TextWriterExtensions;
 using TutorBot.Utility;
@@ -35,9 +36,14 @@ internal class DownloadAssessmentsCommand : Command
 
     try
     {
+
       var studentList = await StudentList.FromRoster(Constants.ROSTER_FILE_PATH);
       var classroom = await client.Classroom().GetByName(classroomName);
-      var assignment = await Assignment.FromGitHub(client, studentList, classroom.Id, assignmentName, loadAssessments: true);
+
+      var progress = new ProgressBar();
+      var parameters = new AssigmentParameters(classroom.Id, assignmentName, LoadAssessments: true);
+      var assignment = await Assignment.FromGitHub(client, studentList, parameters, progress);
+      progress.Dispose();
 
       var assessmentsFileName = string.Format(Constants.ASSESSMENTS_DOWNLOAD_FILE_NAME, assignment.Name);
       using var assessmentsFile = new StreamWriter(assessmentsFileName, append: false);

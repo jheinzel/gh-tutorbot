@@ -16,7 +16,7 @@ internal static class Constants
 
   public const string PAGE_KEY = "page";
   public const string PER_PAGE_KEY = "per_page";
-  public const int SUBMISSIONS_PAGE_SIZE = 20;
+  public const int SUBMISSIONS_PAGE_SIZE = 5;
 
   public const string ASSESSMENT_FILE_NAME = "ASSESSMENT.md";
   public const string ASSESSMENTS_DOWNLOAD_FILE_NAME = "{0}-assessments.csv"; // {0} = assignment name

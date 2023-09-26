@@ -27,7 +27,11 @@ internal class ListReviewStatisticsCommand : Command
     {
       var studentList = await StudentList.FromRoster(Constants.ROSTER_FILE_PATH);
       var classroom = await client.Classroom().GetByName(classroomName);
-      var assignment = await Assignment.FromGitHub(client, studentList, classroom.Id, assignmentName);
+
+      var progress = new ProgressBar();
+      var parameters = new AssigmentParameters(classroom.Id, assignmentName);
+      var assignment = await Assignment.FromGitHub(client, studentList, parameters, progress);
+      progress.Dispose();
 
       var reviewStats = await assignment.GetReviewStatistics(studentList);
 

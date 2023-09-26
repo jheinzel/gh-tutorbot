@@ -28,8 +28,12 @@ internal class ListSubmissionsCommand : Command
     {
       var studentList = await StudentList.FromRoster(Constants.ROSTER_FILE_PATH);
       var classroom = await client.Classroom().GetByName(classroomName);
-      var assignment = await Assignment.FromGitHub(client, studentList, classroom.Id, assignmentName, loadAssessments: true);
 
+      var progress = new ProgressBar();
+      var parameters = new AssigmentParameters(classroom.Id, assignmentName, LoadAssessments: true);
+      var assignment = await Assignment.FromGitHub(client, studentList, parameters, progress);
+      progress.Dispose();
+      
       foreach (var submission in assignment.Submissions.OrderBy(s => s.Owner.FullName))
       {
         var reviewers = submission.Reviewers.Select(r => r.FullName).ToStringWithSeparator();
