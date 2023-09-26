@@ -57,10 +57,10 @@ internal class ListSubmissionsCommand : Command
       var validSubmissions = assignment.Submissions.Where(s => s.Assessment.IsValid());
       
       Console.WriteLine();
-      Console.WriteLine($"#submissions:       {assignment.Submissions.Count}");
-      Console.WriteLine($"#valid submissions: {validSubmissions.Count()}");
-      Console.WriteLine($"avarge effort:      {validSubmissions.Average(s => s.Assessment.Effort).ToString("F1", CultureInfo.InvariantCulture)}");
-      Console.WriteLine($"averge assessment:  {validSubmissions.Average(s => s.Assessment.Total).ToString("F1", CultureInfo.InvariantCulture)}");
+      Console.WriteLine($"#submissions:        {assignment.Submissions.Count}");
+      Console.WriteLine($"#valid submissions:  {validSubmissions.Count()}");
+      Console.WriteLine($"average effort:      {validSubmissions.Average(s => s.Assessment.Effort).ToString("F1", CultureInfo.InvariantCulture)}");
+      Console.WriteLine($"average assessment:  {validSubmissions.Average(s => s.Assessment.Total).ToString("F1", CultureInfo.InvariantCulture)}");
     }
     else
     {

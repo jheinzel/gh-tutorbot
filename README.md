@@ -13,12 +13,16 @@ by automating repetitive tasks.
    ```shell
    gh extension install https://github.com/jheinzel/gh-tutorbot
    ```
+3. Upgrade the TutorBot extension to the latest version if it is already installed:
+   ```shell
+   gh extension upgrade tutorbot
+   ```
 
 ## Commands
 
 TutorBot comes with the following range of commands:
 
-* List all students. The list is extrected from the roster file (`classroom_roster.cvs`)
+* List all students. The list is extrected from the roster file (`classroom_roster.csv`)
   ```shell
   gh tutorbot list-students
   ```
@@ -87,10 +91,10 @@ TutorBot comes with the following range of commands:
   ```
 
 ## Configuration
-* `classroom_roster.cvs`: The student's roster file contains the list of students in a classroom.
+* `classroom_roster.csv`: The student's roster file contains the list of students in a classroom.
   It's main purpose is to map the GitHub username to the student's id (matriculation number) and name.
   The roster file can be downloaded from the classroom page on GitHub in the following way: Classroom page → Students → Download.
-  Place the file in your working directory and name it `classroom_roster.cvs`.
+  Place the file in your working directory and name it `classroom_roster.csv`.
 
 * `appsettings.json`: This configuration file contains general settings for the .NET application and TutorBot specific settings.
   ```json
