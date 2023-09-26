@@ -6,7 +6,7 @@ using TutorBot.Domain.JPlag;
 using TutorBot.Infrastructure;
 using TutorBot.Infrastructure.Exceptions;
 using TutorBot.Infrastructure.TextWriterExtensions;
-using TutorBot.Logic.Exceptions;
+using TutorBot.Domain.Exceptions;
 using TutorBot.Utility;
 
 namespace TutorBot.Commands;
@@ -27,7 +27,7 @@ internal class CheckPlagiarismCommand : Command
     {
       if (!Directory.Exists(rootDirectory))
       {
-        throw new LogicException($"Error: Root directory \"{rootDirectory}\" does not exist. Clone assignment first.");
+        throw new DomainException($"Error: Root directory \"{rootDirectory}\" does not exist. Clone assignment first.");
       }
 
       string reportFile = reportFileOption ?? $"{rootDirectory}/{Constants.DEFAULT_REPORT_FILE}";
@@ -63,12 +63,12 @@ internal class CheckPlagiarismCommand : Command
       {
         "cpp" => "cpp2",
         "java" => "java",
-        _ => throw new LogicException($"Error: Unknown language \"{languageOption}\"")
+        _ => throw new DomainException($"Error: Unknown language \"{languageOption}\"")
       };
 
       if (!File.Exists(configuration.JplagJarPath))
       {
-        throw new LogicException($"Error: JPlag jar file \"{rootDirectory}\" does not exist. Download JPlag from https://github.com/jplag/JPlag/releases.\n" +
+        throw new DomainException($"Error: JPlag jar file \"{rootDirectory}\" does not exist. Download JPlag from https://github.com/jplag/JPlag/releases.\n" +
                                  $"       Ensure that the configuration parameter \"{ConfigurationHelper.KEY_JPLAG_JAR_PATH}\" is set appropriately.");
       }
 
@@ -90,7 +90,7 @@ internal class CheckPlagiarismCommand : Command
     }
     catch (CommandNotFoundException)
     {
-      throw new LogicException($"Error: Java (\"{configuration.JavaPath}\") not found.");
+      throw new DomainException($"Error: Java (\"{configuration.JavaPath}\") not found.");
     }
   }
 
@@ -123,7 +123,7 @@ internal class CheckPlagiarismCommand : Command
     }
     catch (FileNotFoundException ex)
     {
-      throw new LogicException($"Error: JPlag results file \"{ex.FileName}\" not found.");
+      throw new DomainException($"Error: JPlag results file \"{ex.FileName}\" not found.");
     }
   }
 

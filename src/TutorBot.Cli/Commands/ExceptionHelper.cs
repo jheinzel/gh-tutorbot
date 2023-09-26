@@ -1,7 +1,7 @@
 ﻿using Octokit;
 using TutorBot.Infrastructure.Exceptions;
 using TutorBot.Infrastructure.TextWriterExtensions;
-using TutorBot.Logic.Exceptions;
+using TutorBot.Domain.Exceptions;
 
 namespace TutorBot.Commands;
 
@@ -11,7 +11,7 @@ public static class ExceptionHelper
   {
     switch (ex)
     {
-      case LogicException or InfrastrucureException:
+      case DomainException or InfrastrucureException:
         Console.Error.WriteRedLine($"{ex.Message}");
         break;
 

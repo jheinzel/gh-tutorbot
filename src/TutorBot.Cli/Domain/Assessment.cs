@@ -3,7 +3,7 @@ using System.Globalization;
 using System.Text.RegularExpressions;
 using Octokit;
 using TutorBot.Infrastructure;
-using TutorBot.Logic.Exceptions;
+using TutorBot.Domain.Exceptions;
 
 namespace TutorBot.Domain;
 
@@ -26,7 +26,7 @@ public class Assessment
   public IReadOnlyList<AssessmentLine> Lines { get; private set; } = new List<AssessmentLine>();
   public AssessmentState State { get; private set; } = AssessmentState.NotLoaded;
 
-  public double Total => State == AssessmentState.Loaded ? totalGrading : throw new LogicException("Invalid AssessmentState.");
+  public double Total => State == AssessmentState.Loaded ? totalGrading : throw new DomainException("Invalid AssessmentState.");
 
   private double totalGrading;
 

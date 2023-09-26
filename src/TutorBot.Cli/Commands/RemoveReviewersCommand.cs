@@ -2,7 +2,7 @@
 using Microsoft.Extensions.Logging;
 using Octokit;
 using TutorBot.Infrastructure.OctokitExtensions;
-using TutorBot.Logic;
+using TutorBot.Domain;
 using TutorBot.Utility;
 
 namespace TutorBot.Commands;

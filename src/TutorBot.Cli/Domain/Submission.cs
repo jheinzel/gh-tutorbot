@@ -3,9 +3,9 @@ using System.Text.RegularExpressions;
 using Octokit;
 using TutorBot.Domain;
 using TutorBot.Infrastructure.StringExtensions;
-using TutorBot.Logic.Exceptions;
+using TutorBot.Domain.Exceptions;
 
-namespace TutorBot.Logic;
+namespace TutorBot.Domain;
 
 using ReviewStatistics = IDictionary<(string Owner, string Reviewer), ReviewStatisticsItem>;
 
@@ -37,9 +37,9 @@ public class Submission
     var reviews = await client.Repository.PullRequest.Review.GetAll(RepositoryId, Constants.FEEDBACK_PULLREQUEST_ID);
     foreach (var review in reviews.Where(r => students.Contains(r.User.Login)))
     {
-      if (!reviewStats.TryGetValue((Owner.GitHubUsername, review.User.Login), out Logic.ReviewStatisticsItem? stats))
+      if (!reviewStats.TryGetValue((Owner.GitHubUsername, review.User.Login), out Domain.ReviewStatisticsItem? stats))
       {
-        stats = new Logic.ReviewStatisticsItem();
+        stats = new Domain.ReviewStatisticsItem();
         reviewStats.Add((Owner.GitHubUsername, review.User.Login), stats);
       }
 
@@ -56,9 +56,9 @@ public class Submission
     var comments = await client.Repository.PullRequest.ReviewComment.GetAll(RepositoryId, Constants.FEEDBACK_PULLREQUEST_ID);
     foreach (var comment in comments.Where(r => students.Contains(r.User.Login)))
     {
-      if (!reviewStats.TryGetValue((Owner.GitHubUsername, comment.User.Login), out Logic.ReviewStatisticsItem? stats))
+      if (!reviewStats.TryGetValue((Owner.GitHubUsername, comment.User.Login), out Domain.ReviewStatisticsItem? stats))
       {
-        stats = new Logic.ReviewStatisticsItem();
+        stats = new Domain.ReviewStatisticsItem();
         reviewStats.Add((Owner.GitHubUsername, comment.User.Login), stats);
       }
 

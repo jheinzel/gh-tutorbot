@@ -1,7 +1,7 @@
 ﻿using System.Transactions;
 using FluentAssertions;
 using TutorBot.Domain;
-using TutorBot.Logic.Exceptions;
+using TutorBot.Domain.Exceptions;
 using TutorBot.Utility;
 
 namespace TutorBot.Tests;

@@ -1,6 +1,6 @@
 ﻿using System.CommandLine;
 using TutorBot.Infrastructure;
-using TutorBot.Logic;
+using TutorBot.Domain;
 
 namespace TutorBot.Commands;
 

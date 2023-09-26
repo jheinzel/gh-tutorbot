@@ -6,9 +6,9 @@ using TutorBot.Infrastructure;
 using TutorBot.Infrastructure.CollectionExtensions;
 using TutorBot.Infrastructure.OctokitExtensions;
 using TutorBot.Infrastructure.StringExtensions;
-using TutorBot.Logic.Exceptions;
+using TutorBot.Domain.Exceptions;
 
-namespace TutorBot.Logic;
+namespace TutorBot.Domain;
 
 using ReviewStatistics = IDictionary<(string Owner, string Reviewer), ReviewStatisticsItem>;
 
@@ -169,7 +169,7 @@ public class Assignment
 
   public async Task<ReviewStatistics> GetReviewStatistics(StudentList students)
   {
-    var reviewStats = new Dictionary<(string Owner, string Reviewer), Logic.ReviewStatisticsItem>();
+    var reviewStats = new Dictionary<(string Owner, string Reviewer), Domain.ReviewStatisticsItem>();
 
     foreach (var submission in Submissions)
     {

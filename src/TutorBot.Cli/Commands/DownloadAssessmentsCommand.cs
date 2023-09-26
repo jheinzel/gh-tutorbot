@@ -3,10 +3,9 @@ using System.Globalization;
 using Microsoft.Extensions.Logging;
 using Octokit;
 using TutorBot.Domain;
+using TutorBot.Domain.Exceptions;
 using TutorBot.Infrastructure.OctokitExtensions;
 using TutorBot.Infrastructure.TextWriterExtensions;
-using TutorBot.Logic;
-using TutorBot.Logic.Exceptions;
 using TutorBot.Utility;
 
 namespace TutorBot.Commands;

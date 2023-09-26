@@ -7,8 +7,8 @@ using TutorBot.Infrastructure.Exceptions;
 using TutorBot.Infrastructure.OctokitExtensions;
 using TutorBot.Infrastructure.StringExtensions;
 using TutorBot.Infrastructure.TextWriterExtensions;
-using TutorBot.Logic;
-using TutorBot.Logic.Exceptions;
+using TutorBot.Domain;
+using TutorBot.Domain.Exceptions;
 using TutorBot.Utility;
 
 namespace TutorBot.Commands;

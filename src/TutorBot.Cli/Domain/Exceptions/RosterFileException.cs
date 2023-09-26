@@ -1,6 +1,6 @@
-﻿namespace TutorBot.Logic.Exceptions;
+﻿namespace TutorBot.Domain.Exceptions;
 
-public class RosterFileException : LogicException
+public class RosterFileException : DomainException
 {
   public RosterFileException(string message) : base(message)
   {

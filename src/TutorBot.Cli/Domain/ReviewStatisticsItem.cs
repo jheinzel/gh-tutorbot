@@ -1,4 +1,4 @@
-﻿namespace TutorBot.Logic;
+﻿namespace TutorBot.Domain;
 
 
 public class ReviewStatisticsItem

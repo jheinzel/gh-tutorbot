@@ -1,6 +1,6 @@
-﻿namespace TutorBot.Logic.Exceptions;
+﻿namespace TutorBot.Domain.Exceptions;
 
-public class SubmissionException : LogicException
+public class SubmissionException : DomainException
 {
   public SubmissionException(string message) : base(message)
   {

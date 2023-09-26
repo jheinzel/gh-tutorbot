@@ -5,7 +5,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
-using TutorBot.Logic.Exceptions;
+using TutorBot.Domain.Exceptions;
 
 namespace TutorBot.Domain.JPlag;
 
@@ -54,7 +54,7 @@ public class JPlagOverviewDocument
   public static async Task<JPlagOverviewDocument> FromJsonAsync(Stream jsonStream)
   {
     var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-    return (await JsonSerializer.DeserializeAsync<JPlagOverviewDocument>(jsonStream, options)) ?? throw new LogicException("Could not deserialize JSON");
+    return (await JsonSerializer.DeserializeAsync<JPlagOverviewDocument>(jsonStream, options)) ?? throw new DomainException("Could not deserialize JSON");
   }
 
   [JsonPropertyName("jplag_version")]

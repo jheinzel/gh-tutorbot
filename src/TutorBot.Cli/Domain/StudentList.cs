@@ -1,10 +1,10 @@
 ﻿using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
-using TutorBot.Logic.Exceptions;
+using TutorBot.Domain.Exceptions;
 using TutorBot.Utility;
 
-namespace TutorBot.Logic;
+namespace TutorBot.Domain;
 
 public class StudentList
 {
