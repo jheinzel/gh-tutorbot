@@ -54,7 +54,12 @@ internal class ListReviewStatisticsCommand : Command
           throw new DomainException($"Unknown student \"{reviewerName}\".");
         }
 
-        printer.AddRow(reviewer.FullName, owner.FullName, stats.NumReviews.ToString(), stats.NumComments.ToString(), stats.NumWords.ToString(), stats.LastReviewDate.ToLocalTime().ToString("yyyy-MM-dd HH:mm"));
+        printer.AddRow(reviewer.FullName, 
+                       owner.FullName, 
+                       stats.NumReviews.ToString().PadLeft(8), 
+                       stats.NumComments.ToString().PadLeft(9),
+                       stats.NumWords.ToString().PadLeft(6), 
+                       stats.LastReviewDate.ToLocalTime().ToString("yyyy-MM-dd HH:mm"));
       }
 
       printer.Print();
