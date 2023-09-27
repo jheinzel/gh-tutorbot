@@ -1,17 +1,24 @@
-﻿using System.Collections;
-using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
 using TutorBot.Domain.Exceptions;
 using TutorBot.Utility;
 
 namespace TutorBot.Domain;
 
-public class StudentList
+public interface IStudentList
+{
+  IEnumerable<Student> LinkedStudents { get; }
+  IEnumerable<Student> UnlinkedStudents { get; }
+  bool Contains(string gitHubUserName);
+  bool TryGetValue(string gitHubUserName, [MaybeNullWhen(false)] out Student student);
+}
+
+public class StudentList : IStudentList
 {
   private readonly IDictionary<string, Student> students = new Dictionary<string, Student>();
   private readonly IList<Student> unlinkedStudents = new List<Student>();
 
-  public static async Task<StudentList> FromRoster(string filePath)
+  public static async Task<IStudentList> FromRoster(string filePath)
   {
     try
     {
@@ -23,7 +30,7 @@ public class StudentList
     }
   }
 
-  public static async Task<StudentList> FromRoster(Stream rosterStream)
+  public static async Task<IStudentList> FromRoster(Stream rosterStream)
   {
     var studentList = new StudentList();
 

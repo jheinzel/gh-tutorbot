@@ -1,6 +1,4 @@
-﻿using System.Net;
-using Octokit;
-using Octokit.Internal;
+﻿using Octokit;
 
 namespace TutorBot.Infrastructure.OctokitExtensions;
 

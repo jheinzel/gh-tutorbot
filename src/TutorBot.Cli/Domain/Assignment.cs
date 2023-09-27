@@ -1,13 +1,9 @@
-﻿using System.ComponentModel;
-using System.Linq;
-using Octokit;
-using TutorBot.Domain;
+﻿using Octokit;
+using TutorBot.Domain.Exceptions;
 using TutorBot.Infrastructure;
 using TutorBot.Infrastructure.CollectionExtensions;
 using TutorBot.Infrastructure.OctokitExtensions;
 using TutorBot.Infrastructure.StringExtensions;
-using TutorBot.Domain.Exceptions;
-using System.Threading;
 
 namespace TutorBot.Domain;
 
@@ -35,7 +31,7 @@ public class Assignment
     UnlinkedSubmissions = unlinkedSubmissions ?? throw new ArgumentNullException(nameof(unlinkedSubmissions));
   }
 
-  public static async Task<Assignment> FromGitHub(IGitHubClient client, StudentList students, AssigmentParameters parameters, IProgress? progress = null)
+  public static async Task<Assignment> FromGitHub(IGitHubClient client, IStudentList students, AssigmentParameters parameters, IProgress? progress = null)
   {
     var submissions = new List<Submission>();
     var unlinkedSubmission = new List<UnlinkedSubmission>();
@@ -173,7 +169,7 @@ public class Assignment
     }
   }
 
-  public async Task<ReviewStatistics> GetReviewStatistics(StudentList students)
+  public async Task<ReviewStatistics> GetReviewStatistics(IStudentList students)
   {
     var reviewStats = new Dictionary<(string Owner, string Reviewer), Domain.ReviewStatisticsItem>();
 

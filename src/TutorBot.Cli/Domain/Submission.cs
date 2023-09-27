@@ -32,7 +32,7 @@ public class Submission
     this.Reviewers = reviewers;
   }
 
-  public async Task AddReviewStatistics(StudentList students, ReviewStatistics reviewStats)
+  public async Task AddReviewStatistics(IStudentList students, ReviewStatistics reviewStats)
   {
     var reviews = await client.Repository.PullRequest.Review.GetAll(RepositoryId, Constants.FEEDBACK_PULLREQUEST_ID);
     foreach (var review in reviews.Where(r => students.Contains(r.User.Login)))
