@@ -16,6 +16,17 @@ internal class RemoveReviewersCommand : Command
   private readonly Argument<string> assignmentArgument = new("assignment", "assignment name");
   private readonly Option<string> classroomOption = new("--classroom", "classroom name");
 
+  private bool UserAgreesToRemoveReviewers(Assignment assignment)
+  {
+    var numWithAssignedReviewers = assignment.Submissions.Count(s => s.Reviewers.Count > 0);
+    var numValid = assignment.Submissions.Count(s => s.Assessment.IsValid());
+    var numUnlinked = assignment.UnlinkedSubmissions.Count;
+
+    var prompt = $"Remove reviewers from {numWithAssignedReviewers} submissions? (y/N): ";
+
+    return UiHelper.GetUserInput(prompt, answerOptions: new[] { "y", "n" }, defaultAnswer: "n") == "y";
+  }
+
   private async Task HandleAsync(string assignmentName, string classroomName)
   {
     try
@@ -28,7 +39,10 @@ internal class RemoveReviewersCommand : Command
       var assignment = await Assignment.FromGitHub(client, studentList, parameters, progress);
       progress.Dispose();
 
-      await assignment.RemoveReviewers();
+      if (UserAgreesToRemoveReviewers(assignment))
+      {
+        await assignment.RemoveReviewers();
+      }
 
       var assignments = await client.Classroom().Assignment.GetAll(classroom.Id);
     }

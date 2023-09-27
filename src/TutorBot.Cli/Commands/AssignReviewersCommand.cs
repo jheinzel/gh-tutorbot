@@ -24,6 +24,26 @@ internal class AssignReviewersCommand : Command
   private readonly Option<bool> forceOption = new("--force", "force assignment although there are unlinked submissions");
   private readonly Option<bool> dryRunOption = new("--dry-run", "sumulate the execution of the command");
 
+  private bool UserAgreesToAssignReviewers(Assignment assignment)
+  {
+    var numWithAssignedReviewers = assignment.Submissions.Count(s => s.Reviewers.Count > 0);
+    var numValid = assignment.Submissions.Count(s => s.Assessment.IsValid());
+    var numUnlinked = assignment.UnlinkedSubmissions.Count;
+
+    string prompt;
+    if (numWithAssignedReviewers > 0)
+    {
+      prompt = $"There are already {numWithAssignedReviewers} submissions with reviewers assigned. Reassign reviewers? (y/N): ";
+    }
+    else
+    {
+      var unlinkedMessage = numUnlinked > 0 ? $"{numUnlinked} unlinked submissions will be ignored. " : "";
+      prompt = $"Assign reviewers to {numValid} valid submissions? {unlinkedMessage}(y/N): ";
+    }
+
+    return UiHelper.GetUserInput(prompt, answerOptions: new[] { "y", "n" }, defaultAnswer: "n") == "y";
+  }
+
   private async Task HandleAsync(string assignmentName, string classroomName, bool dryRun, bool force)
   {
     try
@@ -38,8 +58,11 @@ internal class AssignReviewersCommand : Command
 
       if (assignment.UnlinkedSubmissions.Count == 0 || force)
       {
-        int maxLength = studentList.LinkedStudents.Max(s => s.FullName.Length);
-        await assignment.AssignReviewers(dryRun, successAction: (owner, reviewer) => Console.WriteLine($"{owner.FullName.PadRight(maxLength, ' ')} <- {reviewer.FullName}"));
+        if (UserAgreesToAssignReviewers(assignment))
+        {
+          int maxLength = studentList.LinkedStudents.Max(s => s.FullName.Length);
+          await assignment.AssignReviewers(dryRun, successAction: (owner, reviewer) => Console.WriteLine($"{owner.FullName.PadRight(maxLength, ' ')} <- {reviewer.FullName}"));
+        }
       }
       else
       {
