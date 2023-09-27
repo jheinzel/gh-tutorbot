@@ -7,16 +7,38 @@ namespace TutorBot.Domain;
 
 public interface IStudentList
 {
-  IEnumerable<Student> LinkedStudents { get; }
-  IEnumerable<Student> UnlinkedStudents { get; }
+  IReadOnlyList<Student> LinkedStudents { get; }
+  IReadOnlyList<Student> UnlinkedStudents { get; }
   bool Contains(string gitHubUserName);
   bool TryGetValue(string gitHubUserName, [MaybeNullWhen(false)] out Student student);
 }
 
 public class StudentList : IStudentList
 {
-  private readonly IDictionary<string, Student> students = new Dictionary<string, Student>();
-  private readonly IList<Student> unlinkedStudents = new List<Student>();
+  private readonly IReadOnlyDictionary<string, Student> students = new Dictionary<string, Student>();
+  private readonly IReadOnlyList<Student> unlinkedStudents = new List<Student>();
+
+  private static IDictionary<string, Student> ToDictionary(IEnumerable<Student> students)
+  {
+    var dictionary = new Dictionary<string, Student>();
+    foreach (var student in students)
+    {
+      dictionary.Add(student.GitHubUsername, student);
+    }
+
+    return dictionary;
+  }
+
+  public StudentList(IEnumerable<Student> students, IEnumerable<Student>? unlinkedStudents = null) : 
+    this(ToDictionary(students), unlinkedStudents)
+  {
+  }
+
+  private StudentList(IDictionary<string, Student> students, IEnumerable<Student>? unlinkedStudents = null)
+  {
+    this.students = students.AsReadOnly();
+    this.unlinkedStudents = (unlinkedStudents ?? Enumerable.Empty<Student>()).ToList();
+  }
 
   public static async Task<IStudentList> FromRoster(string filePath)
   {
@@ -32,7 +54,8 @@ public class StudentList : IStudentList
 
   public static async Task<IStudentList> FromRoster(Stream rosterStream)
   {
-    var studentList = new StudentList();
+    var students = new Dictionary<string, Student>();
+    var unlinkedStudents = new List<Student>();
 
     await foreach (List<string> line in CsvParser.Parse(rosterStream, ignoreFirstLine: true))
     {
@@ -49,19 +72,19 @@ public class StudentList : IStudentList
       if (match.Success)
       {
         var newStudent = new Student
-          (
-            firstName: match.Groups["FirstName"].Value,
-            lastName: match.Groups["LastName"].Value,
-            matNr: match.Groups["MatNr"].Value,
-            groupNr: int.Parse(match.Groups["GroupNr"].Value),
-            gitHubUsername: githubUsername
-          );
+        (
+          firstName: match.Groups["FirstName"].Value,
+          lastName: match.Groups["LastName"].Value,
+          matNr: match.Groups["MatNr"].Value,
+          groupNr: int.Parse(match.Groups["GroupNr"].Value),
+          gitHubUsername: githubUsername
+        );
 
         if (string.IsNullOrEmpty(githubUsername))
         {
-          studentList.unlinkedStudents.Add(newStudent);
+          unlinkedStudents.Add(newStudent);
         }
-        else if (!studentList.students.TryAdd(githubUsername, newStudent))
+        else if (!students.TryAdd(githubUsername, newStudent))
         {
           throw new RosterFileException($"Duplicate GitHub username \"{githubUsername}\" in roster file");
         }
@@ -72,12 +95,12 @@ public class StudentList : IStudentList
       }
     }
 
-    return studentList;
+    return new StudentList(students, unlinkedStudents);
   }
 
-  public IEnumerable<Student> LinkedStudents => students.Values;
+  public IReadOnlyList<Student> LinkedStudents => students.Values.ToList().AsReadOnly();
 
-  public IEnumerable<Student> UnlinkedStudents => unlinkedStudents;
+  public IReadOnlyList<Student> UnlinkedStudents => unlinkedStudents;
 
   public bool TryGetValue(string gitHubUserName, [MaybeNullWhen(false)] out Student student)
   {
