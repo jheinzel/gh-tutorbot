@@ -65,7 +65,8 @@ TutorBot offers the following range of commands:
 * Clone all repositories of a specific assignment: The target directory for
   cloned repositories can be specified. If omitted, the current working
   directory is used. The directory is created if it does not exist. However, if
-  the directory is not empty, the command will fail.
+  the directory is not empty, the command will fail. This command delegates to 
+  `gh repo clone`. In case of problems check if this command works correctly. 
   ```shell
   gh tutorbot clone-assignment <assignment> [--directory <directory>] [--classroom <classroom>]
   ```
@@ -149,7 +150,27 @@ TutorBot offers the following range of commands:
    TutorBot will utilize the generated security token to access the GitHub API.
 5. Apply the commands above to your classroom as needed.
 
-## Typical Workflow for Handling an Assignment
+## Providing feedback
+
+Lecturers, tutors, and students can provide feedback by proceeding with the steps 
+outlined below:
+* Visit the repository of the submission in the web browser
+* Navigate to the *Pull requests* tab and select *Feedback*
+    (`<repository-url>/pulls/1`)
+* On the *Feedback* page, select *Files changed*
+* Add comments to the code and the documentation
+    + Specific lines or a whole file can be selected for feedback. 
+    + After adding the initial comment, click on *Start a review* to add more
+    comments.
+    + Finish your review by leaving a general comment for the entire review and
+    finally clicking on *Submit review*.
+    + Multiple reviews can be added to a pull request.
+* Refer to [Commenting on a pull
+    request](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/reviewing-changes-in-pull-requests/commenting-on-a-pull-request)
+    in the GitHub documentation for further details.
+
+
+## Typical Workflow for Lecuturers
 
 1. Start by creating a new assignment in the classroom with the following
    properties:
@@ -161,23 +182,21 @@ TutorBot offers the following range of commands:
 2. Make the invitation link available to students (e.g., via Moodle).
 3. After the deadline for the assignment, assign reviews to students using the
    `gh tutorbot assign-reviewers` command.
-4. Reviewers (students) provide feedback:
-   * Visit the repository of the submission in the web browser
-   * Navigate to the *Pull requests* tab and select *Feedback*
-     (`<repository-url>/pulls/1`)
-   * On the *Feedback* page, select *Files changed*
-   * Add comments to the code and the documentation
-     + Specific lines or a whole file can be selected for feedback. 
-     + After adding the initial comment, click on *Start a review* to add more
-       comments.
-     + Finish your review by leaving a general comment for the entire review and
-       finally clicking on *Submit review*.
-     + Multiple reviews can be added to a pull request.
-   * Refer to [Commenting on a pull
-     request](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/reviewing-changes-in-pull-requests/commenting-on-a-pull-request)
-     in the GitHub documentation for further details.
-5. Perform a plagiarism check. Before this, ensure all submissions have been
+4. Download the student self-assessments using `gh tutorbot
+   download-assessments`.
+5. Provide feedback.
+
+## Typical Workflow for Tutors
+
+1. Perform a plagiarism check. Before this, ensure all submissions have been
    downloaded using `gh tutorbot clone-assignment`.
-6. Tutors and professors provide feedback.
-7. Download the student self-assessments using `gh tutorbot
-   download-assessments`. 
+2. Provide feedback to the students' submissions and the students' reviews.
+
+## Typical Workflow for Students
+
+1. Clone the assignment repository by following the invitation link.
+2. Implement the assignment und work out the documentation.
+2. Fill out the self-assessment table in `ASSESSMENT.md`.
+4. Commit and push your solution.
+3. Provide feedback to the submissions you are assigned to.
+
