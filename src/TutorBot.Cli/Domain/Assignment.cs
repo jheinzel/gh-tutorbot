@@ -13,7 +13,7 @@ public record AssigmentParameters(long ClassroomId, string AssignmentName, bool 
 
 public class Assignment
 {
-  private IGitHubClient client;
+  private IGitHubClassroomClient client;
 
   public string Name { get; init; }
   public DateTime? Deadline { get; init; }
@@ -22,7 +22,7 @@ public class Assignment
 
   public IReadOnlyList<UnlinkedSubmission> UnlinkedSubmissions { get; init; }
 
-  private Assignment(IGitHubClient client, string name, DateTime? deadline, IReadOnlyList<Submission> submissions, IReadOnlyList<UnlinkedSubmission> unlinkedSubmissions)
+  private Assignment(IGitHubClassroomClient client, string name, DateTime? deadline, IReadOnlyList<Submission> submissions, IReadOnlyList<UnlinkedSubmission> unlinkedSubmissions)
   {
     this.client = client ?? throw new ArgumentNullException(nameof(client));
     Name = name ?? throw new ArgumentNullException(nameof(name));
@@ -31,20 +31,20 @@ public class Assignment
     UnlinkedSubmissions = unlinkedSubmissions ?? throw new ArgumentNullException(nameof(unlinkedSubmissions));
   }
 
-  public static async Task<Assignment> FromGitHub(IGitHubClient client, IStudentList students, AssigmentParameters parameters, IProgress? progress = null)
+  public static async Task<Assignment> FromGitHub(IGitHubClassroomClient client, IStudentList students, AssigmentParameters parameters, IProgress? progress = null)
   {
     var submissions = new List<Submission>();
     var unlinkedSubmission = new List<UnlinkedSubmission>();
 
-    var assignmentDto = await client.Classroom().Assignment.GetByName(parameters.ClassroomId, parameters.AssignmentName);
+    var assignmentDto = await client.Classroom.Assignment.GetByName(parameters.ClassroomId, parameters.AssignmentName);
     progress?.Init(assignmentDto.Accepted * 2);
-    var submissionDtos = await client.Classroom().Submissions.GetAll(assignmentDto.Id, progress);
+    var submissionDtos = await client.Classroom.Submissions.GetAll(assignmentDto.Id, progress);
 
     foreach (var submissionDto in submissionDtos)
     {
       if (submissionDto.Repository is null)
       {
-        throw new SubmissionException($"No repository assign to submission with ID \"{submissionDto.Id}\".");
+        throw new SubmissionException($"No repository assigned to submission with ID \"{submissionDto.Id}\".");
       }
 
       var repository = await client.Repository.Get(submissionDto.Repository.Id);

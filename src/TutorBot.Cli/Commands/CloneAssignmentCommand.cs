@@ -13,7 +13,7 @@ namespace TutorBot.Commands;
 
 internal class CloneAssignmentCommand : Command
 {
-  private readonly IGitHubClient client;
+  private readonly IGitHubClassroomClient client;
   private readonly ConfigurationHelper configuration;
 
   private readonly Argument<string> assignmentArgument = new("assignment", "assignment name");
@@ -25,7 +25,7 @@ internal class CloneAssignmentCommand : Command
     try
     {
       var studentList = await StudentList.FromRoster(Constants.ROSTER_FILE_PATH);
-      var classroom = await client.Classroom().GetByName(classroomName);
+      var classroom = await client.Classroom.GetByName(classroomName);
 
       var progress = new ProgressBar();
       var parameters = new AssigmentParameters(classroom.Id, assignmentName, LoadAssessments: true);
@@ -66,7 +66,7 @@ internal class CloneAssignmentCommand : Command
     }
   }
 
-  public CloneAssignmentCommand(IGitHubClient client, ConfigurationHelper configuration, ILogger<ListAssignmentsCommand> logger) : 
+  public CloneAssignmentCommand(IGitHubClassroomClient client, ConfigurationHelper configuration, ILogger<ListAssignmentsCommand> logger) : 
     base("clone-assignment", "Clone all repositories of an assignment")
   {
     this.client = client;

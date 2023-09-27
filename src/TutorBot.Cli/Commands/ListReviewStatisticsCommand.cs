@@ -11,7 +11,7 @@ namespace TutorBot.Commands;
 
 internal class ListReviewStatisticsCommand : Command
 {
-  private readonly IGitHubClient client;
+  private readonly IGitHubClassroomClient client;
   private readonly ConfigurationHelper configuration;
 
   private readonly Argument<string> assignmentArgument = new("assignment", "assignment name");
@@ -26,7 +26,7 @@ internal class ListReviewStatisticsCommand : Command
     try
     {
       var studentList = await StudentList.FromRoster(Constants.ROSTER_FILE_PATH);
-      var classroom = await client.Classroom().GetByName(classroomName);
+      var classroom = await client.Classroom.GetByName(classroomName);
 
       var progress = new ProgressBar();
       var parameters = new AssigmentParameters(classroom.Id, assignmentName);
@@ -74,7 +74,7 @@ internal class ListReviewStatisticsCommand : Command
     }
   }
 
-  public ListReviewStatisticsCommand(IGitHubClient client, ConfigurationHelper configuration, ILogger<ListAssignmentsCommand> logger) : 
+  public ListReviewStatisticsCommand(IGitHubClassroomClient client, ConfigurationHelper configuration, ILogger<ListAssignmentsCommand> logger) : 
     base("list-review-statistics", "Display summary of reviewers' activity")
   {
     this.client = client;

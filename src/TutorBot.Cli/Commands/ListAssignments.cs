@@ -9,7 +9,7 @@ namespace TutorBot.Commands;
 
 internal class ListAssignmentsCommand : Command
 {
-  private readonly IGitHubClient client;
+  private readonly IGitHubClassroomClient client;
   private readonly ConfigurationHelper configuration;
 
   private readonly Option<string> classroomOption = new("--classroom", "classroom name");
@@ -21,9 +21,9 @@ internal class ListAssignmentsCommand : Command
 
     try
     {
-      var classroom = await client.Classroom().GetByName(classroomName);
+      var classroom = await client.Classroom.GetByName(classroomName);
 
-      var assignments = await client.Classroom().Assignment.GetAll(classroom.Id);
+      var assignments = await client.Classroom.Assignment.GetAll(classroom.Id);
       foreach (var assignment in assignments)
       {
         printer.AddRow(assignment.Id.ToString(), assignment.Title, assignment.Deadline, assignment.Accepted.ToString());
@@ -37,7 +37,7 @@ internal class ListAssignmentsCommand : Command
     }
   }
 
-  public ListAssignmentsCommand(IGitHubClient client, ConfigurationHelper configuration, ILogger<ListAssignmentsCommand> logger) : 
+  public ListAssignmentsCommand(IGitHubClassroomClient client, ConfigurationHelper configuration, ILogger<ListAssignmentsCommand> logger) : 
     base("list-assignments", "List all assignments of a classroom")
   {
     this.client = client;

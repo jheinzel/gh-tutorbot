@@ -21,7 +21,7 @@ await host.Services.GetService<App>()!.RunAsync(args);
 
 void RegisterServices(IServiceCollection services)
 {
-  services.AddSingleton<IGitHubClient>(OctokitExtensions.GetGitHubClient(Constants.APP_NAME, accessToken));
+  services.AddSingleton<IGitHubClassroomClient>(new GitHubClassroomClient(Constants.APP_NAME, accessToken));
   services.AddSingleton<ConfigurationHelper>();
   services.RegisterCommands(typeof(Program).Assembly);
 }

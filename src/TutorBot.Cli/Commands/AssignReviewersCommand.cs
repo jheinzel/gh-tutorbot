@@ -16,7 +16,7 @@ namespace TutorBot.Commands;
 
 internal class AssignReviewersCommand : Command
 {
-  private readonly IGitHubClient client;
+  private readonly IGitHubClassroomClient client;
   private readonly ConfigurationHelper configuration;
 
   private readonly Argument<string> assignmentArgument = new("assignment", "assignment name");
@@ -49,7 +49,7 @@ internal class AssignReviewersCommand : Command
     try
     {
       var studentList = await StudentList.FromRoster(Constants.ROSTER_FILE_PATH);
-      var classroom = await client.Classroom().GetByName(classroomName);
+      var classroom = await client.Classroom.GetByName(classroomName);
 
       var progress = new ProgressBar();
       var parameters = new AssigmentParameters(classroom.Id, assignmentName, LoadAssessments: true);
@@ -77,7 +77,7 @@ internal class AssignReviewersCommand : Command
     }
   }
 
-  public AssignReviewersCommand(IGitHubClient client, ConfigurationHelper configuration, ILogger<ListAssignmentsCommand> logger) :
+  public AssignReviewersCommand(IGitHubClassroomClient client, ConfigurationHelper configuration, ILogger<ListAssignmentsCommand> logger) :
     base("assign-reviewers", "Assign reviewers to assignments randomly")
   {
     this.client = client;

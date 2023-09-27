@@ -10,7 +10,7 @@ namespace TutorBot.Commands;
 
 internal class RemoveReviewersCommand : Command
 {
-  private readonly IGitHubClient client;
+  private readonly IGitHubClassroomClient client;
   private readonly ConfigurationHelper configuration;
 
   private readonly Argument<string> assignmentArgument = new("assignment", "assignment name");
@@ -32,7 +32,7 @@ internal class RemoveReviewersCommand : Command
     try
     {
       var studentList = await StudentList.FromRoster(Constants.ROSTER_FILE_PATH);
-      var classroom = await client.Classroom().GetByName(classroomName);
+      var classroom = await client.Classroom.GetByName(classroomName);
 
       var progress = new ProgressBar();
       var parameters = new AssigmentParameters(classroom.Id, assignmentName);
@@ -44,7 +44,7 @@ internal class RemoveReviewersCommand : Command
         await assignment.RemoveReviewers();
       }
 
-      var assignments = await client.Classroom().Assignment.GetAll(classroom.Id);
+      var assignments = await client.Classroom.Assignment.GetAll(classroom.Id);
     }
     catch (Exception ex)
     {
@@ -52,7 +52,7 @@ internal class RemoveReviewersCommand : Command
     }
   }
 
-  public RemoveReviewersCommand(IGitHubClient client, ConfigurationHelper configuration, ILogger<ListAssignmentsCommand> logger) : 
+  public RemoveReviewersCommand(IGitHubClassroomClient client, ConfigurationHelper configuration, ILogger<ListAssignmentsCommand> logger) : 
     base("remove-reviewers", "Remove reviewers from assignments")
   {
     this.client = client;

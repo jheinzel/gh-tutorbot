@@ -4,6 +4,7 @@ using Octokit;
 using TutorBot.Domain;
 using TutorBot.Infrastructure.StringExtensions;
 using TutorBot.Domain.Exceptions;
+using TutorBot.Infrastructure.OctokitExtensions;
 
 namespace TutorBot.Domain;
 
@@ -11,7 +12,7 @@ using ReviewStatistics = IDictionary<(string Owner, string Reviewer), ReviewStat
 
 public class Submission
 {
-  private IGitHubClient client;
+  private IGitHubClassroomClient client;
   private Repository repository;
   
   public long RepositoryId => repository.Id;
@@ -24,7 +25,7 @@ public class Submission
 
   public Assessment Assessment { get; private set; } = new Assessment();
 
-  public Submission(IGitHubClient client, Repository repository, Student owner, IList<Reviewer> reviewers)
+  public Submission(IGitHubClassroomClient client, Repository repository, Student owner, IList<Reviewer> reviewers)
   {
     this.client = client;
     this.repository = repository;

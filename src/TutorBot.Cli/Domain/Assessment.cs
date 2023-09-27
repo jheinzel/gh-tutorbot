@@ -4,6 +4,7 @@ using System.Text.RegularExpressions;
 using Octokit;
 using TutorBot.Infrastructure;
 using TutorBot.Domain.Exceptions;
+using TutorBot.Infrastructure.OctokitExtensions;
 
 namespace TutorBot.Domain;
 
@@ -53,7 +54,7 @@ public class Assessment
 
   }
 
-  public async Task Load(IGitHubClient client, long repositoryId)
+  public async Task Load(IGitHubClassroomClient client, long repositoryId)
   {
     try
     {

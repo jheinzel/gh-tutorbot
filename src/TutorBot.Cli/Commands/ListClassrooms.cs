@@ -8,7 +8,7 @@ namespace TutorBot.Commands;
 
 internal class ListClassroomsCommand : Command
 {
-  private readonly IGitHubClient client;
+  private readonly IGitHubClassroomClient client;
 
   private async Task HandleAsync()
   {
@@ -17,7 +17,7 @@ internal class ListClassroomsCommand : Command
 
     try
     {
-      var classrooms = await client.Classroom().GetAll();
+      var classrooms = await client.Classroom.GetAll();
       foreach (var classroom in classrooms)
       {
         printer.AddRow(classroom.Id.ToString(), classroom.Name, classroom.Url);
@@ -31,7 +31,7 @@ internal class ListClassroomsCommand : Command
     }
   }
 
-  public ListClassroomsCommand(IGitHubClient client, ILogger<ListSubmissionsCommand> logger) :
+  public ListClassroomsCommand(IGitHubClassroomClient client, ILogger<ListSubmissionsCommand> logger) :
   base("list-classrooms", "List all classrooms")
   {
     this.client = client;

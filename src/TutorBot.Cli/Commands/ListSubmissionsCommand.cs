@@ -13,7 +13,7 @@ namespace TutorBot.Commands;
 
 internal class ListSubmissionsCommand : Command
 {
-  private readonly IGitHubClient client;
+  private readonly IGitHubClassroomClient client;
   private readonly ConfigurationHelper configuration;
 
   private readonly Argument<string> assignmentArgument = new("assignment", "assignment name");
@@ -27,7 +27,7 @@ internal class ListSubmissionsCommand : Command
     try
     {
       var studentList = await StudentList.FromRoster(Constants.ROSTER_FILE_PATH);
-      var classroom = await client.Classroom().GetByName(classroomName);
+      var classroom = await client.Classroom.GetByName(classroomName);
 
       var progress = new ProgressBar();
       var parameters = new AssigmentParameters(classroom.Id, assignmentName, LoadAssessments: true);
@@ -81,7 +81,7 @@ internal class ListSubmissionsCommand : Command
     }
   }
 
-  public ListSubmissionsCommand(IGitHubClient client, ConfigurationHelper configuration, ILogger<ListSubmissionsCommand> logger) :
+  public ListSubmissionsCommand(IGitHubClassroomClient client, ConfigurationHelper configuration, ILogger<ListSubmissionsCommand> logger) :
     base("list-submissions", "List all submissions of an assignment")
   {
     this.client = client;

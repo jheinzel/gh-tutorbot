@@ -8,12 +8,13 @@ using TutorBot.Infrastructure.Exceptions;
 using TutorBot.Infrastructure.TextWriterExtensions;
 using TutorBot.Domain.Exceptions;
 using TutorBot.Utility;
+using TutorBot.Infrastructure.OctokitExtensions;
 
 namespace TutorBot.Commands;
 
 internal class CheckPlagiarismCommand : Command
 {
-  private readonly IGitHubClient client;
+  private readonly IGitHubClassroomClient client;
   private readonly ConfigurationHelper configuration;
 
   private readonly Argument<string> rootDirectoryArgument = new("root-directory", "root directory containing submissions");
@@ -127,7 +128,7 @@ internal class CheckPlagiarismCommand : Command
     }
   }
 
-  public CheckPlagiarismCommand(IGitHubClient client, ConfigurationHelper configuration, ILogger<ListAssignmentsCommand> logger) :
+  public CheckPlagiarismCommand(IGitHubClassroomClient client, ConfigurationHelper configuration, ILogger<ListAssignmentsCommand> logger) :
     base("check-plagiarism", "Check for plagiarism")
   {
     this.client = client;
