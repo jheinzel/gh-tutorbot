@@ -1,8 +1,8 @@
 ﻿# GitHub TutorBot
 
 *GitHub TutorBot* is a straightforward command-line tool designed to assist
-programming tutors at the University of Applied Sciences in Hagenberg by
-automating repetitive tasks.
+programming lecturers and tutors at the University of Applied Sciences in 
+Hagenberg by automating repetitive tasks.
 
 ## Installation
 
