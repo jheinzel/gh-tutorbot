@@ -1,32 +1,32 @@
 ﻿# GitHub TutorBot
 
-*GitHub TutorBot* is a simple command line tool that helps programming tutors at
-the University of Applied Sciences in Hagenberg by automating repetitive tasks.
-
+*GitHub TutorBot* is a straightforward command-line tool designed to assist
+programming tutors at the University of Applied Sciences in Hagenberg by
+automating repetitive tasks.
 
 ## Installation
 
-1. TutorBot is an extension for the [GitHub CLI](https://cli.github.com/), so
-   you need to install it first. Installation instructions can be found
-   [here](https://github.com/cli/cli#installation). Prepackaged binaries can be
-   found [here](https://github.com/cli/cli/releases/).
+1. TutorBot operates as an extension for the [GitHub
+   CLI](https://cli.github.com/). Please install it before proceeding with the
+   installation of TutorBot. Follow the instructions that can be found
+   [here](https://github.com/cli/cli#installation). Prepackaged binaries are
+   also available [here](https://github.com/cli/cli/releases).
 
-2. Install the TutorBot extension by running the following command:
+2. Install the TutorBot extension by executing the following command:
    ```shell
    gh extension install https://github.com/jheinzel/gh-tutorbot
    ```
-3. Upgrade the TutorBot extension to the latest version if it is already
-   installed:
+3. If the TutorBot extension is already installed, update it to the recent
+   version using this command:
    ```shell
    gh extension upgrade tutorbot
    ```
 
 ## Commands
 
-TutorBot comes with the following range of commands:
+TutorBot offers the following range of commands:
 
-* List all students. The list is extrected from the roster file
-  (`classroom_roster.csv`)
+* List all students (extracted from the roster file - `classroom_roster.csv`):
   ```shell
   gh tutorbot list-students
   ```
@@ -36,89 +36,88 @@ TutorBot comes with the following range of commands:
   gh tutorbot list-classrooms
   ```
 
-  * List all assignments created in a classroom :
+* List all assignments created in a specific classroom:
   ```shell
   gh tutorbot list-assignments [--classroom <classroom>]
   ```
 
-* List all submissions of an assignment:
+* List all submissions for a specific assignment:
   ```shell
   gh tutorbot list-submissions <assignment> [--classroom <classroom>]
   ```
 
-* Assign reviewers to an assignment: One reviewer per submission is assigned in
-  a random fashion. The reviewer gets read access to the submission repository
-  and gets an invitation via email.
+* Assign reviewers to an assignment randomly. Each submission will have one
+  reviewer who gains read access to the submission repository and receives an
+  invitation via email.
   ```shell
   gh tutorbot assign-reviewers <assignment> [--classroom <classroom>] [--force] [--dry-run]
   ```
-  + `--force` can be used to force a reassignment of reviewers, although there
-    are unlinked submissions.
-  + `--dry-run` simulates the exection of the command without actually assigning
+  + `--force` allows reassignment of reviewers, even if some submissions are not
+    yet linked.
+  + `--dry-run` simulates executing the command without actually assigning
     reviewers.
 
-* Assign reviewers from an assignment: 
+* Remove reviewers from an assignment: 
   ```shell
   gh tutorbot remove-reviewers <assignment> [--classroom <classroom>]
   ```
 
-* Clone all repositories of an assignment: The directory the repositories are
-  cloned to can be specified. If omitted, the current working directory is used.
-  The directory is created if it does not exist. If the directory ist not empty,
-  the command will fail.
+* Clone all repositories of a specific assignment: The target directory for
+  cloned repositories can be specified. If omitted, the current working
+  directory is used. The directory is created if it does not exist. However, if
+  the directory is not empty, the command will fail.
   ```shell
   gh tutorbot clone-assignment <assignment> [--directory <directory>] [--classroom <classroom>]
   ```
 
-* Download student's self assessments: Collect self assessment data from all
-  submissions and write it to a CSV file. The CSV file is named
-  `<assignment>-assessments.csv` and placed in the current working directory.
+* Download students' self-assessments: Collects self-assessment data from all
+  submissions and writes it to a CSV file, named `<assignment>-assessments.csv`,
+  placed in the current working directory.
   ```shell
   gh tutorbot download-assessments <assignment> [--classroom <classroom>]
   ```
 
-* List review statistics: Get statistical data about the activity of the
+* List review statistics: Provides statistical data about the activity of the
   reviewers.
   ```shell
   gh tutorbot list-review-statistics <assignment> [--classroom <classroom>] [--sort-by (reviewer|comment-length|review-date)]
   ```
 
-* Perform a Plagiarism Check: Use JPlag to cross-verify all assignment
-  submissions for plagiarism. Prior to using this command, download the JPlag
-  JAR file from https://github.com/jplag/JPlag/releases. Subsequently, place
-  this JAR file in the lib directory and ensure it's named as jplag.jar.
-  Alternatively, adjust the configuration variable jplag-jar-path as needed. It
-  is crucial to clone the assignment first using (clone-assignment).
+* Perform a plagiarism check: Uses JPlag to cross-verify all assignment
+  submissions for plagiarism. Before using this command, download the JPlag JAR
+  file from https://github.com/jplag/JPlag/releases. Then install this JAR file
+  in the 'lib' directory and ensure it's named 'jplag.jar'. Alternatively,
+  adjust the configuration variable 'jplag-jar-path' as necessary. It is crucial
+  to first clone the assignments using the `clone-assignment` command.
 
   The plagiarism check generates a ZIP file located in the assignment's
-  directory. This ZIP file contains multiple JSON files, describing the
-  result of the plagiarism check. These results can be analyzed using the report
-  viewer at [https://jplag.github.io/JPlag](https://jplag.github.io/JPlag). 
+  directory. This ZIP file contains multiple JSON files that display the results
+  of the plagiarism check. These results can be analyzed using the report viewer
+  at [https://jplag.github.io/JPlag](https://jplag.github.io/JPlag). 
   ```shell
   gh tutorbot check-plagiarism <root-directory> [--language (cpp|java)] [--report-file <report-file>] [--refresh]
   ```
   + `root-directory` is the path of the directory containing all submissions.
-  + `--language` can be used to specify the programming langugage of the
-    submissions.
-  + `--report-file` can be used to specify the base name of the report file.
-  + `--refresh` can be used to force a plagiarism check even if the results file
-    already exists.
+  + `--language` specifies the programming language of the submissions.
+  + `--report-file` specifies the base name of the report file.
+  + `--refresh` forces a plagiarism check, even if the results file already
+    exists.
 
-* Getting help
+* To get help:
   ```shell
   gh tutorbot [<command>] --help
   ```
 
 ## Configuration
-* `classroom_roster.csv`: The student's roster file contains the list of
-  students in a classroom. It's main purpose is to map the GitHub username to
-  the student's id (matriculation number) and name. The roster file can be
-  downloaded from the classroom page on GitHub in the following way: Classroom
-  page → Students → Download. Place the file in your working directory and name
-  it `classroom_roster.csv`.
+* `classroom_roster.csv`: This roster file containing a list of students in a
+  classroom is used primarily to map the GitHub username to the student's ID
+  (matriculation number) and name. The roster file can be downloaded from the
+  classroom page on GitHub as follows: Classroom page → Students → Download.
+  Place this file in your working directory and name it as
+  `classroom_roster.csv`.
 
 * `appsettings.json`: This configuration file contains general settings for the
-  .NET application and TutorBot specific settings.
+  .NET application along with specific settings for TutorBot.
   ```json
   {
     "default-classroom": "my-classroom",
@@ -128,63 +127,57 @@ TutorBot comes with the following range of commands:
   ```
   + `default-classroom`: The default value for the `--classroom` option.
   + `java-path`: The path to the Java executable.
-  + `jplag-jar-path`: The path to the JPlag JAR file (absolute or relative to
-    the working directory). 
-
-
+  + `jplag-jar-path`: The path to the JPlag JAR file (absolute path or relative
+    to the working directory). 
+  
 ## Working with TutorBot
 
-1. Check if you are a member with admin permissions in the classroom you want to
-   work with. If not, ask the classroom owner to add you as a member with the
-   needed permissions.
+1. Verify if you are a member with admin permissions in the classroom you are
+   working with. If not, ask the classroom owner to add you as a member with the
+   required permissions.
 2. Install GitHub CLI and TutorBot as described above.
-3. Download the roster file to your working directory. Create the configuration
-   file `appsettings.json` and define the default classroom.
+3. Download the student roster file to your working directory. Create the
+   `appsettings.json` configuration file and define your default classroom.
 4. Authenticate with GitHub CLI:
    ```shell
    gh auth login
    ```
-   You can check your authentication status with
+   You can verify your authentication status with:
    ```shell
    gh auth status
    ```
-   TutorBot will use the generated security token to access the GitHub API.
-5. Apply the commands described above to your classroom.
+   TutorBot will utilize the generated security token to access the GitHub API.
+5. Apply the commands above to your classroom as needed.
 
-## Typical workflow for handling an assignment
+## Typical Workflow for Handling an Assignment
 
-1. Create a new assignment in the classroom.
+1. Start by creating a new assignment in the classroom with the following
+   properties:
    * Individual assignment
    * Private repository
-   * Do not grant admin permissions to students
-   * Optional: Add a starter code repository
-   * Important: Enable feedback pall requests
-2. Make invitation link available to students (e. g. via Moodle).
-3. After the assignment deadline, assign reeviews to students (`gh tutorbot
-   assign-reviewers`).
-4. Reviewers (students) give feedback
-   * Visit the repository of the submission in the web broswser
+   * Students should not be granted admin permissions
+   * You can optionally add a starter code repository
+   * Important: Enable feedback pull requests
+2. Make the invitation link available to students (e.g., via Moodle).
+3. After the deadline for the assignment, assign reviews to students using the
+   `gh tutorbot assign-reviewers` command.
+4. Reviewers (students) provide feedback:
+   * Visit the repository of the submission in the web browser
    * Navigate to the *Pull requests* tab and select *Feedback*
      (`<repository-url>/pulls/1`)
-   * On the *Feedback* page select *Files changed*
+   * On the *Feedback* page, select *Files changed*
    * Add comments to the code and the documentation
-     + Click on the line number to add a comment to a specific line. You can
-       also select a range of lines to add a comment to multiple lines. Comments
-       can also be attachted to a whole file by clicking on the balloon icon in
-       the upper right corner of the file.
-     + After adding the first comment, click on *Start a review* to add more
+     + Specific lines or a whole file can be selected for feedback. 
+     + After adding the initial comment, click on *Start a review* to add more
        comments.
-     + Add more comments by selecting lines in the way described above and
-       clicking on *Add comment*. 
-     + Finish your review by clicking on *Finish your review*. In the popup
-       window you must leave a comment for the whole review. Finally click on
-       *Submit review*.
-     + You can add multiple reviews to a pull request. To add another review,
-       click on *Start a review* again.
-   * See [Commenting on a pull
+     + Finish your review by leaving a general comment for the entire review and
+       finally clicking on *Submit review*.
+     + Multiple reviews can be added to a pull request.
+   * Refer to [Commenting on a pull
      request](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/reviewing-changes-in-pull-requests/commenting-on-a-pull-request)
-     in the GitHub documentation for more details.
-5. Perfom a plagiarism check. Download all submissions before (`gh tutorbot
-   clone-assignment`)
-6. Give feedback (tutors, professors)
-7. Download the self assessments (`gh tutorbot download-assessments`).
+     in the GitHub documentation for further details.
+5. Perform a plagiarism check. Before this, ensure all submissions have been
+   downloaded using `gh tutorbot clone-assignment`.
+6. Tutors and professors provide feedback.
+7. Download the student self-assessments using `gh tutorbot
+   download-assessments`. 
