@@ -8,6 +8,7 @@ using TutorBot.Infrastructure.StringExtensions;
 using TutorBot.Domain;
 using TutorBot.Domain.Exceptions;
 using TutorBot.Utility;
+using System.IO;
 
 namespace TutorBot.Commands;
 
@@ -24,6 +25,14 @@ internal class CloneAssignmentCommand : Command
   {
     try
     {
+      directory ??= assignmentName;
+
+      // check if directory does not exist or is empty
+      if (Directory.Exists(directory) && Directory.EnumerateFileSystemEntries(directory).Any())
+      {
+        throw new DomainException($"Error: Directory \"{directory}\" already exists and is not empty.");
+      }
+
       var studentList = await StudentList.FromRoster(Constants.ROSTER_FILE_PATH);
       var classroom = await client.Classroom.GetByName(classroomName);
 
@@ -37,7 +46,6 @@ internal class CloneAssignmentCommand : Command
       {
         try
         {
-          directory ??= assignment.Name;
           var localDirName = submission.Owner.FullName.Replace(" ", "_");
           var ownerName = submission.Owner.FullName;
           var repoFullName = submission.RepositoryFullName;
