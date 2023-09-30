@@ -62,8 +62,11 @@ internal class ListSubmissionsCommand : Command
       Console.WriteLine();
       Console.WriteLine($"#submissions:        {assignment.Submissions.Count}");
       Console.WriteLine($"#valid submissions:  {validSubmissions.Count()}");
-      Console.WriteLine($"average effort:      {validSubmissions.Average(s => s.Assessment.Effort).ToString("F1", CultureInfo.InvariantCulture)}");
-      Console.WriteLine($"average assessment:  {validSubmissions.Average(s => s.Assessment.Total).ToString("F1", CultureInfo.InvariantCulture)}");
+      if (validSubmissions.Any())
+      {
+        Console.WriteLine($"average effort:      {validSubmissions.Average(s => s.Assessment.Effort).ToString("F1", CultureInfo.InvariantCulture)}");
+        Console.WriteLine($"average assessment:  {validSubmissions.Average(s => s.Assessment.Total).ToString("F1", CultureInfo.InvariantCulture)}");
+      }
     }
     else
     {
