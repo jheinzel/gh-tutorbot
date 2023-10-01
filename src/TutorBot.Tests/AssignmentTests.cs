@@ -50,7 +50,7 @@ public class AssignmentTests
   public async Task Submission_WithNoRepository_ThrowsException()
   {
     assignmentClient.GetByName(1, "ue01").Returns(
-      Task.FromResult(new AssignmentDto { Id = 10, Title = "ue01", Accepted = 1, Deadline = DateTime.Now.AddDays(1).ToString("o") }));
+      Task.FromResult(new AssignmentDto { Id = 10, Title = "ue01", Accepted = 1, Deadline = DateTime.Now.AddDays(1) }));
 
     var submissionDto1 = new SubmissionDto { Id = 100, Students = new List<StudentDto> { new StudentDto { Id = 1, Login = "gh-mayr" } } };
     submissionsClient.GetAll(10).Returns(Task.FromResult<IReadOnlyList<SubmissionDto>>(new List<SubmissionDto> { submissionDto1 }));
@@ -66,7 +66,7 @@ public class AssignmentTests
   {
     var assignmentName = "ue01";
     assignmentClient.GetByName(1, assignmentName).Returns(
-      Task.FromResult(new AssignmentDto { Id = 10, Title = "ue01", Accepted = 1, Deadline = DateTime.Now.AddDays(1).ToString("o") }));
+      Task.FromResult(new AssignmentDto { Id = 10, Title = "ue01", Accepted = 1, Deadline = DateTime.Now.AddDays(1) }));
 
     var studentDto1 = new StudentDto { Id = 1, Login = "gh-mayr" };
     var submissionDto1 = new SubmissionDto { Id = 100, Students = new List<StudentDto> { studentDto1 }, Repository = new RepositoryDto { Id = 100 } };
@@ -93,7 +93,7 @@ public class AssignmentTests
   {
     var assignmentName = "ue01";
     assignmentClient.GetByName(1, assignmentName).Returns(
-      Task.FromResult(new AssignmentDto { Id = 10, Title = "ue01", Accepted = 1, Deadline = DateTime.Now.AddDays(1).ToString("o") }));
+      Task.FromResult(new AssignmentDto { Id = 10, Title = "ue01", Accepted = 1, Deadline = DateTime.Now.AddDays(1) }));
 
     var studentDto1 = new StudentDto { Id = 1, Login = "gh-mayr" };
     var submissionDto1 = new SubmissionDto { Id = 100, Students = new List<StudentDto> { studentDto1 }, Repository = new RepositoryDto { Id = 100 } };

@@ -16,13 +16,13 @@ public class Assignment
   private IGitHubClassroomClient client;
 
   public string Name { get; init; }
-  public DateTime? Deadline { get; init; }
+  public DateTimeOffset? Deadline { get; init; }
 
   public IReadOnlyList<Submission> Submissions { get; init; }
 
   public IReadOnlyList<UnlinkedSubmission> UnlinkedSubmissions { get; init; }
 
-  private Assignment(IGitHubClassroomClient client, string name, DateTime? deadline, IReadOnlyList<Submission> submissions, IReadOnlyList<UnlinkedSubmission> unlinkedSubmissions)
+  private Assignment(IGitHubClassroomClient client, string name, DateTimeOffset? deadline, IReadOnlyList<Submission> submissions, IReadOnlyList<UnlinkedSubmission> unlinkedSubmissions)
   {
     this.client = client ?? throw new ArgumentNullException(nameof(client));
     Name = name ?? throw new ArgumentNullException(nameof(name));
@@ -107,7 +107,7 @@ public class Assignment
       progress?.Increment();
     }
 
-    return new Assignment(client, assignmentDto.Title, assignmentDto.Deadline?.ToDateTime(), submissions, unlinkedSubmission);
+    return new Assignment(client, assignmentDto.Title, assignmentDto.Deadline, submissions, unlinkedSubmission);
   }
 
 

@@ -11,5 +11,5 @@ public class AssignmentDto
   public long Id { get; init; }
 	public string Title { get; init; } = string.Empty;
 	public int Accepted { get; init; }
-	public string? Deadline { get; init; }
+	public DateTimeOffset? Deadline { get; init; }
 }

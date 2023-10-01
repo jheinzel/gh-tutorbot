@@ -26,7 +26,8 @@ internal class ListAssignmentsCommand : Command
       var assignments = await client.Classroom.Assignment.GetAll(classroom.Id);
       foreach (var assignment in assignments)
       {
-        printer.AddRow(assignment.Id.ToString(), assignment.Title, assignment.Deadline, assignment.Accepted.ToString());
+        var deadLineStr = assignment.Deadline is null ? "-" : assignment.Deadline?.LocalDateTime.ToString("yyyy-MM-dd HH:mm");
+        printer.AddRow(assignment.Id.ToString(), assignment.Title, deadLineStr, assignment.Accepted.ToString());
       }
 
       printer.Print();
