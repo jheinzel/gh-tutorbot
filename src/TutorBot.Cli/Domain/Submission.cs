@@ -45,7 +45,7 @@ public class Submission
       }
 
       var reviewDate = review.SubmittedAt;
-      if (reviewDate > stats.LastReviewDate)
+      if (stats.LastReviewDate is null || reviewDate > stats.LastReviewDate)
       {
         stats.LastReviewDate = reviewDate;
       }

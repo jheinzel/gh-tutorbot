@@ -172,6 +172,13 @@ public class Assignment
   public async Task<ReviewStatistics> GetReviewStatistics(IStudentList students)
   {
     var reviewStats = new Dictionary<(string Owner, string Reviewer), Domain.ReviewStatisticsItem>();
+    foreach (var submission in Submissions)
+    {
+      foreach (var reviewer in submission.Reviewers)
+      {
+        reviewStats.Add((submission.Owner.GitHubUsername, reviewer.GitHubUsername), new ReviewStatisticsItem());
+      }
+    }
 
     foreach (var submission in Submissions)
     {

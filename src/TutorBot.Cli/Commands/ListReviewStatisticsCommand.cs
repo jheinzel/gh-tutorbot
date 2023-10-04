@@ -6,6 +6,7 @@ using TutorBot.Infrastructure.OctokitExtensions;
 using TutorBot.Domain;
 using TutorBot.Domain.Exceptions;
 using TutorBot.Utility;
+using System.Linq;
 
 namespace TutorBot.Commands;
 
@@ -16,12 +17,13 @@ internal class ListReviewStatisticsCommand : Command
 
   private readonly Argument<string> assignmentArgument = new("assignment", "assignment name");
   private readonly Option<string> classroomOption = new("--classroom", "classroom name");
-  private readonly Option<string> sortOption = new("--sort-by", "sorting criteria");
+  private readonly Option<string> orderOption = new("--order-by", "order criteria");
+  private readonly Option<int?> groupOption = new("--group", "filter group");
 
-  private async Task HandleAsync(string assignmentName, string classroomName, string sortOption)
+  private async Task HandleAsync(string assignmentName, string classroomName, string order, int? group)
   {
     var printer = new TablePrinter();
-    printer.AddRow("REVIEWER", "OWNER", "#REVIEWS", "#COMMENTS", "#WORDS", "LASTREVIEWDATE");
+    printer.AddRow("REVIEWER", "GR.", "OWNER", "#REVIEWS", "#COMMENTS", "#WORDS", "LASTREVIEWDATE");
 
     try
     {
@@ -35,18 +37,18 @@ internal class ListReviewStatisticsCommand : Command
 
       var reviewStats = await assignment.GetReviewStatistics(studentList);
 
-      var sortedReviewStats =
-        sortOption switch
+      var orderedReviewStats =
+        order switch
         {
           "reviewer" => reviewStats.OrderBy(rs => rs.Key.Reviewer),
-          "review-date" => reviewStats.OrderByDescending(rs => rs.Value.LastReviewDate),
-          "comment-length" => reviewStats.OrderByDescending(rs => rs.Value.NumComments),
-          _ => throw new DomainException($"Unknown sort option \"{sortOption}\".")
+          "review-date" => reviewStats.OrderBy(rs => rs.Value.LastReviewDate ?? DateTimeOffset.MaxValue),
+          "review-date-desc" => reviewStats.OrderByDescending(rs => rs.Value.LastReviewDate ?? DateTimeOffset.MaxValue),
+          "comment-length" => reviewStats.OrderBy(rs => rs.Value.NumComments),
+          "comment-length-desc" => reviewStats.OrderByDescending(rs => rs.Value.NumComments),
+          _ => throw new DomainException($"Unknown order option \"{order}\".")
         };
 
-      sortedReviewStats = reviewStats.OrderBy(rs => rs.Key.Reviewer);
-
-      foreach (var ((ownerName, reviewerName), stats) in sortedReviewStats)
+      foreach (var ((ownerName, reviewerName), stats) in orderedReviewStats)
       {
         if (! studentList.TryGetValue(ownerName, out var owner))
         {
@@ -58,12 +60,17 @@ internal class ListReviewStatisticsCommand : Command
           throw new DomainException($"Unknown student \"{reviewerName}\".");
         }
 
-        printer.AddRow(reviewer.FullName, 
-                       owner.FullName, 
-                       stats.NumReviews.ToString().PadLeft(8), 
-                       stats.NumComments.ToString().PadLeft(9),
-                       stats.NumWords.ToString().PadLeft(6), 
-                       stats.LastReviewDate.ToLocalTime().ToString("yyyy-MM-dd HH:mm"));
+        if (group is null || reviewer.GroupNr == group.Value)
+        {
+          var lastReviewDate = stats.LastReviewDate?.ToString("yyyy-MM-dd HH:mm") ?? "-";
+          printer.AddRow(reviewer.FullName,
+                         reviewer.GroupNr.ToString().PadLeft(2),
+                         owner.FullName,
+                         stats.NumReviews.ToString().PadLeft(8),
+                         stats.NumComments.ToString().PadLeft(9),
+                         stats.NumWords.ToString().PadLeft(6),
+                         lastReviewDate);
+        }
       }
 
       printer.Print();
@@ -86,14 +93,18 @@ internal class ListReviewStatisticsCommand : Command
     classroomOption.SetDefaultValue(configuration.DefaultClassroom);
     AddOption(classroomOption);
 
-    sortOption.AddAlias("-s");
-    sortOption.FromAmong("reviewer", "comment-length", "review-date")
+    orderOption.AddAlias("-s");
+    orderOption.FromAmong("reviewer", "comment-length", "comment-length-desc", "review-date", "review-date-desc")
               .SetDefaultValue("reviewer");
-    AddOption(sortOption);
+    AddOption(orderOption);
+
+    groupOption.AddAlias("-g");
+    groupOption.SetDefaultValue(null);
+    AddOption(groupOption);
 
     AddAlias("lr");
 
-    this.SetHandler(HandleAsync, assignmentArgument, classroomOption, sortOption);
+    this.SetHandler(HandleAsync, assignmentArgument, classroomOption, orderOption, groupOption);
   }
 }
 
