@@ -81,8 +81,19 @@ TutorBot offers the following range of commands:
 * List review statistics: Provides statistical data about the activity of the
   reviewers.
   ```shell
-  gh tutorbot list-review-statistics <assignment> [--classroom <classroom>] [-- -by (reviewer|comment-length|review-date)]
+  gh tutorbot list-review-statistics <assignment>
+     [--classroom <classroom>] 
+     [--order-by (reviewer|comment-length[-desc]|review-date[-desc])] 
+     [--group <nr>]
   ```
+  + `--order-by` specifies how the statistics data is ordered:
+    + `reviewer`: Order by reviewer name.
+    + `comment-length`: Order by comment length (ascending).
+    + `comment-length-desc`: Order by comment length (descending).
+    + `review-date`: Order by last review date (ascending).
+    + `review-date-desc`: Order by last review date (descending).
+  + `--group`: Filter by group. The group number is specified as a positive
+    integer. If omitted, all groups are considered.
 
 * Perform a plagiarism check: Uses JPlag to cross-verify all assignment
   submissions for plagiarism. Before using this command, download the JPlag JAR
