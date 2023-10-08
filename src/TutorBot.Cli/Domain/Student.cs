@@ -1,6 +1,8 @@
-﻿namespace TutorBot.Domain;
+﻿using System;
 
-public class Student
+namespace TutorBot.Domain;
+
+public class Student : IEquatable<Student>
 {
   public Student(string gitHubUsername, string lastName, string firstName, string matNr, int groupNr)
   {
@@ -18,4 +20,29 @@ public class Student
   public int GroupNr { get; init; }
 
   public virtual string FullName => $"{LastName} {FirstName}";
+
+  public override bool Equals(object? obj)
+  {
+    return Equals(obj as Student);
+  }
+
+  public bool Equals(Student? other)
+  {
+    if (other == null)
+    {
+      return false;
+    }
+
+    if (ReferenceEquals(this, other))
+    {
+      return true;
+    }
+
+    return GitHubUsername == other.GitHubUsername;
+  }
+
+  public override int GetHashCode()
+  {
+    return GitHubUsername?.GetHashCode() ?? 0;
+  }
 }

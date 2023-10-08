@@ -36,7 +36,7 @@ internal class CloneAssignmentCommand : Command
       var studentList = await StudentList.FromRoster(Constants.ROSTER_FILE_PATH);
       var classroom = await client.Classroom.GetByName(classroomName);
 
-      var progress = new ProgressBar();
+      var progress = new ProgressBar("Loading submissions");
       var parameters = new AssigmentParameters(classroom.Id, assignmentName, LoadAssessments: true);
       var assignment = await Assignment.FromGitHub(client, studentList, parameters, progress);
       progress.Dispose();

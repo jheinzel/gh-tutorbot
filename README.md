@@ -12,11 +12,18 @@ Hagenberg by automating repetitive tasks.
    [here](https://github.com/cli/cli#installation). Prepackaged binaries are
    also available [here](https://github.com/cli/cli/releases).
 
-2. Install the TutorBot extension by executing the following command:
+2. Log in to GitHub using the GitHub CLI:
+   ```sh
+   gh auth login
+   ```
+   This generates a security token that is used by TutorBot to access GitHub.
+   The authentication status can be verified with `gh auth status`.
+
+3. Install the TutorBot extension by executing the following command:
    ```shell
    gh extension install https://github.com/jheinzel/gh-tutorbot
    ```
-3. If the TutorBot extension is already installed, update it to the recent
+4. If the TutorBot extension is already installed, update it to the recent
    version using this command:
    ```shell
    gh extension upgrade tutorbot
@@ -43,19 +50,20 @@ TutorBot offers the following range of commands:
 
 * List all submissions for a specific assignment:
   ```shell
-  gh tutorbot list-submissions <assignment> [--classroom <classroom>]
+      gh tutorbot list-submissions <assignment> [--classroom <classroom>] [--group <nr>]
   ```
+  + `--group`: Filter by group. The group number is specified as a positive
+    integer. If omitted, all groups are considered.
 
 * Assign reviewers to an assignment randomly. Each submission will have one
   reviewer who gains read access to the submission repository and receives an
-  invitation via email.
+  invitation via email. If there are already reveiwers assigned, the command
+  will preserve these assignments and add add the missing ones.
   ```shell
-  gh tutorbot assign-reviewers <assignment> [--classroom <classroom>] [--force] [--dry-run]
+  gh tutorbot assign-reviewers <assignment> [--classroom <classroom>] [--force]
   ```
-  + `--force` allows reassignment of reviewers, even if some submissions are not
+  + `--force` allows assigment of reviewers, even if some submissions are not
     yet linked.
-  + `--dry-run` simulates executing the command without actually assigning
-    reviewers.
 
 * Remove reviewers from an assignment: 
   ```shell
@@ -171,8 +179,8 @@ following instructions:
 * On the *Feedback* page, click on *Files changed*.
 * Proceed to add comments related to the code and the documentation.
     + Choose specific lines or the entire file for providing feedback. 
-    + After submitting your initial comment, select *Start a review* to provide
-      additional comments.
+    + After submitting your initial comment, select *Start a review* 
+    + Add additional comments (*Add review comments*).
     + Finalize your review by expressing a general comment for the complete
       review, and click on *Submit review*.
     + Multiple reviews can be submitted to a single pull request.
@@ -210,4 +218,5 @@ following instructions:
 1. Make a copy of the assignment repository by following the invitation link.
 2. Complete the assignment and prepare the necessary documentation.
 3. Fill in the self-assessment table in the `ASSESSMENT.md` file.
-4. Commit and
+4. Commit and push your changes to the repository.
+5. Review the submission of the student you have been assigned to.

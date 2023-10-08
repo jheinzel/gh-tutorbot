@@ -1,12 +1,10 @@
 ﻿using System.CommandLine;
 using Microsoft.Extensions.Logging;
-using Octokit;
-using TutorBot.Infrastructure;
-using TutorBot.Infrastructure.OctokitExtensions;
 using TutorBot.Domain;
 using TutorBot.Domain.Exceptions;
+using TutorBot.Infrastructure;
+using TutorBot.Infrastructure.OctokitExtensions;
 using TutorBot.Utility;
-using System.Linq;
 
 namespace TutorBot.Commands;
 
@@ -30,12 +28,14 @@ internal class ListReviewStatisticsCommand : Command
       var studentList = await StudentList.FromRoster(Constants.ROSTER_FILE_PATH);
       var classroom = await client.Classroom.GetByName(classroomName);
 
-      var progress = new ProgressBar();
+      var progress = new ProgressBar("Loading submissions");
       var parameters = new AssigmentParameters(classroom.Id, assignmentName);
       var assignment = await Assignment.FromGitHub(client, studentList, parameters, progress);
       progress.Dispose();
 
-      var reviewStats = await assignment.GetReviewStatistics(studentList);
+      var progressStatistics = new ProgressBar("Loading statistics ");
+      var reviewStats = await assignment.GetReviewStatistics(studentList, progressStatistics);
+      progressStatistics.Dispose();
 
       var orderedReviewStats =
         order switch
@@ -64,7 +64,7 @@ internal class ListReviewStatisticsCommand : Command
         {
           var lastReviewDate = stats.LastReviewDate?.ToString("yyyy-MM-dd HH:mm") ?? "-";
           printer.AddRow(reviewer.FullName,
-                         reviewer.GroupNr.ToString().PadLeft(2),
+                         reviewer.GroupNr.ToString(),
                          owner.FullName,
                          stats.NumReviews.ToString().PadLeft(8),
                          stats.NumComments.ToString().PadLeft(9),

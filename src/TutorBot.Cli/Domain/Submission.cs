@@ -1,10 +1,6 @@
-﻿using System.Globalization;
-using System.Text.RegularExpressions;
-using Octokit;
-using TutorBot.Domain;
-using TutorBot.Infrastructure.StringExtensions;
-using TutorBot.Domain.Exceptions;
+﻿using Octokit;
 using TutorBot.Infrastructure.OctokitExtensions;
+using TutorBot.Infrastructure.StringExtensions;
 
 namespace TutorBot.Domain;
 
@@ -25,12 +21,12 @@ public class Submission
 
   public Assessment Assessment { get; private set; } = new Assessment();
 
-  public Submission(IGitHubClassroomClient client, Repository repository, Student owner, IList<Reviewer> reviewers)
+  public Submission(IGitHubClassroomClient client, Repository repository, Student owner, IEnumerable<Reviewer> reviewers)
   {
     this.client = client;
     this.repository = repository;
     this.Owner = owner;
-    this.Reviewers = reviewers;
+    this.Reviewers = reviewers.ToList();
   }
 
   public async Task AddReviewStatistics(IStudentList students, ReviewStatistics reviewStats)

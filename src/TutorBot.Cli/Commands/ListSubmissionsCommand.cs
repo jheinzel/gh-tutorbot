@@ -1,7 +1,6 @@
 ﻿using System.CommandLine;
 using System.Globalization;
 using Microsoft.Extensions.Logging;
-using Octokit;
 using TutorBot.Domain;
 using TutorBot.Infrastructure;
 using TutorBot.Infrastructure.CollectionExtensions;
@@ -18,33 +17,46 @@ internal class ListSubmissionsCommand : Command
 
   private readonly Argument<string> assignmentArgument = new("assignment", "assignment name");
   private readonly Option<string> classroomOption = new("--classroom", "classroom name");
+  private readonly Option<int?> groupOption = new("--group", "filter group");
 
-  private async Task HandleAsync(string assignmentName, string classroomName)
+  private async Task HandleAsync(string assignmentName, string classroomName, int? group)
   {
     var printer = new TablePrinter();
-    printer.AddRow("STUDENT", "STUD.ID", "REVIEWER(S)", "EFFORT", "ASSESSMENT", "REPOSITORY URL");
+    printer.AddRow("STUDENT", "STUD.ID", "Gr.", "REVIEWER(S)", "EFFORT", "ASSESSMENT", "REPOSITORY URL");
 
     try
     {
       var studentList = await StudentList.FromRoster(Constants.ROSTER_FILE_PATH);
       var classroom = await client.Classroom.GetByName(classroomName);
 
-      var progress = new ProgressBar();
+      var progress = new ProgressBar("Loading submissions");
       var parameters = new AssigmentParameters(classroom.Id, assignmentName, LoadAssessments: true);
       var assignment = await Assignment.FromGitHub(client, studentList, parameters, progress);
       progress.Dispose();
-      
-      foreach (var submission in assignment.Submissions.OrderBy(s => s.Owner.FullName))
+
+      var filteredSubmissions = assignment.Submissions;
+      if (group is not null)
+      {
+        filteredSubmissions = filteredSubmissions.Where(s => s.Owner.GroupNr == group).ToList();
+      }
+
+      foreach (var submission in filteredSubmissions.OrderBy(s => s.Owner.FullName))
       {
         var reviewers = submission.Reviewers.Select(r => r.FullName).ToStringWithSeparator();
         var effortInfo = submission.Assessment.State == AssessmentState.Loaded ? FormattableString.Invariant($"{submission.Assessment.Effort,6:F1}") : $"{"   -",-6}";
         var assessmentInfo = submission.Assessment.State == AssessmentState.Loaded ? FormattableString.Invariant($"{submission.Assessment.Total,10:F1}") : $"{submission.Assessment.State,-10}";
-        printer.AddRow(submission.Owner.FullName, submission.Owner.MatNr, reviewers, effortInfo, assessmentInfo, submission.RepositoryUrl);
+        printer.AddRow(submission.Owner.FullName,
+                       submission.Owner.MatNr,
+                       submission.Owner.GroupNr.ToString(),
+                       reviewers,
+                       effortInfo,
+                       assessmentInfo,
+                       submission.RepositoryUrl);
       }
 
       printer.Print();
 
-      PrintStatistics(assignment);
+      PrintStatistics(filteredSubmissions);
       PrintUnlinked(assignment);
     }
     catch (Exception ex)
@@ -53,14 +65,14 @@ internal class ListSubmissionsCommand : Command
     }
   }
 
-  private static void PrintStatistics(Assignment assignment)
+  private static void PrintStatistics(IReadOnlyCollection<Submission> submissions)
   {
-    if (assignment.Submissions.Any())
+    if (submissions.Any())
     {
-      var validSubmissions = assignment.Submissions.Where(s => s.Assessment.IsValid());
-      
+      var validSubmissions = submissions.Where(s => s.Assessment.IsValid());
+
       Console.WriteLine();
-      Console.WriteLine($"#submissions:        {assignment.Submissions.Count}");
+      Console.WriteLine($"#submissions:        {submissions.Count}");
       Console.WriteLine($"#valid submissions:  {validSubmissions.Count()}");
       if (validSubmissions.Any())
       {
@@ -70,7 +82,7 @@ internal class ListSubmissionsCommand : Command
     }
     else
     {
-      Console.WriteLine($"No submission for this assignment.");
+      Console.WriteLine($"No submission for this assignment (in the specified group).");
     }
   }
 
@@ -96,9 +108,13 @@ internal class ListSubmissionsCommand : Command
     classroomOption.SetDefaultValue(configuration.DefaultClassroom);
     AddOption(classroomOption);
 
+    groupOption.AddAlias("-g");
+    groupOption.SetDefaultValue(null);
+    AddOption(groupOption);
+
     AddAlias("ls");
 
-    this.SetHandler(HandleAsync, assignmentArgument, classroomOption);
+    this.SetHandler(HandleAsync, assignmentArgument, classroomOption, groupOption);
   }
 }
 

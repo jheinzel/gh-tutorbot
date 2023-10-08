@@ -13,10 +13,12 @@ public class ProgressBar : IProgress
   private int max;
   private int progress;
   private int curserPosition;
+  private string title;
   private ConsoleColor color;
 
-  public ProgressBar(ConsoleColor color = ConsoleColor.Green, int max = 100)
+  public ProgressBar(string title = "", ConsoleColor color = ConsoleColor.Green, int max = 100)
   {
+    this.title = title;
     this.color = color;
     Init(max);
   }
@@ -34,11 +36,12 @@ public class ProgressBar : IProgress
 
     Console.CursorLeft = curserPosition;
     var progressPercent = (int)((double)progress / max * 100);
-    var progressString = new string('#', progress);
-    var remainingString = new string(' ', Math.Max(0, max - progress));
+    var progressBarLength = (int)((double)progress / max * Constants.MAX_PROGESSBAR_LENGTH);
+    var progressString = new string('█', progressBarLength);
+    var remainingString = new string(' ', Math.Max(0, Constants.MAX_PROGESSBAR_LENGTH - progressBarLength));
 
     Console.ForegroundColor = color;
-    Console.Write($"[{progressString}{remainingString}] {progressPercent,3}%");
+    Console.Write($"{title}{(title=="" ? "" : ": ")}[{progressString}{remainingString}] {progressPercent,3}%");
     Console.ResetColor();
   }
 

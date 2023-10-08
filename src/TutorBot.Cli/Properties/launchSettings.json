@@ -2,7 +2,7 @@
   "profiles": {
     "gh-tutorbot": {
       "commandName": "Project",
-      "commandLineArgs": "list-review-statistics --order-by comment-length-desc ue03",
+      "commandLineArgs": "assign-reviewers ue03",
       "workingDirectory": "C:\\Users\\p20058\\Documents\\FH\\Lehre\\Tools\\gh-tutorbot\\test\\swo3-test"
     }
   }

@@ -22,9 +22,16 @@ internal class RemoveReviewersCommand : Command
     var numValid = assignment.Submissions.Count(s => s.Assessment.IsValid());
     var numUnlinked = assignment.UnlinkedSubmissions.Count;
 
-    var prompt = $"Remove reviewers from {numWithAssignedReviewers} submissions? (y/N): ";
-
-    return UiHelper.GetUserInput(prompt, answerOptions: new[] { "y", "n" }, defaultAnswer: "n") == "y";
+    if (numWithAssignedReviewers > 0)
+    {
+      var prompt = $"Remove reviewers from {numWithAssignedReviewers} submissions in assignment \"{assignment.Name}\"? (y/N)? ";
+      return UiHelper.GetUserInput(prompt, answerOptions: new[] { "y", "n" }, defaultAnswer: "n") == "y";
+    }
+    else
+    {
+      Console.WriteLine($"No reviewers assigned to submissions in assignment \"{assignment.Name}\".");
+      return false;
+    }
   }
 
   private async Task HandleAsync(string assignmentName, string classroomName)
@@ -34,17 +41,16 @@ internal class RemoveReviewersCommand : Command
       var studentList = await StudentList.FromRoster(Constants.ROSTER_FILE_PATH);
       var classroom = await client.Classroom.GetByName(classroomName);
 
-      var progress = new ProgressBar();
+      var progressLoading = new ProgressBar("Loading submissions");
       var parameters = new AssigmentParameters(classroom.Id, assignmentName);
-      var assignment = await Assignment.FromGitHub(client, studentList, parameters, progress);
-      progress.Dispose();
+      var assignment = await Assignment.FromGitHub(client, studentList, parameters, progressLoading);
+      progressLoading.Dispose();
 
       if (UserAgreesToRemoveReviewers(assignment))
       {
-        await assignment.RemoveReviewers();
+        using var progressRemoving = new ProgressBar("Removing Reviewers");
+        await assignment.RemoveReviewers(progressRemoving);
       }
-
-      var assignments = await client.Classroom.Assignment.GetAll(classroom.Id);
     }
     catch (Exception ex)
     {

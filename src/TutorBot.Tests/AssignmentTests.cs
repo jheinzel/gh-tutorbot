@@ -26,7 +26,6 @@ public class AssignmentTests
     var repository1 = new Repository("", htmlUrl: "https://repo1", "", "", "", "", "", id: 100, "", owner: null, "repo1", "swo3/repo1", false, "", "", "", true, false, 0, 0, "", 0, DateTimeOffset.Now, DateTimeOffset.Now, DateTimeOffset.Now, permissions: null, null, null, null, false, false, false, false, 0, 0, false, false, false, false, 0, false, RepositoryVisibility.Private, Enumerable.Empty<string>(), null, null);
     client.Repository.Get(100).Returns(repository1);
 
-
     classroomsClient = Substitute.For<IClassroomsClient>();
     client.Classroom.Returns(classroomsClient);
 

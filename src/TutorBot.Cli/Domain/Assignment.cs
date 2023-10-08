@@ -22,7 +22,7 @@ public class Assignment
 
   public IReadOnlyList<UnlinkedSubmission> UnlinkedSubmissions { get; init; }
 
-  private Assignment(IGitHubClassroomClient client, string name, DateTimeOffset? deadline, IReadOnlyList<Submission> submissions, IReadOnlyList<UnlinkedSubmission> unlinkedSubmissions)
+  public Assignment(IGitHubClassroomClient client, string name, DateTimeOffset? deadline, IReadOnlyList<Submission> submissions, IReadOnlyList<UnlinkedSubmission> unlinkedSubmissions)
   {
     this.client = client ?? throw new ArgumentNullException(nameof(client));
     Name = name ?? throw new ArgumentNullException(nameof(name));
@@ -111,46 +111,40 @@ public class Assignment
   }
 
 
-  public async Task AssignReviewers(bool dryRun, Action<Student, Student> successAction)
+  public IReadOnlyList<(Submission, Student)> FindReviewers()
   {
-    if (!dryRun)
-    {
-      await RemoveReviewers();
-    }
-
-    // create a shallow copy of the submissions list
-    // only consider submissions with a valid assessment
-    // (i.e. assessment file exists, has the correct format
-    // and the total grading is greater than 0)
     var validSubmissions = Submissions.Where(s => s.Assessment.IsValid()).ToList();
-    if (validSubmissions.Count() <= 1)
-    {
-      return;
-    }
-
     validSubmissions.Shuffle();
 
+    var studentToSubmission = new Dictionary<Student, Submission>();
+    validSubmissions.ForEach(s => studentToSubmission.Add(s.Owner, s));
+
+    var existingAssignments = validSubmissions.Where(s => s.Reviewers.Count > 0).Select(s => (s, studentToSubmission[s.Reviewers[0]]));
+    
+    var mapping = new EntityMapper<Submission>(validSubmissions, existingAssignments);
+
+    return mapping.FindUniqueMapping()
+                  .Select(pair => (pair.Key, pair.Value.Owner))
+                  .ToList().AsReadOnly();
+  }
+
+  public async Task AssignReviewers(IEnumerable<(Submission, Student)> reviewers, IProgress? progress = null)
+  {
+    progress?.Init(reviewers.Count());
     var readRequest = new CollaboratorRequest(Constants.GITHUB_READ_ROLE);
 
-    for (int i = 0; i < validSubmissions.Count; i++)
+    foreach (var (submission, reviewer) in reviewers)
     {
-      int j = (i + 1) % validSubmissions.Count;
-      var owner = validSubmissions[i].Owner;
-      var reviewer = validSubmissions[j].Owner;
-
-      RepositoryInvitation? invitation = null;
-      if (!dryRun)
-      {
-        invitation = await client.Repository.Collaborator.Add(validSubmissions[i].RepositoryId, reviewer.GitHubUsername, readRequest);
-      }
-      validSubmissions[i].Reviewers.Add(new Reviewer(reviewer, invitation?.Id));
-
-      successAction(owner, reviewer);
+      RepositoryInvitation? invitation = await client.Repository.Collaborator.Add(submission.RepositoryId, reviewer.GitHubUsername, readRequest);
+      submission.Reviewers.Add(new Reviewer(reviewer, invitation?.Id));
+      progress?.Increment();
     }
   }
 
-  public async Task RemoveReviewers()
+  public async Task RemoveReviewers(IProgress? progress = null)
   {
+    progress?.Init(Submissions.Count );
+
     foreach (var submission in Submissions)
     {
       foreach (var reviewer in submission.Reviewers)
@@ -163,13 +157,15 @@ public class Assignment
         {
           await client.Repository.Collaborator.Delete(submission.RepositoryId, reviewer.GitHubUsername);
         }
+
+        progress?.Increment();
       }
 
       submission.Reviewers.Clear();
     }
   }
 
-  public async Task<ReviewStatistics> GetReviewStatistics(IStudentList students)
+  public async Task<ReviewStatistics> GetReviewStatistics(IStudentList students, IProgress? progress = null)
   {
     var reviewStats = new Dictionary<(string Owner, string Reviewer), Domain.ReviewStatisticsItem>();
     foreach (var submission in Submissions)
@@ -180,9 +176,12 @@ public class Assignment
       }
     }
 
+    progress?.Init(Submissions.Count);
+
     foreach (var submission in Submissions)
     {
       await submission.AddReviewStatistics(students, reviewStats);
+      progress?.Increment();
     }
 
     return reviewStats;

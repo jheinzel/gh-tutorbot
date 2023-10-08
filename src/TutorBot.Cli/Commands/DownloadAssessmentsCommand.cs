@@ -1,7 +1,6 @@
 ﻿using System.CommandLine;
 using System.Globalization;
 using Microsoft.Extensions.Logging;
-using Octokit;
 using TutorBot.Domain;
 using TutorBot.Domain.Exceptions;
 using TutorBot.Infrastructure;
@@ -40,7 +39,7 @@ internal class DownloadAssessmentsCommand : Command
       var studentList = await StudentList.FromRoster(Constants.ROSTER_FILE_PATH);
       var classroom = await client.Classroom.GetByName(classroomName);
 
-      var progress = new ProgressBar();
+      var progress = new ProgressBar("Loading submissions");
       var parameters = new AssigmentParameters(classroom.Id, assignmentName, LoadAssessments: true);
       var assignment = await Assignment.FromGitHub(client, studentList, parameters, progress);
       progress.Dispose();
@@ -61,7 +60,7 @@ internal class DownloadAssessmentsCommand : Command
             WriteHeader(assessmentsFile, assessment.Lines.Select(line => line.Exercise));
           }
 
-          assessmentsFile.Write($"\"{submission.Owner.FullName}\",{submission.Owner.MatNr},{assessment.Effort.ToString(CultureInfo.InvariantCulture)}.");
+          assessmentsFile.Write($"\"{submission.Owner.FullName}\",{submission.Owner.MatNr},{assessment.Effort.ToString(CultureInfo.InvariantCulture)}");
           foreach (var line in assessment.Lines)
           {
             assessmentsFile.Write($",{line.Gradings[0]},{line.Gradings[1]},{line.Gradings[2]}");
