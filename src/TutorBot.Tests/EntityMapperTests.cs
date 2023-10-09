@@ -3,6 +3,20 @@ using TutorBot.Domain;
 
 namespace TutorBot.Tests;
 
+public static class CollectionExtensions
+{
+  public static void DeterministicShuffle<T>(this IList<T> list, int seed)
+  {
+    var random = new Random(seed);
+
+    for (int i = list.Count - 1; i > 0; i--)
+    {
+      int k = random.Next(i);
+      (list[k], list[i]) = (list[i], list[k]);
+    }
+  }
+}
+
 public class EntityMapperTests
 {
   private Func<string, string, bool> suffixEqual = (s, t) => !s[1..].Equals(t[1..]);
@@ -11,7 +25,7 @@ public class EntityMapperTests
   {
     for (int i = 0; i < num; i++)
     {
-      yield return $"S{prefix}{i}";
+      yield return $"{prefix}{i}";
     }
   }
 
@@ -63,8 +77,8 @@ public class EntityMapperTests
     var mapping = mapper.FindUniqueMapping();
 
     mapping.Should().HaveCount(2);
-    mapping["E1"].Should().Be("E2");
-    mapping["E2"].Should().Be("E1");
+    mapping["E1"].Should().BeEquivalentTo("E2");
+    mapping["E2"].Should().BeEquivalentTo("E1");
   }
 
   [Fact]
@@ -77,8 +91,8 @@ public class EntityMapperTests
     var mapping = mapper.FindUniqueMapping();
 
     mapping.Should().HaveCount(2);
-    mapping["E1"].Should().Be("E2");
-    mapping["E2"].Should().Be("E1");
+    mapping["E1"].Should().BeEquivalentTo("E2");
+    mapping["E2"].Should().BeEquivalentTo("E1");
   }
 
 
@@ -134,6 +148,35 @@ public class EntityMapperTests
     foreach (var (s, t) in newMapping) resultingMapping.Add(s, t);
 
     MappingShouldBeCorrect(entities.ToList(), resultingMapping);
+  }
+
+  [Fact]
+  public void Mapping_StressTest()
+  {
+    for (int nEntities = 5; nEntities <= 8; nEntities++)
+    {
+      for (var i = 0; i < 10; i++)
+      {
+        var entities = CreateStrings("E", nEntities).ToList();
+        var givenMapping = new List<(string, string)>
+        {
+          ("E1", "E0"),
+          ("E0", "E2"),
+          ("E3", "E4")
+        };
+        entities.DeterministicShuffle(i * 10);
+
+        var mapper = new EntityMapper<string>(entities, givenMapping);
+
+        var newMapping = mapper.FindUniqueMapping();
+
+        var resultingMapping = new Dictionary<string, string>();
+        foreach (var (s, t) in givenMapping) resultingMapping.Add(s, t);
+        foreach (var (s, t) in newMapping) resultingMapping.Add(s, t);
+
+        MappingShouldBeCorrect(entities.ToList(), resultingMapping);
+      }
+    }
   }
 
   [Fact]
@@ -194,6 +237,28 @@ public class EntityMapperTests
     MappingShouldBeCorrect(entities.ToList(), resultingMapping);
   }
 
+  [Fact]
+  public void Mapping_WithGivenMappingAndTwoHoles_ShouldBeCorrect()
+  {
+    var entities = CreateStrings("E", 8);
+    var givenMapping = new List<(string, string)>
+    {
+      ("E1", "E2"),
+      ("E2", "E3"),
+      ("E7", "E6"),
+      ("E6", "E5"),
+    };
+
+    var mapper = new EntityMapper<string>(entities, givenMapping);
+
+    var newMapping = mapper.FindUniqueMapping();
+
+    var resultingMapping = new Dictionary<string, string>();
+    foreach (var (s, t) in givenMapping) resultingMapping.Add(s, t);
+    foreach (var (s, t) in newMapping) resultingMapping.Add(s, t);
+
+    MappingShouldBeCorrect(entities.ToList(), resultingMapping);
+  }
 
   [Theory]
   [InlineData(3)]
