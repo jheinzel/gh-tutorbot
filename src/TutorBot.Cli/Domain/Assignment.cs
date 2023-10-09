@@ -113,19 +113,26 @@ public class Assignment
 
   public IReadOnlyList<(Submission, Student)> FindReviewers()
   {
-    var validSubmissions = Submissions.Where(s => s.Assessment.IsValid()).ToList();
-    validSubmissions.Shuffle();
+    try
+    {
+      var validSubmissions = Submissions.Where(s => s.Assessment.IsValid()).ToList();
+      validSubmissions.Shuffle();
 
-    var studentToSubmission = new Dictionary<Student, Submission>();
-    validSubmissions.ForEach(s => studentToSubmission.Add(s.Owner, s));
+      var studentToSubmission = new Dictionary<Student, Submission>();
+      validSubmissions.ForEach(s => studentToSubmission.Add(s.Owner, s));
 
-    var existingAssignments = validSubmissions.Where(s => s.Reviewers.Count > 0).Select(s => (s, studentToSubmission[s.Reviewers[0]]));
-    
-    var mapping = new EntityMapper<Submission>(validSubmissions, existingAssignments);
+      var existingAssignments = validSubmissions.Where(s => s.Reviewers.Count > 0).Select(s => (s, studentToSubmission[s.Reviewers[0]]));
 
-    return mapping.FindUniqueMapping()
-                  .Select(pair => (pair.Key, pair.Value.Owner))
-                  .ToList().AsReadOnly();
+      var mapping = new EntityMapper<Submission>(validSubmissions, existingAssignments);
+
+      return mapping.FindUniqueMapping()
+                    .Select(pair => (pair.Key, pair.Value.Owner))
+                    .ToList().AsReadOnly();
+    } 
+    catch (NonUniqueValuesException<Submission> ex)
+    {
+      throw new ReviewerAssignmentException($"Reviewers are assigned to multiple submissions: {ex.NonUniqueValues.ToStringWithSeparator()}");
+    }
   }
 
   public async Task AssignReviewers(IEnumerable<(Submission, Student)> reviewers, IProgress? progress = null)

@@ -137,7 +137,7 @@ public class AssignReviewersTests
 
     IList<(Submission Submission, Student Reviewer)> reviewers = assignment.FindReviewers().ToList();
     reviewers.Should().HaveCount(2);
-    reviewers[0].Submission.Owner.Should().Be(reviewers[1].Reviewer);
+    reviewers[0].Submission.Owner.Should().BeEquivalentTo(reviewers[1].Reviewer);
   }
 
   [Theory]
@@ -194,13 +194,13 @@ public class AssignReviewersTests
   [InlineData(5)]
   [InlineData(10)]
   [InlineData(30)]
-  public async Task ReviewerAssignment_WithPreAssignedReviewers_ShouldBeCorrect(int numSubmission)
+  public async Task ReviewerAssignment_WithPreAssignedReviewers_ShouldBeCorrect(int numSubmissions)
   {
-    var students = CreateStudentList(numSubmission);
+    var students = CreateStudentList(numSubmissions);
     var emptyReviewerList = new List<Reviewer>();
 
     var submissions = new List<Submission>();
-    for (int i = 0; i < numSubmission; i++)
+    for (int i = 0; i < numSubmissions; i++)
     {
       if (i % 2 == 0)
       {
