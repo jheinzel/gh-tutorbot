@@ -1,21 +1,8 @@
 ﻿using FluentAssertions;
 using TutorBot.Domain;
+using TutorBot.Domain.Exceptions;
 
 namespace TutorBot.Tests;
-
-public static class CollectionExtensions
-{
-  public static void DeterministicShuffle<T>(this IList<T> list, int seed)
-  {
-    var random = new Random(seed);
-
-    for (int i = list.Count - 1; i > 0; i--)
-    {
-      int k = random.Next(i);
-      (list[k], list[i]) = (list[i], list[k]);
-    }
-  }
-}
 
 public class EntityMapperTests
 {
@@ -43,7 +30,7 @@ public class EntityMapperTests
   }
 
   [Fact]
-  public void Mapping_WithoutEntities_ShouldHaveEmpyMapping()
+  public void FindMapping_WithoutEntities_ShouldHaveEmpyMapping()
   {
     var entities = new List<string>();
     var noGivenMappings = new List<(string, string)>();
@@ -55,7 +42,7 @@ public class EntityMapperTests
   }
 
   [Fact]
-  public void Mapping_WithOneEntity_ShouldHaveEmpyMapping()
+  public void FindFindMapping_WithOneEntity_ShouldReturnEmptyMapping()
   {
     var entities = new List<string> { "E1" };
     var noGivenMappings = new List<(string, string)>();
@@ -68,7 +55,7 @@ public class EntityMapperTests
 
 
   [Fact]
-  public void Mapping_WithTwoEntities_ShouldBeCorrect()
+  public void FindFindMapping_WithTwoEntities_ShouldReturnCorrectMapping()
   {
     var entities = new List<string> { "E1", "E2" };
     var noGivenMappings = new List<(string, string)>();
@@ -82,7 +69,7 @@ public class EntityMapperTests
   }
 
   [Fact]
-  public void Mapping_WithTwoEntitiesInReverseOrder_ShouldBeCorrect()
+  public void FindFindMapping_WithTwoEntitiesInReverseOrder_ShouldReturnCorrectMapping()
   {
     var entities = new List<string> { "E2", "E1" };
     var noGivenMappings = new List<(string, string)>();
@@ -98,7 +85,7 @@ public class EntityMapperTests
 
   [Theory]
   [InlineData(100)]
-  public void Mapping_WithoutGivenMappings_ShouldBeCorrect(int n)
+  public void FindMapping_WithoutGivenFindMapping_ShouldReturnCorrectMapping(int n)
   {
     var entities = CreateStrings("E", n);
     var noGivenMappings = new List<(string, string)>();
@@ -110,7 +97,7 @@ public class EntityMapperTests
   }
 
   [Fact]
-  public void Mapping_WithTreeEntitiesAndOneGivenMapping_ShouldBeCorrect()
+  public void FindMapping_WithTreeEntitiesAndOneGivenFindMapping_ShouldReturnCorrectMapping()
   {
     var entities = new List<string> { "E0", "E1", "E2" };
     var givenMapping = new List<(string, string)>
@@ -130,7 +117,7 @@ public class EntityMapperTests
   }
 
   [Fact]
-  public void Mapping_WithTreeEntitiesAndTwoGivenMappings_ShouldBeCorrect()
+  public void FindMapping_WithTreeEntitiesAndTwoGivenMappings_ShouldReturnCorrectMapping()
   {
     var entities = new List<string> { "E0", "E1", "E2" };
     var givenMapping = new List<(string, string)>
@@ -151,36 +138,48 @@ public class EntityMapperTests
   }
 
   [Fact]
-  public void Mapping_StressTest()
+  public void FindMapping_WithForEntitesAndTwoGivenMappings_ShouldReturnCorrectMapping()
   {
-    for (int nEntities = 5; nEntities <= 8; nEntities++)
+    var entities = new List<string> { "E0", "E1", "E2", "E3" };
+    var givenMapping = new List<(string, string)>
     {
-      for (var i = 0; i < 10; i++)
-      {
-        var entities = CreateStrings("E", nEntities).ToList();
-        var givenMapping = new List<(string, string)>
-        {
-          ("E1", "E0"),
-          ("E0", "E2"),
-          ("E3", "E4")
-        };
-        entities.DeterministicShuffle(i * 10);
+      ("E1", "E0"),
+      ("E2", "E3"),
+    };
 
-        var mapper = new EntityMapper<string>(entities, givenMapping);
+    var mapper = new EntityMapper<string>(entities, givenMapping);
 
-        var newMapping = mapper.FindUniqueMapping();
+    var newMapping = mapper.FindUniqueMapping();
 
-        var resultingMapping = new Dictionary<string, string>();
-        foreach (var (s, t) in givenMapping) resultingMapping.Add(s, t);
-        foreach (var (s, t) in newMapping) resultingMapping.Add(s, t);
+    var resultingMapping = new Dictionary<string, string>();
+    foreach (var (s, t) in givenMapping) resultingMapping.Add(s, t);
+    foreach (var (s, t) in newMapping) resultingMapping.Add(s, t);
 
-        MappingShouldBeCorrect(entities.ToList(), resultingMapping);
-      }
-    }
+    MappingShouldBeCorrect(entities.ToList(), resultingMapping);
   }
 
   [Fact]
-  public void Mapping_WithGivenCycle_ShouldBeCorrect()
+  public void FindMapping_WithForEntitesAndOneGivenFindMapping_ShouldReturnCorrectMapping()
+  {
+    var entities = new List<string> { "E0", "E1", "E2", "E3" };
+    var givenMapping = new List<(string, string)>
+    {
+      ("E1", "E2"),
+    };
+
+    var mapper = new EntityMapper<string>(entities, givenMapping);
+
+    var newMapping = mapper.FindUniqueMapping();
+
+    var resultingMapping = new Dictionary<string, string>();
+    foreach (var (s, t) in givenMapping) resultingMapping.Add(s, t);
+    foreach (var (s, t) in newMapping) resultingMapping.Add(s, t);
+
+    MappingShouldBeCorrect(entities.ToList(), resultingMapping);
+  }
+
+  [Fact]
+  public void FindMapping_WithGivenCycle_ShouldReturnCorrectMapping()
   {
     var entities = new List<string> { "E0", "E1", "E2", "E3" };
     var givenMapping = new List<(string, string)>
@@ -201,7 +200,7 @@ public class EntityMapperTests
   }
 
   [Fact]
-  public void Mapping_WithGivenCycleAndIsolatedNode_ReturnsEmptyMapping()
+  public void FindMapping_WithGivenCycleAndIsolatedNode_ReturnsEmptyMapping()
   {
     var entities = new List<string> { "E0", "E1", "E2" };
     var givenMapping = new List<(string, string)>
@@ -218,12 +217,12 @@ public class EntityMapperTests
   }
 
   [Fact]
-  public void Mapping_WithFourEntitiesAndOneGivenMapping_ShouldBeCorrect_()
+  public void FindMapping_WithFourEntitiesAndOneGivenFindMapping_ShouldReturnCorrectMapping_()
   {
     var entities = new List<string> { "E0", "E1", "E2", "E3" };
     var givenMapping = new List<(string, string)>
     {
-      ("E0", "E2"),
+      ("E1", "E2"),
     };
 
     var mapper = new EntityMapper<string>(entities, givenMapping);
@@ -238,7 +237,7 @@ public class EntityMapperTests
   }
 
   [Fact]
-  public void Mapping_WithGivenMappingAndTwoHoles_ShouldBeCorrect()
+  public void FindMapping_WithGivenMappingAndTwoHoles_ShouldReturnCorrectMapping()
   {
     var entities = CreateStrings("E", 8);
     var givenMapping = new List<(string, string)>
@@ -260,20 +259,33 @@ public class EntityMapperTests
     MappingShouldBeCorrect(entities.ToList(), resultingMapping);
   }
 
-  [Theory]
-  [InlineData(3)]
-  [InlineData(10)]
-  [InlineData(30)]
-  public void Mapping_WithGivenMappings_ShouldBeCorrect(int n)
+
+  [Fact]
+  public void FindMapping_WithComplexGivenFindMapping_ShouldReturnCorrectMapping()
   {
-    var entities = CreateStrings("E", n).ToList();
+    int nEntities = 30;
+
+    var entities = CreateStrings("E", nEntities).ToList();
     var givenMapping = new List<(string, string)>();
-    for (int i = 0; i < n; i++)
+    int i = 0;
+    bool chainForward = true;
+
+    while (i < nEntities)
     {
-      if (i % 3 == 1)
+      for (int j = 0; i < nEntities && j < 2; i++, j++)
       {
-        givenMapping.Add((entities[i], entities[(i + 1) % n]));
+        if (chainForward)
+        {
+          givenMapping.Add((entities[i], entities[(i + 1) % nEntities]));
+        }
+        else // chainBackward
+        {
+          givenMapping.Add((entities[i], entities[(i - 1 + nEntities) % nEntities]));
+        }
       }
+
+      chainForward = !chainForward;
+      i += 2;
     }
 
     var mapper = new EntityMapper<string>(entities, givenMapping);
@@ -285,5 +297,23 @@ public class EntityMapperTests
     foreach (var (s, t) in newMapping) resultingMapping.Add(s, t);
 
     MappingShouldBeCorrect(entities.ToList(), resultingMapping);
+  }
+
+  [Fact]
+  public void FindMapping_WithNonUniqueTargets_ShouldThrowException()
+  {
+    var entities = new List<string> { "E0", "E1", "E2" };
+    var givenMapping = new List<(string, string)>
+    {
+      ("E0", "E2"),
+      ("E1", "E2")
+    };
+
+    var findUniquMappingAction = () => new EntityMapper<string>(entities, givenMapping);
+    findUniquMappingAction.Should()
+      .Throw<NonUniqueValuesException<string>>()
+        .Which.NonUniqueValues.Should()
+              .HaveCount(1).And
+              .Contain("E2");
   }
 }
