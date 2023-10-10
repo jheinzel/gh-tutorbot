@@ -1,14 +1,12 @@
 ﻿using System.CommandLine;
 using System.ComponentModel;
 using Microsoft.Extensions.Logging;
-using Octokit;
+using TutorBot.Domain;
+using TutorBot.Domain.Exceptions;
 using TutorBot.Infrastructure;
 using TutorBot.Infrastructure.OctokitExtensions;
 using TutorBot.Infrastructure.StringExtensions;
-using TutorBot.Domain;
-using TutorBot.Domain.Exceptions;
 using TutorBot.Utility;
-using System.IO;
 
 namespace TutorBot.Commands;
 
@@ -46,7 +44,7 @@ internal class CloneAssignmentCommand : Command
       {
         try
         {
-          var localDirName = submission.Owner.FullName.Replace(" ", "_");
+          var localDirName = submission.Owner.FullName.Replace(" ", "_").Replace(".", "");
           var ownerName = submission.Owner.FullName;
           var repoFullName = submission.RepositoryFullName;
 

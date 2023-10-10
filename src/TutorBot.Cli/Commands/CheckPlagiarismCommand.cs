@@ -1,14 +1,14 @@
 ﻿using System.CommandLine;
 using System.IO.Compression;
 using Microsoft.Extensions.Logging;
-using Octokit;
+using TutorBot.Domain;
+using TutorBot.Domain.Exceptions;
 using TutorBot.Domain.JPlag;
 using TutorBot.Infrastructure;
 using TutorBot.Infrastructure.Exceptions;
-using TutorBot.Infrastructure.TextWriterExtensions;
-using TutorBot.Domain.Exceptions;
-using TutorBot.Utility;
 using TutorBot.Infrastructure.OctokitExtensions;
+using TutorBot.Infrastructure.TextWriterExtensions;
+using TutorBot.Utility;
 
 namespace TutorBot.Commands;
 
@@ -43,6 +43,7 @@ internal class CheckPlagiarismCommand : Command
       {
         resultFileExists = true;
         Console.WriteLine($"Info: JPlag results file \"{jplugResultFile}\" already exists. Skipping plagiarism check.");
+        Console.WriteLine();
       }
 
       if (resultFileExists)
@@ -75,16 +76,22 @@ internal class CheckPlagiarismCommand : Command
 
       var jplagArgs = string.Format(Constants.JPLAG_ARGS, language, reportFile, rootDirectory);
       var javaArgs = $"-jar \"{configuration.JplagJarPath}\" {jplagArgs}";
+
       var (result, errorResult, exitCode) = await ProcessHelper.RunProcessAsync(configuration.JavaPath, javaArgs);
 
       if (exitCode == 0)
       {
-        Console.WriteLine(result);
+        File.WriteAllText($"{rootDirectory}/jplag.log", result);
+        Console.WriteLine($"JPlag finished successfully. See \"{rootDirectory}/jplag.log\" for details.");
+        Console.WriteLine("Display the results with the report viewer at https://jplag.github.io/JPlag/");
+        Console.WriteLine();
       }
       else
       {
-        Console.WriteLine(result);
-        Console.Error.WriteRedLine($"{errorResult}");
+        File.WriteAllText($"{rootDirectory}/jplag.log", result);
+        File.WriteAllText($"{rootDirectory}/jplag.log", errorResult);
+        Console.WriteLine($"JPlag finished with errors. See \"{rootDirectory}/jplag.log\" and \"{rootDirectory}/jplag-errors.log\" for details.");
+        Console.WriteLine();
       }
 
       return exitCode == 0;
@@ -115,7 +122,7 @@ internal class CheckPlagiarismCommand : Command
           {
             printer.AddRow($"{comparision.FirstSubmission}",
                             $"{comparision.SecondSubmission}",
-                            FormattableString.Invariant($"{comparision.Similarity,9:F2}"));
+                            FormattableString.Invariant($"{comparision.Similarity*100,10:F1}"));
           }
 
           printer.Print();

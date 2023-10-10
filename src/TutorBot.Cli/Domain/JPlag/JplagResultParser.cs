@@ -49,6 +49,18 @@ public class JPlagMetric
   public string? Description { get; set; }
 }
 
+public class Cluster
+{
+  [JsonPropertyName("average_similarity")]
+  public double AverageSimilarity { get; set; }
+
+  [JsonPropertyName("strength")]
+  public double Strength { get; set; }
+
+  [JsonPropertyName("members")]
+  public List<string> Members { get; set; } = new();
+}
+
 public class JPlagOverviewDocument
 {
   public static async Task<JPlagOverviewDocument> FromJsonAsync(Stream jsonStream)
@@ -97,9 +109,8 @@ public class JPlagOverviewDocument
   public List<JPlagMetric> Metrics { get; set; } = new();
 
   [JsonPropertyName("clusters")]
-  public List<string> Clusters { get; set; } = new();
+  public List<Cluster> Clusters { get; set; } = new();
 
   [JsonPropertyName("total_comparisons")]
   public int TotalComparisons { get; set; }
 }
-
