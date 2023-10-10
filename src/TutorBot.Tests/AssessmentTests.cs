@@ -35,6 +35,22 @@ public class AssessmentTests
       | 2         | 60          | 0                 | 0                | 0            |
       """;
 
+  const string correct4 = """
+      # **SWO3-Übungen - WS2023/24 - Übungszettel x - Deckblatt**
+
+      Nachname und Vorname: Sorglos Susi
+
+      Aufwand [Stunden]: 10.0
+
+      ## **Erfüllungsgrad**
+
+      | Beispiel  | Gewichtung  | Lösungsidee (15%) | Implement. (70%) | Testen (15%)    |
+      | --------- | :---------: | :---------------: | :--------------: | :-------------: |
+      | 1         | 50          | 100               | 100              | 100             |
+      | 2         | 50          | 0                 | 0                | 0               |
+      """;
+
+
   const string wrong1 = """
       | Beispiel  | Gewichtung  | Lösungsidee (20%) | Implement. (70%) | Testen (10%) |
       | --------- | :---------: | :---------------: | :--------------: | :----------: |
@@ -103,6 +119,7 @@ public class AssessmentTests
   [InlineData(correct1, 10.5, 50.57)]
   [InlineData(correct2, 10.0, 100)]
   [InlineData(correct3, 0.0, 0.0)]
+  [InlineData(correct4, 10.0, 50.0)]
   public void Assessment_ShouldBe_Correct(string content, double effort, double totalGrading)
   {
     var assessment = new Assessment();
