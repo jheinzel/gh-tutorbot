@@ -2,8 +2,8 @@
   "profiles": {
     "gh-tutorbot": {
       "commandName": "Project",
-      "commandLineArgs": "check-plagiarism ue01",
-      "workingDirectory": "C:\\Users\\p20058\\Documents\\FH\\Lehre\\Tools\\gh-tutorbot\\test\\swo3-bb-2023ws"
+      "commandLineArgs": "download-assessments ue03",
+      "workingDirectory": "C:\\Users\\p20058\\Documents\\FH\\Lehre\\Tools\\gh-tutorbot\\test\\swo3-test"
     }
   }
 }

@@ -1,12 +1,15 @@
 ﻿using System.CommandLine;
 using System.Globalization;
 using Microsoft.Extensions.Logging;
+using ClosedXML.Excel;
 using TutorBot.Domain;
 using TutorBot.Domain.Exceptions;
 using TutorBot.Infrastructure;
 using TutorBot.Infrastructure.OctokitExtensions;
 using TutorBot.Infrastructure.TextWriterExtensions;
 using TutorBot.Utility;
+using DocumentFormat.OpenXml.Spreadsheet;
+using DocumentFormat.OpenXml.Wordprocessing;
 
 namespace TutorBot.Commands;
 
@@ -20,22 +23,41 @@ internal class DownloadAssessmentsCommand : Command
 
   private async Task HandleAsync(string assignmentName, string classroomName)
   {
-    void WriteHeader(StreamWriter writer, IEnumerable<string> exercises)
+    void WriteHeader(IXLWorksheet worksheet, int row, IEnumerable<string> exercises)
     {
-      writer.Write($"\"Name\",\"Mat.Nr.\",\"Aufwand\"");
+      int column = 1;
+      foreach (var colName in new[] { "Name", "Mat.Nr", "Aufwand" })
+      {
+        worksheet.Cell(row, column++).Value = colName;
+      }
+
       foreach (var exercise in exercises)
       {
         foreach (var gradingType in new[] { "L", "I", "T" })
         {
-          writer.Write($",\"{exercise} - {gradingType}\"");
+          worksheet.Cell(row, column++).Value = $"{exercise} - {gradingType}";
         }
       }
-      writer.WriteLine();
+    }
+
+    void WriteRow(IXLWorksheet worksheet, int row, string fullName, string matNr, double effort, IReadOnlyList<AssessmentLine> lines)
+    {
+      int column = 1;
+      worksheet.Cell(row, column++).Value = fullName;
+      worksheet.Cell(row, column++).Value = matNr;
+      worksheet.Cell(row, column++).Value = effort;
+
+      foreach (var line in lines)
+      {
+        foreach (var grading in line.Gradings)
+        {
+          worksheet.Cell(row, column++).Value = grading;
+        }
+      }
     }
 
     try
     {
-
       var studentList = await StudentList.FromRoster(Constants.ROSTER_FILE_PATH);
       var classroom = await client.Classroom.GetByName(classroomName);
 
@@ -44,8 +66,8 @@ internal class DownloadAssessmentsCommand : Command
       var assignment = await Assignment.FromGitHub(client, studentList, parameters, progress);
       progress.Dispose();
 
-      var assessmentsFileName = string.Format(Constants.ASSESSMENTS_DOWNLOAD_FILE_NAME, assignment.Name);
-      using var assessmentsFile = new StreamWriter(assessmentsFileName, append: false);
+      using var workbook = new XLWorkbook();
+      var worksheet = workbook.AddWorksheet(assignment.Name);
 
       int i = 0;
       foreach (var submission in assignment.Submissions.Where(s => s.Assessment.IsValid())
@@ -55,25 +77,28 @@ internal class DownloadAssessmentsCommand : Command
         {
           var assessment = submission.Assessment ?? throw new InvalidOperationException($"Inconsitent Assessment state in sumbission {submission.RepositoryName}.");
 
-          if (i == 0)
+          if (i == 0) // write header before first content row is written
           {
-            WriteHeader(assessmentsFile, assessment.Lines.Select(line => line.Exercise));
+            WriteHeader(worksheet, i+1, assessment.Lines.Select(line => line.Exercise));
           }
 
-          assessmentsFile.Write($"\"{submission.Owner.FullName}\",{submission.Owner.MatNr},{assessment.Effort.ToString(CultureInfo.InvariantCulture)}");
-          foreach (var line in assessment.Lines)
-          {
-            assessmentsFile.Write($",{line.Gradings[0]},{line.Gradings[1]},{line.Gradings[2]}");
-          }
-
-          assessmentsFile.WriteLine();
           i++;
+          WriteRow(worksheet, i+1, submission.Owner.FullName, submission.Owner.MatNr, assessment.Effort, assessment.Lines);
         }
         catch (AssessmentFileException ex)
         {
           Console.Error.WriteRedLine($"{ex.Message}");
         }
       }
+
+      worksheet.Columns(1,2).AdjustToContents();
+
+      var rangeWithData = worksheet.RangeUsed();
+      var excelTable = rangeWithData.CreateTable();
+      excelTable.Theme = XLTableTheme.TableStyleLight10;
+
+      var assessmentsFileName = string.Format(Constants.ASSESSMENTS_DOWNLOAD_FILE_NAME, assignment.Name);
+      workbook.SaveAs(assessmentsFileName);
 
       Console.WriteLine($"Downloaded {i} {(i==1 ? "assessment" : "assessments")} to \"{assessmentsFileName}\"");
     }
@@ -100,4 +125,3 @@ internal class DownloadAssessmentsCommand : Command
     this.SetHandler(HandleAsync, assignmentArgument, classroomOption);
   }
 }
-

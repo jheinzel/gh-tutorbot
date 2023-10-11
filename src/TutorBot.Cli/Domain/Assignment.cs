@@ -3,7 +3,6 @@ using TutorBot.Domain.Exceptions;
 using TutorBot.Infrastructure;
 using TutorBot.Infrastructure.CollectionExtensions;
 using TutorBot.Infrastructure.OctokitExtensions;
-using TutorBot.Infrastructure.StringExtensions;
 
 namespace TutorBot.Domain;
 
