@@ -1,9 +1,7 @@
-﻿using System.Runtime.CompilerServices;
-using System.Text;
+﻿using System.Text;
 using FluentAssertions;
 using Octokit;
 using TutorBot.Domain;
-using TutorBot.Domain.Exceptions;
 using TutorBot.Infrastructure.OctokitExtensions;
 
 namespace TutorBot.Tests;
@@ -34,6 +32,8 @@ public class AssignReviewersTests
     repositoriesClient = Substitute.For<IRepositoriesClient>();
     client.Repository.Returns(repositoriesClient);
 
+    repository = CreateRepository(100, "repo1");
+
     repoCollaboratorsClient = Substitute.For<IRepoCollaboratorsClient>();
     client.Repository.Collaborator.Returns(repoCollaboratorsClient);
     var readRequest = new CollaboratorRequest("read");
@@ -46,45 +46,6 @@ public class AssignReviewersTests
     var encodedContent = Convert.ToBase64String(Encoding.UTF8.GetBytes(assessmentString));
     RepositoryContent reopContent = new RepositoryContent("", "", "", 0, ContentType.File, "", "", "", "", "", encodedContent, "", "");
     repositoryContentsClient.GetAllContents(Arg.Any<long>(), Arg.Any<string>()).Returns(Task.FromResult<IReadOnlyList<RepositoryContent>>(new List<RepositoryContent> { reopContent }));
-
-    repository = CreateRepository(100, "repo1");
-  }
-
-  private Repository CreateRepository(int id, string repoName)
-  {
-    return new Repository("", htmlUrl: $"https://{repoName}", "", "", "", "", "", id, "", owner: null, repoName, $"swo3/{repoName}", false, "", "", "", true, false, 0, 0, "", 0, DateTimeOffset.Now, DateTimeOffset.Now, DateTimeOffset.Now, permissions: null, null, null, null, false, false, false, false, 0, 0, false, false, false, false, 0, false, RepositoryVisibility.Private, Enumerable.Empty<string>(), null, null);
-  }
-
-  private IList<Student> CreateStudentList(int n)
-  {
-    var students = new List<Student>();
-    for (int i = 1; i <= n; i++)
-    {
-      students.Add(new Student($"gh-student-{i}", $"first-{i}", $"student-{i}", $"S{i}", 1));
-    }
-
-    return students;
-  }
-
-  private static void ReviewerAssignmentShouldBeCorrect(IEnumerable<(Submission, Student)> reviewers, int expectedSize)
-  {
-    reviewers.Should().HaveCount(expectedSize);
-    foreach (var (submission, reviewer) in reviewers)
-    {
-      reviewer.Should().NotBeNull();
-      submission.Owner.Should().NotBe(reviewer);
-    }
-    reviewers.Select((s, r) => r).Should().OnlyHaveUniqueItems();
-  }
-
-  private static void ReviewerAssignmentShouldBeCorrect(Assignment assignment)
-  {
-    foreach (var submission in assignment.Submissions)
-    {
-      submission.Reviewers.Should().HaveCount(1);
-      submission.Owner.Should().NotBe(submission.Reviewers[0]);
-    }
-    assignment.Submissions.SelectMany(s => s.Reviewers).Should().OnlyHaveUniqueItems();
   }
 
   [Fact]
@@ -251,5 +212,42 @@ public class AssignReviewersTests
     await assignment.AssignReviewers(reviewers);
 
     ReviewerAssignmentShouldBeCorrect(assignment);
+  }
+
+  private Repository CreateRepository(int id, string repoName)
+  {
+    return new Repository("", htmlUrl: $"https://{repoName}", "", "", "", "", "", id, "", owner: null, repoName, $"swo3/{repoName}", false, "", "", "", true, false, 0, 0, "", 0, DateTimeOffset.Now, DateTimeOffset.Now, DateTimeOffset.Now, permissions: null, null, null, null, false, false, false, false, false, 0, 0, false, false, false, false, 0, false, RepositoryVisibility.Private, Enumerable.Empty<string>(), null, null, null);
+  }
+
+  private IList<Student> CreateStudentList(int n)
+  {
+    var students = new List<Student>();
+    for (int i = 1; i <= n; i++)
+    {
+      students.Add(new Student($"gh-student-{i}", $"first-{i}", $"student-{i}", $"S{i}", 1));
+    }
+
+    return students;
+  }
+
+  private static void ReviewerAssignmentShouldBeCorrect(IEnumerable<(Submission, Student)> reviewers, int expectedSize)
+  {
+    reviewers.Should().HaveCount(expectedSize);
+    foreach (var (submission, reviewer) in reviewers)
+    {
+      reviewer.Should().NotBeNull();
+      submission.Owner.Should().NotBe(reviewer);
+    }
+    reviewers.Select((s, r) => r).Should().OnlyHaveUniqueItems();
+  }
+
+  private static void ReviewerAssignmentShouldBeCorrect(Assignment assignment)
+  {
+    foreach (var submission in assignment.Submissions)
+    {
+      submission.Reviewers.Should().HaveCount(1);
+      submission.Owner.Should().NotBe(submission.Reviewers[0]);
+    }
+    assignment.Submissions.SelectMany(s => s.Reviewers).Should().OnlyHaveUniqueItems();
   }
 }

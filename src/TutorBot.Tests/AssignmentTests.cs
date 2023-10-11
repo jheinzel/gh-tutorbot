@@ -23,8 +23,7 @@ public class AssignmentTests
     repositoriesClient = Substitute.For<IRepositoriesClient>();
     client.Repository.Returns(repositoriesClient);
 
-    var repository1 = new Repository("", htmlUrl: "https://repo1", "", "", "", "", "", id: 100, "", owner: null, "repo1", "swo3/repo1", false, "", "", "", true, false, 0, 0, "", 0, DateTimeOffset.Now, DateTimeOffset.Now, DateTimeOffset.Now, permissions: null, null, null, null, false, false, false, false, 0, 0, false, false, false, false, 0, false, RepositoryVisibility.Private, Enumerable.Empty<string>(), null, null);
-    client.Repository.Get(100).Returns(repository1);
+    client.Repository.Get(100).Returns(CreateRepository(100, "repo1"));
 
     classroomsClient = Substitute.For<IClassroomsClient>();
     client.Classroom.Returns(classroomsClient);
@@ -115,5 +114,10 @@ public class AssignmentTests
     assignment.Submissions[0].Reviewers.Should().HaveCount(1);
     assignment.Submissions[0].Reviewers[0].LastName.Should().Be(expectedReviewer.LastName);
     assignment.Submissions[0].Reviewers[0].FirstName.Should().Be(expectedReviewer.FirstName);
+  }
+
+  private Repository CreateRepository(int id, string repoName)
+  {
+    return new Repository("", htmlUrl: $"https://{repoName}", "", "", "", "", "", id, "", owner: null, repoName, $"swo3/{repoName}", false, "", "", "", true, false, 0, 0, "", 0, DateTimeOffset.Now, DateTimeOffset.Now, DateTimeOffset.Now, permissions: null, null, null, null, false, false, false, false, false, 0, 0, false, false, false, false, 0, false, RepositoryVisibility.Private, Enumerable.Empty<string>(), null, null, null);
   }
 }
