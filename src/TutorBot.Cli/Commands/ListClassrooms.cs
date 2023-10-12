@@ -31,7 +31,7 @@ internal class ListClassroomsCommand : Command
     }
   }
 
-  public ListClassroomsCommand(IGitHubClassroomClient client, ILogger<ListSubmissionsCommand> logger) :
+  public ListClassroomsCommand(IGitHubClassroomClient client) :
   base("list-classrooms", "List all classrooms")
   {
     this.client = client;

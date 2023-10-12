@@ -1,15 +1,12 @@
 ﻿using System.CommandLine;
-using System.Globalization;
-using Microsoft.Extensions.Logging;
 using ClosedXML.Excel;
+using Microsoft.Extensions.Logging;
 using TutorBot.Domain;
 using TutorBot.Domain.Exceptions;
 using TutorBot.Infrastructure;
 using TutorBot.Infrastructure.OctokitExtensions;
 using TutorBot.Infrastructure.TextWriterExtensions;
 using TutorBot.Utility;
-using DocumentFormat.OpenXml.Spreadsheet;
-using DocumentFormat.OpenXml.Wordprocessing;
 
 namespace TutorBot.Commands;
 
@@ -108,7 +105,7 @@ internal class DownloadAssessmentsCommand : Command
     }
   }
 
-  public DownloadAssessmentsCommand(IGitHubClassroomClient client, ConfigurationHelper configuration, ILogger<ListSubmissionsCommand> logger) :
+  public DownloadAssessmentsCommand(IGitHubClassroomClient client, ConfigurationHelper configuration) :
     base("download-assessments", "Download assessments of all submissions")
   {
     this.client = client;

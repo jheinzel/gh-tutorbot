@@ -85,7 +85,7 @@ internal class AssignReviewersCommand : Command
     }
   }
 
-  public AssignReviewersCommand(IGitHubClassroomClient client, ConfigurationHelper configuration, ILogger<ListAssignmentsCommand> logger) :
+  public AssignReviewersCommand(IGitHubClassroomClient client, ConfigurationHelper configuration) :
     base("assign-reviewers", "Assign reviewers to assignments randomly")
   {
     this.client = client;

@@ -58,7 +58,7 @@ internal class RemoveReviewersCommand : Command
     }
   }
 
-  public RemoveReviewersCommand(IGitHubClassroomClient client, ConfigurationHelper configuration, ILogger<ListAssignmentsCommand> logger) : 
+  public RemoveReviewersCommand(IGitHubClassroomClient client, ConfigurationHelper configuration) : 
     base("remove-reviewers", "Remove reviewers from assignments")
   {
     this.client = client;

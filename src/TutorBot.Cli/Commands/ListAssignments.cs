@@ -38,7 +38,7 @@ internal class ListAssignmentsCommand : Command
     }
   }
 
-  public ListAssignmentsCommand(IGitHubClassroomClient client, ConfigurationHelper configuration, ILogger<ListAssignmentsCommand> logger) : 
+  public ListAssignmentsCommand(IGitHubClassroomClient client, ConfigurationHelper configuration) : 
     base("list-assignments", "List all assignments of a classroom")
   {
     this.client = client;

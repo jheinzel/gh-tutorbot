@@ -1,13 +1,11 @@
 ﻿using System.CommandLine;
 using System.IO.Compression;
 using Microsoft.Extensions.Logging;
-using TutorBot.Domain;
 using TutorBot.Domain.Exceptions;
 using TutorBot.Domain.JPlag;
 using TutorBot.Infrastructure;
 using TutorBot.Infrastructure.Exceptions;
 using TutorBot.Infrastructure.OctokitExtensions;
-using TutorBot.Infrastructure.TextWriterExtensions;
 using TutorBot.Utility;
 
 namespace TutorBot.Commands;
@@ -135,7 +133,7 @@ internal class CheckPlagiarismCommand : Command
     }
   }
 
-  public CheckPlagiarismCommand(IGitHubClassroomClient client, ConfigurationHelper configuration, ILogger<ListAssignmentsCommand> logger) :
+  public CheckPlagiarismCommand(IGitHubClassroomClient client, ConfigurationHelper configuration) :
     base("check-plagiarism", "Check for plagiarism")
   {
     this.client = client;

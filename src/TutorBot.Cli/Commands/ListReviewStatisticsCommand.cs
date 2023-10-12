@@ -64,7 +64,7 @@ internal class ListReviewStatisticsCommand : Command
         {
           var lastReviewDate = stats.LastReviewDate?.ToString("yyyy-MM-dd HH:mm") ?? "-";
           printer.AddRow(reviewer.FullName,
-                         reviewer.GroupNr.ToString(),
+                         reviewer.GroupNr.ToString().PadLeft(3),
                          owner.FullName,
                          stats.NumReviews.ToString().PadLeft(8),
                          stats.NumComments.ToString().PadLeft(9),
@@ -81,7 +81,7 @@ internal class ListReviewStatisticsCommand : Command
     }
   }
 
-  public ListReviewStatisticsCommand(IGitHubClassroomClient client, ConfigurationHelper configuration, ILogger<ListAssignmentsCommand> logger) : 
+  public ListReviewStatisticsCommand(IGitHubClassroomClient client, ConfigurationHelper configuration) : 
     base("list-review-statistics", "Display summary of reviewers' activity")
   {
     this.client = client;
@@ -95,7 +95,7 @@ internal class ListReviewStatisticsCommand : Command
 
     orderOption.AddAlias("-s");
     orderOption.FromAmong("reviewer", "comment-length", "comment-length-desc", "review-date", "review-date-desc")
-              .SetDefaultValue("reviewer");
+              .SetDefaultValue("review-date-desc");
     AddOption(orderOption);
 
     groupOption.AddAlias("-g");

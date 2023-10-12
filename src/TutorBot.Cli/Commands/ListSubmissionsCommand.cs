@@ -47,7 +47,7 @@ internal class ListSubmissionsCommand : Command
         var assessmentInfo = submission.Assessment.State == AssessmentState.Loaded ? FormattableString.Invariant($"{submission.Assessment.Total,10:F1}") : $"{submission.Assessment.State,-10}";
         printer.AddRow(submission.Owner.FullName,
                        submission.Owner.MatNr,
-                       submission.Owner.GroupNr.ToString(),
+                       submission.Owner.GroupNr.ToString().PadLeft(3),
                        reviewers,
                        effortInfo,
                        assessmentInfo,
@@ -96,7 +96,7 @@ internal class ListSubmissionsCommand : Command
     }
   }
 
-  public ListSubmissionsCommand(IGitHubClassroomClient client, ConfigurationHelper configuration, ILogger<ListSubmissionsCommand> logger) :
+  public ListSubmissionsCommand(IGitHubClassroomClient client, ConfigurationHelper configuration) :
     base("list-submissions", "List all submissions of an assignment")
   {
     this.client = client;

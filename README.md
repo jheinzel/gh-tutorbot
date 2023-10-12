@@ -76,7 +76,7 @@ TutorBot offers the following range of commands:
   the directory is not empty, the command will fail. This command delegates to
   `gh repo clone`. In case of problems check if this command works correctly. 
   ```shell
-  gh tutorbot clone-assignment <assignment> [--directory <directory>] [--classroom <classroom>]
+  gh tutorbot clone-submissions <assignment> [--directory <directory>] [--classroom <classroom>]
   ```
 
 * Download students' self-assessments: Collects self-assessment data from all
