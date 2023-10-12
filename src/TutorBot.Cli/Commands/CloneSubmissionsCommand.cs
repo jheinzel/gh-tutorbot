@@ -10,7 +10,7 @@ using TutorBot.Utility;
 
 namespace TutorBot.Commands;
 
-internal class CloneAssignmentCommand : Command
+internal class CloneSubmissionsCommand : Command
 {
   private readonly IGitHubClassroomClient client;
   private readonly ConfigurationHelper configuration;
@@ -72,8 +72,8 @@ internal class CloneAssignmentCommand : Command
     }
   }
 
-  public CloneAssignmentCommand(IGitHubClassroomClient client, ConfigurationHelper configuration, ILogger<ListAssignmentsCommand> logger) : 
-    base("clone-assignment", "Clone all repositories of an assignment")
+  public CloneSubmissionsCommand(IGitHubClassroomClient client, ConfigurationHelper configuration) : 
+    base("clone-submissions", "Clone all repositories of an assignment")
   {
     this.client = client;
     this.configuration = configuration;
@@ -88,7 +88,7 @@ internal class CloneAssignmentCommand : Command
     directoryOption.SetDefaultValue(null);
     AddOption(directoryOption);
 
-    AddAlias("ca");
+    AddAlias("cs");
 
     this.SetHandler(HandleAsync, assignmentArgument, classroomOption, directoryOption);
   }
