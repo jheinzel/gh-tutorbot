@@ -13,8 +13,6 @@ public class AssignReviewersTests
   private readonly IRepositoryContentsClient repositoryContentsClient;
   private readonly IRepoCollaboratorsClient repoCollaboratorsClient;
 
-  private Repository repository;
-
   const string assessmentString = """
       # Erfüllungsgrad
 
@@ -32,20 +30,25 @@ public class AssignReviewersTests
     repositoriesClient = Substitute.For<IRepositoriesClient>();
     client.Repository.Returns(repositoriesClient);
 
-    repository = CreateRepository(100, "repo1");
-
     repoCollaboratorsClient = Substitute.For<IRepoCollaboratorsClient>();
     client.Repository.Collaborator.Returns(repoCollaboratorsClient);
-    var readRequest = new CollaboratorRequest("read");
-    var invitation = new RepositoryInvitation(1, "", repository, null, null, InvitationPermissionType.Read, DateTimeOffset.Now, false, "", "");
-    repoCollaboratorsClient.Add(Arg.Any<long>(), Arg.Any<string>(), Arg.Is<CollaboratorRequest>(r => r.Permission == "read")).Returns(Task.FromResult(invitation));
 
     repositoryContentsClient = Substitute.For<IRepositoryContentsClient>();
     client.Repository.Content.Returns(repositoryContentsClient);
+  }
 
+  private void AddContent(IRepositoryContentsClient contentClient, string assessmentString)
+  {
     var encodedContent = Convert.ToBase64String(Encoding.UTF8.GetBytes(assessmentString));
     RepositoryContent reopContent = new RepositoryContent("", "", "", 0, ContentType.File, "", "", "", "", "", encodedContent, "", "");
-    repositoryContentsClient.GetAllContents(Arg.Any<long>(), Arg.Any<string>()).Returns(Task.FromResult<IReadOnlyList<RepositoryContent>>(new List<RepositoryContent> { reopContent }));
+    contentClient.GetAllContents(Arg.Any<long>(), Arg.Any<string>()).Returns(Task.FromResult<IReadOnlyList<RepositoryContent>>(new List<RepositoryContent> { reopContent }));
+  }
+
+  private void AddCollaborator(IRepoCollaboratorsClient collaboratorsClient, Repository repository, string permission)
+  {
+    var readRequest = new CollaboratorRequest(permission);
+    var invitation = new RepositoryInvitation(1, "", repository, null, null, InvitationPermissionType.Read, DateTimeOffset.Now, false, "", "");
+    collaboratorsClient.Add(Arg.Any<long>(), Arg.Any<string>(), Arg.Is<CollaboratorRequest>(r => r.Permission == permission)).Returns(Task.FromResult(invitation));
   }
 
   [Fact]
@@ -64,7 +67,11 @@ public class AssignReviewersTests
   {
     var students = CreateStudentList(1);
     var emptyReviewerList = new List<Reviewer>();
- 
+
+    var repository = CreateRepository(100, "repo1");
+
+    AddContent(repositoryContentsClient, assessmentString);
+
     var submissions = new List<Submission>
     {
       new Submission(client, repository, students[0], emptyReviewerList)
@@ -84,6 +91,10 @@ public class AssignReviewersTests
   {
     var students = CreateStudentList(2);
     var emptyReviewerList = new List<Reviewer>();
+
+    var repository = CreateRepository(100, "repo1");
+
+    AddContent(repositoryContentsClient, assessmentString);
 
     var submissions = new List<Submission>
     {
@@ -110,6 +121,10 @@ public class AssignReviewersTests
     var students = CreateStudentList(numSubmission);
     var emptyReviewerList = new List<Reviewer>();
 
+    var repository = CreateRepository(100, "repo1");
+
+    AddContent(repositoryContentsClient, assessmentString);
+
     var submissions = new List<Submission>();
     for (int i = 0; i < numSubmission; i++)
     {
@@ -130,6 +145,10 @@ public class AssignReviewersTests
   {
     var students = CreateStudentList(3);
     var emptyReviewerList = new List<Reviewer>();
+
+    var repository = CreateRepository(100, "repo1");
+
+    AddContent(repositoryContentsClient, assessmentString);
 
     var submissions = new List<Submission>
     {
@@ -159,6 +178,10 @@ public class AssignReviewersTests
   {
     var students = CreateStudentList(numSubmissions);
     var emptyReviewerList = new List<Reviewer>();
+
+    var repository = CreateRepository(100, "repo1");
+
+    AddContent(repositoryContentsClient, assessmentString);
 
     var submissions = new List<Submission>();
     for (int i = 0; i < numSubmissions; i++)
@@ -191,6 +214,10 @@ public class AssignReviewersTests
   {
     var students = CreateStudentList(3);
     var emptyReviewerList = new List<Reviewer>();
+
+    var repository = CreateRepository(100, "repo1");
+
+    AddContent(repositoryContentsClient, assessmentString);
 
     var submissions = new List<Submission>();
     for (int i = 0; i < 3; i++)

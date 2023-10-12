@@ -23,8 +23,6 @@ public class AssignmentTests
     repositoriesClient = Substitute.For<IRepositoriesClient>();
     client.Repository.Returns(repositoriesClient);
 
-    client.Repository.Get(100).Returns(CreateRepository(100, "repo1"));
-
     classroomsClient = Substitute.For<IClassroomsClient>();
     client.Classroom.Returns(classroomsClient);
 
@@ -62,9 +60,11 @@ public class AssignmentTests
   [Fact]
   public async Task SimpleAssignment_IsLoadedCorrectly()
   {
+    repositoriesClient.Get(100).Returns(CreateRepository(100, "repo1"));
+
     var assignmentName = "ue01";
     assignmentClient.GetByName(1, assignmentName).Returns(
-      Task.FromResult(new AssignmentDto { Id = 10, Title = "ue01", Accepted = 1, Deadline = DateTime.Now.AddDays(1) }));
+      Task.FromResult(new AssignmentDto { Id = 10, Title = assignmentName, Accepted = 1, Deadline = DateTime.Now.AddDays(1) }));
 
     var studentDto1 = new StudentDto { Id = 1, Login = "gh-mayr" };
     var submissionDto1 = new SubmissionDto { Id = 100, Students = new List<StudentDto> { studentDto1 }, Repository = new RepositoryDto { Id = 100 } };
@@ -89,9 +89,11 @@ public class AssignmentTests
   [Fact]
   public async Task SimpleAssignment_With_Reviewers_IsLoadedCorrectly()
   {
+    repositoriesClient.Get(100).Returns(CreateRepository(100, "repo1"));
+
     var assignmentName = "ue01";
     assignmentClient.GetByName(1, assignmentName).Returns(
-      Task.FromResult(new AssignmentDto { Id = 10, Title = "ue01", Accepted = 1, Deadline = DateTime.Now.AddDays(1) }));
+      Task.FromResult(new AssignmentDto { Id = 10, Title = assignmentName, Accepted = 1, Deadline = DateTime.Now.AddDays(1) }));
 
     var studentDto1 = new StudentDto { Id = 1, Login = "gh-mayr" };
     var submissionDto1 = new SubmissionDto { Id = 100, Students = new List<StudentDto> { studentDto1 }, Repository = new RepositoryDto { Id = 100 } };
