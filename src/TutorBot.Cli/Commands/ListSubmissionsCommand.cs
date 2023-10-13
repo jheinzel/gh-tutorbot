@@ -30,17 +30,11 @@ internal class ListSubmissionsCommand : Command
       var classroom = await client.Classroom.GetByName(classroomName);
 
       var progress = new ProgressBar("Loading submissions");
-      var parameters = new AssigmentParameters(classroom.Id, assignmentName, LoadAssessments: true);
+      var parameters = new AssigmentParameters(classroom.Id, assignmentName, group, LoadAssessments: true);
       var assignment = await Assignment.FromGitHub(client, studentList, parameters, progress);
       progress.Dispose();
 
-      var filteredSubmissions = assignment.Submissions;
-      if (group is not null)
-      {
-        filteredSubmissions = filteredSubmissions.Where(s => s.Owner.GroupNr == group).ToList();
-      }
-
-      foreach (var submission in filteredSubmissions.OrderBy(s => s.Owner.FullName))
+      foreach (var submission in assignment.Submissions.OrderBy(s => s.Owner.FullName))
       {
         var reviewers = submission.Reviewers.Select(r => r.FullName).ToStringWithSeparator();
         var effortInfo = submission.Assessment.State == AssessmentState.Loaded ? FormattableString.Invariant($"{submission.Assessment.Effort,6:F1}") : $"{"   -",-6}";
@@ -56,7 +50,7 @@ internal class ListSubmissionsCommand : Command
 
       printer.Print();
 
-      PrintStatistics(filteredSubmissions);
+      PrintStatistics(assignment.Submissions);
       PrintUnlinked(assignment);
     }
     catch (Exception ex)

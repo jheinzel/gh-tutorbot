@@ -8,7 +8,7 @@ namespace TutorBot.Domain;
 
 using ReviewStatistics = IDictionary<(string Owner, string Reviewer), ReviewStatisticsItem>;
 
-public record AssigmentParameters(long ClassroomId, string AssignmentName, bool LoadAssessments = false);
+public record AssigmentParameters(long ClassroomId, string AssignmentName, int? Group = null, bool LoadAssessments = false);
 
 public class Assignment
 {
@@ -46,69 +46,42 @@ public class Assignment
         throw new SubmissionException($"No repository assigned to submission with ID \"{submissionDto.Id}\".");
       }
 
-      var repository = await client.Repository.Get(submissionDto.Repository.Id);
-
       if (submissionDto.Students.Count == 0)
       {
         throw new SubmissionException($"No owner assigned assigned to repository \"{submissionDto.Id}\".");
       }
       if (submissionDto.Students.Count > 1)
       {
-        throw new SubmissionException($"More than one owner assigned to repository \"{repository.Name}\".");
+        throw new SubmissionException($"More than one owner assigned to repository \"{submissionDto?.Repository.FullName}\".");
       }
+
       if (!students.TryGetValue(submissionDto.Students[0].Login, out var owner))
       {
-        unlinkedSubmission.Add(new UnlinkedSubmission(repository));
+        var repo = await client.Repository.Get(submissionDto.Repository.Id);
+        unlinkedSubmission.Add(new UnlinkedSubmission(repo));
         progress?.Increment();
         continue;
       }
 
-      var reviewers = new List<Reviewer>();
-
-      var readOnlyCollaborators = (await client.Repository.Collaborator.GetAll(repository.Id))
-                                    .Where(c => c.Permissions.Maintain is not null &&
-                                                c.Permissions.Maintain == false &&
-                                                c.RoleName == Constants.GITHUB_READ_ROLE)
-                                    .ToList();
-
-      foreach (var collaborator in readOnlyCollaborators)
+      if (parameters.Group is null || owner.GroupNr == parameters.Group)
       {
-        if (students.TryGetValue(collaborator.Login, out var reviewer))
-        {
-          reviewers.Add(new Reviewer(reviewer));
-        }
-        else
-        {
-          throw new SubmissionException($"No student assigned to reviewer \"{collaborator.Login}\".");
-        }
-      }
+        var repository = await client.Repository.Get(submissionDto.Repository.Id);
 
-      var invitations = (await client.Repository.Invitation.GetAllForRepository(repository.Id)).ToList();
-      foreach (var invitation in invitations.Where(i => i.Permissions == Constants.GITHUB_READ_ROLE))
-      {
-        if (students.TryGetValue(invitation.Invitee.Login, out var reviewer))
-        {
-          reviewers.Add(new Reviewer(reviewer, invitation.Id));
-        }
-        else
-        {
-          throw new SubmissionException($"No student assigned to reviewer \"{invitation.Invitee.Login}\".");
-        }
-      }
+        List<Reviewer> reviewers = await LoadReviewers(client, students, repository);
 
-      var submission = new Submission(client, repository, owner, reviewers);
-      if (parameters.LoadAssessments)
-      {
-        await submission.Assessment.Load(client, repository.Id);
+        var submission = new Submission(client, repository, owner, reviewers);
+        if (parameters.LoadAssessments)
+        {
+          await submission.Assessment.Load(client, repository.Id);
+        }
+        submissions.Add(submission);
       }
-      submissions.Add(submission);
 
       progress?.Increment();
     }
 
     return new Assignment(client, assignmentDto.Title, assignmentDto.Deadline, submissions, unlinkedSubmission);
   }
-
 
   public IReadOnlyList<(Submission, Student)> FindReviewers()
   {
@@ -191,5 +164,43 @@ public class Assignment
     }
 
     return reviewStats;
+  }
+
+  private static async Task<List<Reviewer>> LoadReviewers(IGitHubClassroomClient client, IStudentList students, Repository repository)
+  {
+    var reviewers = new List<Reviewer>();
+
+    var readOnlyCollaborators = (await client.Repository.Collaborator.GetAll(repository.Id))
+                                  .Where(c => c.Permissions.Maintain is not null &&
+                                              c.Permissions.Maintain == false &&
+                                              c.RoleName == Constants.GITHUB_READ_ROLE)
+                                  .ToList();
+
+    foreach (var collaborator in readOnlyCollaborators)
+    {
+      if (students.TryGetValue(collaborator.Login, out var reviewer))
+      {
+        reviewers.Add(new Reviewer(reviewer));
+      }
+      else
+      {
+        throw new SubmissionException($"No student assigned to reviewer \"{collaborator.Login}\".");
+      }
+    }
+
+    var invitations = (await client.Repository.Invitation.GetAllForRepository(repository.Id)).ToList();
+    foreach (var invitation in invitations.Where(i => i.Permissions == Constants.GITHUB_READ_ROLE))
+    {
+      if (students.TryGetValue(invitation.Invitee.Login, out var reviewer))
+      {
+        reviewers.Add(new Reviewer(reviewer, invitation.Id));
+      }
+      else
+      {
+        throw new SubmissionException($"No student assigned to reviewer \"{invitation.Invitee.Login}\".");
+      }
+    }
+
+    return reviewers;
   }
 }
