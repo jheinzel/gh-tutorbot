@@ -159,7 +159,7 @@ public class Assignment
 
     foreach (var submission in Submissions)
     {
-      await submission.AddReviewStatistics(students, reviewStats);
+      await submission.AddReviewStatistics(reviewStats);
       progress?.Increment();
     }
 

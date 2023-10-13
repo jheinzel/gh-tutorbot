@@ -29,10 +29,10 @@ public class Submission
     this.Reviewers = reviewers.ToList();
   }
 
-  public async Task AddReviewStatistics(IStudentList students, ReviewStatistics reviewStats)
+  public async Task AddReviewStatistics(ReviewStatistics reviewStats)
   {
     var reviews = await client.Repository.PullRequest.Review.GetAll(RepositoryId, Constants.FEEDBACK_PULLREQUEST_ID);
-    foreach (var review in reviews.Where(r => students.Contains(r.User.Login)))
+    foreach (var review in reviews)
     {
       if (!reviewStats.TryGetValue((Owner.GitHubUsername, review.User.Login), out Domain.ReviewStatisticsItem? stats))
       {
@@ -51,7 +51,7 @@ public class Submission
     }
 
     var comments = await client.Repository.PullRequest.ReviewComment.GetAll(RepositoryId, Constants.FEEDBACK_PULLREQUEST_ID);
-    foreach (var comment in comments.Where(r => students.Contains(r.User.Login)))
+    foreach (var comment in comments)
     {
       if (!reviewStats.TryGetValue((Owner.GitHubUsername, comment.User.Login), out Domain.ReviewStatisticsItem? stats))
       {

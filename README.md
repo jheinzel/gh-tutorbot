@@ -93,6 +93,7 @@ TutorBot offers the following range of commands:
      [--classroom <classroom>] 
      [--order-by (reviewer|comment-length[-desc]|review-date[-desc])] 
      [--group <nr>]
+     [--all-reviewers]
   ```
   + `--order-by` specifies how the statistics data is ordered:
     + `reviewer`: Order by reviewer name.
@@ -101,7 +102,9 @@ TutorBot offers the following range of commands:
     + `review-date`: Order by last review date (ascending).
     + `review-date-desc`: Order by last review date (descending).
   + `--group`: Filter by group. The group number is specified as a positive
-    integer. If omitted, all groups are considered.
+    integer. If omitted, all groups are considered
+  + `--all-reviewers`: Show statistics from all reviewers: students, leturers, 
+    and tutors. If omitted, only students are considered.
 
 * Perform a plagiarism check: Uses JPlag to cross-verify all assignment
   submissions for plagiarism. Before using this command, download the JPlag JAR

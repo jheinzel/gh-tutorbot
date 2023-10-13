@@ -4,6 +4,7 @@ using TutorBot.Domain;
 using TutorBot.Domain.Exceptions;
 using TutorBot.Infrastructure;
 using TutorBot.Infrastructure.OctokitExtensions;
+using TutorBot.Infrastructure.TextWriterExtensions;
 using TutorBot.Utility;
 
 namespace TutorBot.Commands;
@@ -17,8 +18,9 @@ internal class ListReviewStatisticsCommand : Command
   private readonly Option<string> classroomOption = new("--classroom", "classroom name");
   private readonly Option<string> orderOption = new("--order-by", "order criteria");
   private readonly Option<int?> groupOption = new("--group", "filter group");
+  private readonly Option<bool> allReviewersOption = new("--all-reviewers", "include review statistics from non-students");
 
-  private async Task HandleAsync(string assignmentName, string classroomName, string order, int? group)
+  private async Task HandleAsync(string assignmentName, string classroomName, string order, int? group, bool showAllReviewers)
   {
     var printer = new TablePrinter();
     printer.AddRow("REVIEWER", "GR.", "OWNER", "#REVIEWS", "#COMMENTS", "#WORDS", "LASTREVIEWDATE");
@@ -50,21 +52,25 @@ internal class ListReviewStatisticsCommand : Command
 
       foreach (var ((ownerName, reviewerName), stats) in orderedReviewStats)
       {
-        if (! studentList.TryGetValue(ownerName, out var owner))
+        if (!studentList.TryGetValue(ownerName, out var owner))
         {
-          throw new DomainException($"Unknown student \"{ownerName}\".");
+          Console.Out.WriteRedLine($"Ignoring repository from unknown student \"{ownerName}\".");
+          continue;
         }
 
-        if (!studentList.TryGetValue(reviewerName, out var reviewer))
+        if (!studentList.TryGetValue(reviewerName, out var reviewer) && !showAllReviewers)
         {
-          throw new DomainException($"Unknown student \"{reviewerName}\".");
+           continue; // ignore reviews from non-students when --all-reviewers is not specified
         }
 
-        if (group is null || reviewer.GroupNr == group.Value)
+        if (reviewer is null || group is null || reviewer.GroupNr == group.Value)
         {
           var lastReviewDate = stats.LastReviewDate?.ToString("yyyy-MM-dd HH:mm") ?? "-";
-          printer.AddRow(reviewer.FullName,
-                         reviewer.GroupNr.ToString().PadLeft(3),
+          var reviewerDisplayName = reviewer is null ? reviewerName : reviewer.FullName;
+          var reviewerGroup = reviewer is null ? "-" : reviewer.GroupNr.ToString();
+
+          printer.AddRow(reviewerDisplayName,
+                         reviewerGroup.PadLeft(3),
                          owner.FullName,
                          stats.NumReviews.ToString().PadLeft(8),
                          stats.NumComments.ToString().PadLeft(9),
@@ -81,7 +87,7 @@ internal class ListReviewStatisticsCommand : Command
     }
   }
 
-  public ListReviewStatisticsCommand(IGitHubClassroomClient client, ConfigurationHelper configuration) : 
+  public ListReviewStatisticsCommand(IGitHubClassroomClient client, ConfigurationHelper configuration) :
     base("list-review-statistics", "Display summary of reviewers' activity")
   {
     this.client = client;
@@ -93,7 +99,7 @@ internal class ListReviewStatisticsCommand : Command
     classroomOption.SetDefaultValue(configuration.DefaultClassroom);
     AddOption(classroomOption);
 
-    orderOption.AddAlias("-s");
+    orderOption.AddAlias("-o");
     orderOption.FromAmong("reviewer", "comment-length", "comment-length-desc", "review-date", "review-date-desc")
               .SetDefaultValue("review-date-desc");
     AddOption(orderOption);
@@ -102,9 +108,13 @@ internal class ListReviewStatisticsCommand : Command
     groupOption.SetDefaultValue(null);
     AddOption(groupOption);
 
+    allReviewersOption.AddAlias("-a");
+    allReviewersOption.SetDefaultValue(false);
+    AddOption(allReviewersOption);
+
     AddAlias("lr");
 
-    this.SetHandler(HandleAsync, assignmentArgument, classroomOption, orderOption, groupOption);
+    this.SetHandler(HandleAsync, assignmentArgument, classroomOption, orderOption, groupOption, allReviewersOption);
   }
 }
 
