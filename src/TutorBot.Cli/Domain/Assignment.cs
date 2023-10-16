@@ -67,7 +67,8 @@ public class Assignment
       {
         var repository = await client.Repository.Get(submissionDto.Repository.Id);
 
-        List<Reviewer> reviewers = await LoadReviewers(client, students, repository);
+        
+        List<Reviewer> reviewers = await LoadReviewers(client, owner, students, repository);
 
         var submission = new Submission(client, repository, owner, reviewers);
         if (parameters.LoadAssessments)
@@ -166,7 +167,7 @@ public class Assignment
     return reviewStats;
   }
 
-  private static async Task<List<Reviewer>> LoadReviewers(IGitHubClassroomClient client, IStudentList students, Repository repository)
+  private static async Task<List<Reviewer>> LoadReviewers(IGitHubClassroomClient client, Student owner, IStudentList students, Repository repository)
   {
     var reviewers = new List<Reviewer>();
 
@@ -176,7 +177,7 @@ public class Assignment
                                               c.RoleName == Constants.GITHUB_READ_ROLE)
                                   .ToList();
 
-    foreach (var collaborator in readOnlyCollaborators)
+    foreach (var collaborator in readOnlyCollaborators.Where(c => c.Login != owner.GitHubUsername))
     {
       if (students.TryGetValue(collaborator.Login, out var reviewer))
       {
