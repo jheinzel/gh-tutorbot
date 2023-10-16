@@ -23,7 +23,7 @@ internal class ListReviewStatisticsCommand : Command
   private async Task HandleAsync(string assignmentName, string classroomName, string order, int? group, bool showAllReviewers)
   {
     var printer = new TablePrinter();
-    printer.AddRow("REVIEWER", "GR.", "OWNER", "#REVIEWS", "#COMMENTS", "#WORDS", "LASTREVIEWDATE");
+    printer.AddRow("REVIEWER", "GR.", "OWNER", "#REV.", "#COMM.", "#WORDS", "LASTREVIEWDATE", "REVIEW URL");
 
     try
     {
@@ -69,13 +69,19 @@ internal class ListReviewStatisticsCommand : Command
           var reviewerDisplayName = reviewer is null ? reviewerName : reviewer.FullName;
           var reviewerGroup = reviewer is null ? "-" : reviewer.GroupNr.ToString();
 
+          var submission = assignment.Submissions.FirstOrDefault(s => s.Owner == owner);
+          var pullRequestUrl = submission is not null ?
+                                $"{submission.RepositoryUrl}/pull/{Constants.FEEDBACK_PULLREQUEST_ID}" :
+                                "-";
+
           printer.AddRow(reviewerDisplayName,
                          reviewerGroup.PadLeft(3),
                          owner.FullName,
                          stats.NumReviews.ToString().PadLeft(8),
                          stats.NumComments.ToString().PadLeft(9),
                          stats.NumWords.ToString().PadLeft(6),
-                         lastReviewDate);
+                         lastReviewDate,
+                         pullRequestUrl);
         }
       }
 
