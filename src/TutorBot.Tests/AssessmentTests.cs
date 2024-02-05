@@ -50,40 +50,76 @@ public class AssessmentTests
       | 2         | 50          | 0                 | 0                | 0               |
       """;
 
+  // Has extra newlines at the end of the table
+	const string correct5 = """
+      # **SWO3-Übungen - WS2023/24 - Übungszettel 8 - Deckblatt**
 
-  const string wrong1 = """
+      Nachname und Vorname: Sorglos Susi
+
+      Aufwand [Stunden]:    10.0
+
+      ## **Erfüllungsgrad**
+
+      | Beispiel  | Gewichtung  | Lösungsidee (15%) | Implement. (70%) | Testen (15%)    |
+      | --------- | :---------: | :---------------: | :--------------: | :-------------: |
+      | 1         | 100         | 100               | 100              | 100             |
+
+
+
+      """;
+
+	const string wrong1 = """
+      # Erfüllungsgrad
+      
+      Aufwand [Stunden]: 10.0
+      
       | Beispiel  | Gewichtung  | Lösungsidee (20%) | Implement. (70%) | Testen (10%) |
       | --------- | :---------: | :---------------: | :--------------: | :----------: |
       | 1         | 40          | 0                 | 0                | 0            |
+      |
       """;
 
   const string wrong2 = """
-      Aufwand (in Stunden): 10.0
+      # Erfüllungsgrad
+      
+      Aufwand [Stunden]: 10.0
+      
       | Beispiel  | Gewichtung  | Lösungsidee (20%) | Implement. (70%) | 
       | --------- | :---------: | :---------------: | :--------------: | 
       | 1         | 40          | 0                 | 0                | 
       """;
 
   const string wrong3 = """
+      # Erfüllungsgrad
+      
+      Aufwand [Stunden]: 10.0
+      
       | Beispiel  | Gewichtung  | Lösungsidee (20%) | Implement. (xxx%) | Testen (10%) |
       | --------- | :---------: | :---------------: | :--------------: | :----------: |
       | 1         | 40          | 0                 | 0                | 0            |
       """;
 
   const string wrong4 = """
+      # Erfüllungsgrad
+      
+      Aufwand [Stunden]: 10.0
+      
       | Beispiel  | Gewichtung  | Lösungsidee (20%) | Implement. (70%) | Testen (10%) |
       | --------- | :---------: | :---------------: | :--------------: | :----------: |
       | 1         | 40          | 0                 | xxx                | 0          |
       """;
 
   const string wrong5 = """
+      # Erfüllungsgrad
+      
+      Aufwand (in Stunden): 10.0
+      
       | Beispiel  | Gewichtung  | Lösungsidee (20%) | Implement. (70%) | Testen (10%) |
       | --------- | :---------: | :---------------: | :--------------: | :----------: |
       | 1         | 4xxx0       | 0                 | xxx              | 0            |
       """;
 
-
-  [Fact]
+	[Fact]
   public void Test_Assessment_Extensively()
   {
     Assessment assessment = new Assessment();
@@ -119,8 +155,9 @@ public class AssessmentTests
   [InlineData(correct1, 10.5, 50.57)]
   [InlineData(correct2, 10.0, 100)]
   [InlineData(correct3, 0.0, 0.0)]
-  [InlineData(correct4, 10.0, 50.0)]
-  public void Assessment_ShouldBe_Correct(string content, double effort, double totalGrading)
+	[InlineData(correct4, 10.0, 50.0)]
+	[InlineData(correct5, 10.0, 100.0)]
+	public void Assessment_ShouldBe_Correct(string content, double effort, double totalGrading)
   {
     var assessment = new Assessment();
     assessment.LoadFromString(content);
@@ -138,6 +175,7 @@ public class AssessmentTests
   [InlineData(wrong3)]
   [InlineData(wrong4)]
   [InlineData(wrong5)]
+
   public void Assessment_ShouldBe_ThrowExcecption(string content)
   {
     var assessment = new Assessment();

@@ -109,6 +109,12 @@ public class Assessment
       return index + 1;
     }
 
+    bool HasMoreTableLines(string content, int from)
+    {
+			ReadLine(content, from, out string line);
+			return !string.IsNullOrWhiteSpace(line) && line.TrimStart()[0] == '|';
+    }
+
     int ReadTableLine(string content, int from, out string[] values)
     {
       int index = ReadLine(content, from, out string line);
@@ -211,7 +217,7 @@ public class Assessment
 
     var lines = new List<AssessmentLine>();
 
-    while (index < content.Length)
+    while (index < content.Length && HasMoreTableLines(content, index))
     {
       index = ReadTableLine(content, index, out string[] values);
       if (values.Length != 5)
