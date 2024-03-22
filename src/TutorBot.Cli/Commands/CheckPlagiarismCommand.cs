@@ -61,7 +61,7 @@ internal class CheckPlagiarismCommand : Command
     {
       string language = languageOption switch
       {
-        "cpp" => "cpp2",
+        "cpp" => "cpp",
         "java" => "java",
         _ => throw new DomainException($"Error: Unknown language \"{languageOption}\"")
       };
@@ -111,16 +111,22 @@ internal class CheckPlagiarismCommand : Command
       {
         using (var jsonStream = entry.Open())
         {
-          var overviewDocument = await JPlagOverviewDocument.FromJsonAsync(jsonStream);
+          var overviewDocument = await JplagOverviewDocument.FromJsonAsync(jsonStream);
 
           var printer = new TablePrinter();
-          printer.AddRow("STUDENT-1", "STUDENT-2", "SIMILARITY");
+          printer.AddRow("STUDENT-1", "STUDENT-2", "AVG-SIMILARITY", "MAX-SIMILARITY");
 
-          foreach (var comparision in overviewDocument.Metrics[0].TopComparisons)
+          foreach (var comparision in overviewDocument.TopComparisons)
           {
+            if (comparision.Similarities is null)
+            {
+							throw new DomainException($"Error: Unexpected structure of 'overview.json'. No 'similarity' property in 'top-comparisons' element.");
+						}
+
             printer.AddRow($"{comparision.FirstSubmission}",
-                            $"{comparision.SecondSubmission}",
-                            FormattableString.Invariant($"{comparision.Similarity*100,10:F1}"));
+                           $"{comparision.SecondSubmission}",
+                           FormattableString.Invariant($"{comparision.Similarities.Avg*100,10:F1}"),
+													 FormattableString.Invariant($"{comparision.Similarities.Max*100,10:F1}"));
           }
 
           printer.Print();
