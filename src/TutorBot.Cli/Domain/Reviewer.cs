@@ -1,13 +1,8 @@
 ﻿namespace TutorBot.Domain;
 
-public class Reviewer : Student
+public class Reviewer(Student student, long? invitationId = null) : Student(student.GitHubUsername, student.LastName, student.FirstName, student.MatNr, student.GroupNr)
 {
-  public int? InvitationId { get; init; }
-
-  public Reviewer(Student student, int? invitationId = null) : base(student.GitHubUsername, student.LastName, student.FirstName, student.MatNr, student.GroupNr)
-  {
-    InvitationId = invitationId;
-  }
+  public long? InvitationId { get; init; } = invitationId;
 
   public bool IsInvitationPending => InvitationId.HasValue;
 

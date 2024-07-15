@@ -35,11 +35,11 @@ public class AssignmentTests
     collaboratorClient = Substitute.For<IRepoCollaboratorsClient>();
     client.Repository.Collaborator.Returns(collaboratorClient);
 
-    students = new StudentList(new List<Student> 
-    {
+    students = new StudentList(
+    [
       new Student("gh-mayr", "Mayr", "Franz", "S2110307001", 1),
       new Student("gh-huber", "Huber", "Susi", "S2110307002", 1)
-    });
+    ]);
   }
 
   [Fact]
@@ -48,8 +48,8 @@ public class AssignmentTests
     assignmentClient.GetByName(1, "ue01").Returns(
       Task.FromResult(new AssignmentDto { Id = 10, Title = "ue01", Accepted = 1, Deadline = DateTime.Now.AddDays(1) }));
 
-    var submissionDto1 = new SubmissionDto { Id = 100, Students = new List<StudentDto> { new StudentDto { Id = 1, Login = "gh-mayr" } } };
-    submissionsClient.GetAll(10).Returns(Task.FromResult<IReadOnlyList<SubmissionDto>>(new List<SubmissionDto> { submissionDto1 }));
+    var submissionDto1 = new SubmissionDto { Id = 100, Students = [new() { Id = 1, Login = "gh-mayr" }] };
+    submissionsClient.GetAll(10).Returns(Task.FromResult<IReadOnlyList<SubmissionDto>>([submissionDto1]));
 
     var parameters = new AssigmentParameters(1, "ue01", LoadAssessments: false);
     var fromGitHubAction = async () => await Assignment.FromGitHub(client, students, parameters);
@@ -67,10 +67,10 @@ public class AssignmentTests
       Task.FromResult(new AssignmentDto { Id = 10, Title = assignmentName, Accepted = 1, Deadline = DateTime.Now.AddDays(1) }));
 
     var studentDto1 = new StudentDto { Id = 1, Login = "gh-mayr" };
-    var submissionDto1 = new SubmissionDto { Id = 100, Students = new List<StudentDto> { studentDto1 }, Repository = new RepositoryDto { Id = 100 } };
-    submissionsClient.GetAll(10).Returns(Task.FromResult<IReadOnlyList<SubmissionDto>>(new List<SubmissionDto> { submissionDto1 }));
+    var submissionDto1 = new SubmissionDto { Id = 100, Students = [studentDto1], Repository = new RepositoryDto { Id = 100 } };
+    submissionsClient.GetAll(10).Returns(Task.FromResult<IReadOnlyList<SubmissionDto>>([submissionDto1]));
 
-    collaboratorClient.GetAll(100).Returns(Task.FromResult<IReadOnlyList<Collaborator>>(new List<Collaborator> { }));
+    collaboratorClient.GetAll(100).Returns(Task.FromResult<IReadOnlyList<Collaborator>>([]));
 
     var parameters = new AssigmentParameters(1, "ue01", LoadAssessments: false);
     var assignment = await Assignment.FromGitHub(client, students, parameters);
@@ -96,13 +96,13 @@ public class AssignmentTests
       Task.FromResult(new AssignmentDto { Id = 10, Title = assignmentName, Accepted = 1, Deadline = DateTime.Now.AddDays(1) }));
 
     var studentDto1 = new StudentDto { Id = 1, Login = "gh-mayr" };
-    var submissionDto1 = new SubmissionDto { Id = 100, Students = new List<StudentDto> { studentDto1 }, Repository = new RepositoryDto { Id = 100 } };
-    submissionsClient.GetAll(10).Returns(Task.FromResult<IReadOnlyList<SubmissionDto>>(new List<SubmissionDto> { submissionDto1 }));
+    var submissionDto1 = new SubmissionDto { Id = 100, Students = [studentDto1], Repository = new RepositoryDto { Id = 100 } };
+    submissionsClient.GetAll(10).Returns(Task.FromResult<IReadOnlyList<SubmissionDto>>([submissionDto1]));
 
     var reviewerName = "gh-huber";
     var permissions1 = new CollaboratorPermissions(pull: false, triage: false, push: false, maintain: false, admin: false);
     var collaborator1 = new Collaborator("gh-huber", id: 2, "gh-huber@gmail.com", "Huber", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", false, permissions: permissions1, "read");
-    collaboratorClient.GetAll(100).Returns(Task.FromResult<IReadOnlyList<Collaborator>>(new List<Collaborator> { collaborator1 }));
+    collaboratorClient.GetAll(100).Returns(Task.FromResult<IReadOnlyList<Collaborator>>([collaborator1]));
 
     var parameters = new AssigmentParameters(1, "ue01", LoadAssessments: false);
     var assignment = await Assignment.FromGitHub(client, students, parameters);
@@ -118,8 +118,8 @@ public class AssignmentTests
     assignment.Submissions[0].Reviewers[0].FirstName.Should().Be(expectedReviewer.FirstName);
   }
 
-  private Repository CreateRepository(int id, string repoName)
+  private static Repository CreateRepository(int id, string repoName)
   {
-    return new Repository("", htmlUrl: $"https://{repoName}", "", "", "", "", "", "", id, "", owner: null, repoName, $"swo3/{repoName}", false, "", "", "", true, false, 0, 0, "", 0, DateTimeOffset.Now, DateTimeOffset.Now, DateTimeOffset.Now, permissions: null, null, null, null, false, false, false, false, false, 0, 0, false, false, false, false, 0, false, RepositoryVisibility.Private, Enumerable.Empty<string>(), null, null, null);
+    return new Repository("", htmlUrl: $"https://{repoName}", "", "", "", "", "", "", id, "", owner: null, repoName, $"swo3/{repoName}", false, "", "", "", true, false, 0, 0, "", 0, DateTimeOffset.Now, DateTimeOffset.Now, DateTimeOffset.Now, permissions: null, null, null, null, false, false, false, false, false, 0, 0, false, false, false, false, 0, false, RepositoryVisibility.Private, [], null, null, null, new());
   }
 }

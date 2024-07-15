@@ -6,28 +6,20 @@ namespace TutorBot.Domain;
 
 using ReviewStatistics = IDictionary<(string Owner, string Reviewer), ReviewStatisticsItem>;
 
-public class Submission
+public class Submission(IGitHubClassroomClient client, Repository repository, Student owner, IEnumerable<Reviewer> reviewers)
 {
-  private IGitHubClassroomClient client;
-  private Repository repository;
+  private readonly IGitHubClassroomClient client = client;
+  private readonly Repository repository = repository;
   
   public long RepositoryId => repository.Id;
   public string RepositoryName => repository.Name;
   public string RepositoryFullName => repository.FullName;
   public string RepositoryUrl => repository.HtmlUrl;
-  public Student Owner { get; init; }
+  public Student Owner { get; init; } = owner;
 
-  public IList<Reviewer> Reviewers { get; set; }
+  public IList<Reviewer> Reviewers { get; set; } = reviewers.ToList();
 
   public Assessment Assessment { get; private set; } = new Assessment();
-
-  public Submission(IGitHubClassroomClient client, Repository repository, Student owner, IEnumerable<Reviewer> reviewers)
-  {
-    this.client = client;
-    this.repository = repository;
-    this.Owner = owner;
-    this.Reviewers = reviewers.ToList();
-  }
 
   public async Task AddReviewStatistics(ReviewStatistics reviewStats)
   {
@@ -67,15 +59,11 @@ public class Submission
   }
 }
 
-public class UnlinkedSubmission
+public class UnlinkedSubmission(Repository repository)
 {
-  private Repository repository;
-
   public long RepositoryId => repository.Id;
   public string RepositoryName => repository.Name;
   public string RepositoryFullName => repository.FullName;
   public string RepositoryUrl => repository.HtmlUrl;
   public string  GitHubUsername => repository.Owner.Login;
-
-  public UnlinkedSubmission(Repository repository) => this.repository = repository;
 }

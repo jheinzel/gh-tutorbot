@@ -37,14 +37,14 @@ public class AssignReviewersTests
     client.Repository.Content.Returns(repositoryContentsClient);
   }
 
-  private void AddContent(IRepositoryContentsClient contentClient, string assessmentString)
+  private static void AddContent(IRepositoryContentsClient contentClient, string assessmentString)
   {
     var encodedContent = Convert.ToBase64String(Encoding.UTF8.GetBytes(assessmentString));
-    RepositoryContent reopContent = new RepositoryContent("", "", "", 0, ContentType.File, "", "", "", "", "", encodedContent, "", "");
-    contentClient.GetAllContents(Arg.Any<long>(), Arg.Any<string>()).Returns(Task.FromResult<IReadOnlyList<RepositoryContent>>(new List<RepositoryContent> { reopContent }));
+    RepositoryContent reopContent = new("", "", "", 0, ContentType.File, "", "", "", "", "", encodedContent, "", "");
+    contentClient.GetAllContents(Arg.Any<long>(), Arg.Any<string>()).Returns(Task.FromResult<IReadOnlyList<RepositoryContent>>([reopContent]));
   }
 
-  private void AddCollaborator(IRepoCollaboratorsClient collaboratorsClient, Repository repository, string permission)
+  private static void AddCollaborator(IRepoCollaboratorsClient collaboratorsClient, Repository repository, string permission)
   {
     var readRequest = new CollaboratorRequest(permission);
     var invitation = new RepositoryInvitation(1, "", repository, null, null, InvitationPermissionType.Read, DateTimeOffset.Now, false, "", "");
@@ -74,7 +74,7 @@ public class AssignReviewersTests
 
     var submissions = new List<Submission>
     {
-      new Submission(client, repository, students[0], emptyReviewerList)
+      new(client, repository, students[0], emptyReviewerList)
     };
     foreach (var s in submissions) await s.Assessment.Load(client, repository.Id);
 
@@ -98,8 +98,8 @@ public class AssignReviewersTests
 
     var submissions = new List<Submission>
     {
-      new Submission(client, repository, students[0], emptyReviewerList),
-      new Submission(client, repository, students[1], emptyReviewerList)
+      new(client, repository, students[0], emptyReviewerList),
+      new(client, repository, students[1], emptyReviewerList)
     };
     foreach (var s in submissions) await s.Assessment.Load(client, repository.Id);
 
@@ -152,9 +152,9 @@ public class AssignReviewersTests
 
     var submissions = new List<Submission>
     {
-      new Submission(client, repository, students[0], new List<Reviewer> { new Reviewer(students[1]) }),
-      new Submission(client, repository, students[1], emptyReviewerList),
-      new Submission(client, repository, students[2], emptyReviewerList)
+      new(client, repository, students[0], [new Reviewer(students[1])]),
+      new(client, repository, students[1], emptyReviewerList),
+      new(client, repository, students[2], emptyReviewerList)
     };
     foreach (var s in submissions) await s.Assessment.Load(client, repository.Id);
 
@@ -192,7 +192,7 @@ public class AssignReviewersTests
       }
       else
       {
-        submissions.Add(new Submission(client, repository, students[i], new List<Reviewer> { new Reviewer(students[i - 1]) }));
+        submissions.Add(new Submission(client, repository, students[i], [new(students[i - 1])]));
       } 
     }
     foreach (var s in submissions) await s.Assessment.Load(client, repository.Id);
@@ -241,12 +241,12 @@ public class AssignReviewersTests
     ReviewerAssignmentShouldBeCorrect(assignment);
   }
 
-  private Repository CreateRepository(int id, string repoName)
+  private static Repository CreateRepository(int id, string repoName)
   {
-    return new Repository("", htmlUrl: $"https://{repoName}", "", "", "", "", "", "", id, "", owner: null, repoName, $"swo3/{repoName}", false, "", "", "", true, false, 0, 0, "", 0, DateTimeOffset.Now, DateTimeOffset.Now, DateTimeOffset.Now, permissions: null, null, null, null, false, false, false, false, false, 0, 0, false, false, false, false, 0, false, RepositoryVisibility.Private, Enumerable.Empty<string>(), null, null, null);
+    return new Repository("", htmlUrl: $"https://{repoName}", "", "", "", "", "", "", id, "", owner: null, repoName, $"swo3/{repoName}", false, "", "", "", true, false, 0, 0, "", 0, DateTimeOffset.Now, DateTimeOffset.Now, DateTimeOffset.Now, permissions: null, null, null, null, false, false, false, false, false, 0, 0, false, false, false, false, 0, false, RepositoryVisibility.Private, [], null, null, null, new());
   }
 
-  private IList<Student> CreateStudentList(int n)
+  private static List<Student> CreateStudentList(int n)
   {
     var students = new List<Student>();
     for (int i = 1; i <= n; i++)

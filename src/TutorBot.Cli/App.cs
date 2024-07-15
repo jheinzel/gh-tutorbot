@@ -3,15 +3,9 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace TutorBot;
 
-public class App
+public class App(IServiceProvider serviceProvider)
 {
-  private readonly IServiceProvider serviceProvider;
-
-  public App(IServiceProvider serviceProvider)
-  {
-    this.serviceProvider = serviceProvider;
-  }
-
+  private readonly IServiceProvider serviceProvider = serviceProvider;
 
   public async Task RunAsync(string[] args)
   {

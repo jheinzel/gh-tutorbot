@@ -2,7 +2,7 @@
   "profiles": {
     "gh-tutorbot": {
       "commandName": "Project",
-      "commandLineArgs": "check-plagiarism ue01-debug --language cpp",
+      "commandLineArgs": "list-review-statistics ue07 --classroom swe4-vz-2024ss",
       "workingDirectory": "C:\\Users\\p20058\\Documents\\FH\\Lehre\\Tools\\gh-tutorbot\\test\\swe4-vz-2024ss"
     }
   }

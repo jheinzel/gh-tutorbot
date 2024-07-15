@@ -10,25 +10,16 @@ using ReviewStatistics = IDictionary<(string Owner, string Reviewer), ReviewStat
 
 public record AssigmentParameters(long ClassroomId, string AssignmentName, int? Group = null, bool LoadAssessments = false);
 
-public class Assignment
+public class Assignment(IGitHubClassroomClient client, string name, DateTimeOffset? deadline, IReadOnlyList<Submission> submissions, IReadOnlyList<UnlinkedSubmission> unlinkedSubmissions)
 {
-  private IGitHubClassroomClient client;
+  private readonly IGitHubClassroomClient client = client ?? throw new ArgumentNullException(nameof(client));
 
-  public string Name { get; init; }
-  public DateTimeOffset? Deadline { get; init; }
+  public string Name { get; init; } = name ?? throw new ArgumentNullException(nameof(name));
+  public DateTimeOffset? Deadline { get; init; } = deadline;
 
-  public IReadOnlyList<Submission> Submissions { get; init; }
+  public IReadOnlyList<Submission> Submissions { get; init; } = submissions ?? throw new ArgumentNullException(nameof(submissions));
 
-  public IReadOnlyList<UnlinkedSubmission> UnlinkedSubmissions { get; init; }
-
-  public Assignment(IGitHubClassroomClient client, string name, DateTimeOffset? deadline, IReadOnlyList<Submission> submissions, IReadOnlyList<UnlinkedSubmission> unlinkedSubmissions)
-  {
-    this.client = client ?? throw new ArgumentNullException(nameof(client));
-    Name = name ?? throw new ArgumentNullException(nameof(name));
-    Deadline = deadline;
-    Submissions = submissions ?? throw new ArgumentNullException(nameof(submissions));
-    UnlinkedSubmissions = unlinkedSubmissions ?? throw new ArgumentNullException(nameof(unlinkedSubmissions));
-  }
+  public IReadOnlyList<UnlinkedSubmission> UnlinkedSubmissions { get; init; } = unlinkedSubmissions ?? throw new ArgumentNullException(nameof(unlinkedSubmissions));
 
   public static async Task<Assignment> FromGitHub(IGitHubClassroomClient client, IStudentList students, AssigmentParameters parameters, IProgress? progress = null)
   {
@@ -145,7 +136,7 @@ public class Assignment
     }
   }
 
-  public async Task<ReviewStatistics> GetReviewStatistics(IStudentList students, IProgress? progress = null)
+  public async Task<ReviewStatistics> GetReviewStatistics(IProgress? progress = null)
   {
     var reviewStats = new Dictionary<(string Owner, string Reviewer), Domain.ReviewStatisticsItem>();
     foreach (var submission in Submissions)

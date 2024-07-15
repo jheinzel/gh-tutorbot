@@ -36,7 +36,7 @@ internal class ListReviewStatisticsCommand : Command
       progress.Dispose();
 
       var progressStatistics = new ProgressBar("Loading statistics ");
-      var reviewStats = await assignment.GetReviewStatistics(studentList, progressStatistics);
+      var reviewStats = await assignment.GetReviewStatistics(progressStatistics);
       progressStatistics.Dispose();
 
       var orderedReviewStats =
