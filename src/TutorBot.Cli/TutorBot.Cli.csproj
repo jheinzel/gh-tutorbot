@@ -7,7 +7,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AssemblyName>gh-tutorbot</AssemblyName>
-    <Version>0.7.9</Version>
+    <Version>0.8.0</Version>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion> 
   </PropertyGroup>
 
