@@ -2,8 +2,8 @@
   "profiles": {
     "gh-tutorbot": {
       "commandName": "Project",
-      "commandLineArgs": "list-submissions ue01 --classroom swo3-vz-2024ws",
-      "workingDirectory": "C:\\Users\\p20058\\Documents\\FH\\Lehre\\Tools\\gh-tutorbot\\test\\swo3-vz-2024ws"
+      "commandLineArgs": "check-plagiarism ue01 --language cpp",
+      "workingDirectory": "C:\\Users\\p20058\\Documents\\FH\\Lehre\\Tools\\gh-tutorbot\\test\\swe4-vz-2025ss"
     }
   }
 }
