@@ -23,7 +23,7 @@ internal static class Constants
   public const string EFFORT_PREFIX = "Aufwand"; // {0} = assignment name
   public const int FEEDBACK_PULLREQUEST_ID = 1;
 
-  public const string JPLAG_ARGS = "-l {0} -r \"{1}\" \"{2}\""; // {0} = language, {1} = report file, {2} = root directory
+  public const string JPLAG_ARGS = "--language={0} --result-file=\"{1}\" --mode=RUN \"{2}\""; // {0} = language, {1} = report file, {2} = root directory
   public const string DEFAULT_REPORT_FILE = "plagiarism-report";
 
   public const int MAX_PROGESSBAR_LENGTH = 50;
