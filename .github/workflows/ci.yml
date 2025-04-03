@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 env:
-  DOTNET_VERSION: "8.0.x"
+  DOTNET_VERSION: "9.0.x"
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -60,10 +60,11 @@ jobs:
           cp dist/linux-x64/gh-tutorbot ${{ runner.temp }}/staging/tutorbot-linux-amd64
 
       - name: publish artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: executables
           path: ${{ runner.temp }}/staging/*
+          compression-level: 0  # Optional, speeds up upload for large binaries
 
   publish:
     runs-on: ubuntu-latest
@@ -89,7 +90,7 @@ jobs:
             exit 1
           }
       - name: download artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: executables
           path: ${{ runner.temp }}/dist
