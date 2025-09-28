@@ -1,10 +1,8 @@
 ﻿using System.CommandLine;
-using Microsoft.Extensions.Logging;
-using Octokit;
-using TutorBot.Infrastructure.OctokitExtensions;
 using TutorBot.Domain;
-using TutorBot.Utility;
 using TutorBot.Infrastructure;
+using TutorBot.Infrastructure.OctokitExtensions;
+using TutorBot.Utility;
 
 namespace TutorBot.Commands;
 

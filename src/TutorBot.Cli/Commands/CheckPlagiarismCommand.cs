@@ -72,8 +72,8 @@ internal class CheckPlagiarismCommand : Command
 
       if (!File.Exists(configuration.JplagJarPath))
       {
-        throw new DomainException($"Error: JPlag jar file \"{rootDirectory}\" does not exist. Download JPlag from https://github.com/jplag/JPlag/releases.\n" +
-                                 $"       Ensure that the configuration parameter \"{ConfigurationHelper.KEY_JPLAG_JAR_PATH}\" is set appropriately.");
+        throw new DomainException($"Error: JPlag jar file \"{configuration.JplagJarPath}\" does not exist. Download JPlag from https://github.com/jplag/JPlag/releases.\n" +
+                                  $"       Ensure that the configuration parameter \"{ConfigurationHelper.KEY_JPLAG_JAR_PATH}\" is set appropriately.");
       }
 
       var jplagRunArgs = string.Format(Constants.JPLAG_RUN_ARGS, language, reportFile, rootDirectory);
@@ -85,7 +85,7 @@ internal class CheckPlagiarismCommand : Command
       {
         File.WriteAllText($"{rootDirectory}/jplag.log", result);
         Console.WriteLine($"JPlag finished successfully. See \"{rootDirectory}/jplag.log\" for details.");
-        Console.WriteLine("Display the results with the report viewer at https://jplag.github.io/JPlag/");
+        Console.WriteLine($"Report written to \"{reportFile}\"");
         Console.WriteLine();
       }
       else

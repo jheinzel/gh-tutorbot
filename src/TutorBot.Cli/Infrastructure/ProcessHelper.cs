@@ -5,9 +5,25 @@ using TutorBot.Infrastructure.Exceptions;
 
 namespace TutorBot.Infrastructure;
 
+public record ProcessResult(string? Result, string? ErrorResult, int ExitCode);
+public record ProcessHandle(Task<ProcessResult> Task, Process Process);
+
 public static class ProcessHelper
 {
-  public static Task<(string? Result, string? ErrorResult, int ExitCode)> RunProcessAsync(string programPath, string argString)
+  // Standard usage: no process handle returned
+  public static Task<ProcessResult> RunProcessAsync(string programPath, string argString)
+  {
+    return RunProcessInternalAsync(programPath, argString).Task;
+  }
+
+  // Advanced usage: process handle returned for termination
+  public static ProcessHandle RunProcessWithHandleAsync(string programPath, string argString)
+  {
+    return RunProcessInternalAsync(programPath, argString);
+  }
+
+  // Shared implementation
+  private static ProcessHandle RunProcessInternalAsync(string programPath, string argString)
   {
     void AppendLine(StringBuilder sb, string? line)
     {
@@ -20,7 +36,7 @@ public static class ProcessHelper
 
     try
     {
-      var tcs = new TaskCompletionSource<(string?, string?, int)>();
+      var tcs = new TaskCompletionSource<ProcessResult>();
 
       var process = new Process
       {
@@ -41,16 +57,15 @@ public static class ProcessHelper
 
       process.Exited += (sender, args) =>
       {
-        tcs.SetResult((output.ToString(), error.ToString(), process.ExitCode));
+        tcs.SetResult(new ProcessResult(output.ToString(), error.ToString(), process.ExitCode));
         process.Dispose();
       };
 
       process.Start();
+      process.BeginOutputReadLine();
+      process.BeginErrorReadLine();
 
-      process.BeginOutputReadLine(); // Start async read of stdout
-      process.BeginErrorReadLine(); // Start async read of stderr
-
-      return tcs.Task;
+      return new ProcessHandle(tcs.Task, process);
     }
     catch (Win32Exception)
     {

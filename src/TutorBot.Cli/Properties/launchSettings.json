@@ -2,8 +2,8 @@
   "profiles": {
     "gh-tutorbot": {
       "commandName": "Project",
-      "commandLineArgs": "check-plagiarism ue03 --language cpp",
-      "workingDirectory": "C:\\Users\\p20058\\Documents\\FH\\Lehre\\Tools\\gh-tutorbot\\test\\swe4-vz-2025ss"
+      "commandLineArgs": "view-plagiarism-report ue07",
+      "workingDirectory": "C:\\Users\\p20058\\Documents\\FH\\Lehre\\Tools\\gh-tutorbot\\data\\swe4-vz-2025ss"
     }
   }
 }

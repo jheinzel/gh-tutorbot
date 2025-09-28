@@ -103,7 +103,7 @@ TutorBot offers the following range of commands:
     + `review-date-desc`: Order by last review date (descending).
   + `--group`: Filter by group. The group number is specified as a positive
     integer. If omitted, all groups are considered
-  + `--all-reviewers`: Show statistics from all reviewers: students, leturers, 
+  + `--all-reviewers`: Show statistics from all reviewers: students, letchers, 
     and tutors. If omitted, only students are considered.
 
 * Perform a plagiarism check: Uses JPlag to cross-verify all assignment
@@ -113,10 +113,9 @@ TutorBot offers the following range of commands:
   adjust the configuration variable 'jplag-jar-path' as necessary. It is crucial
   to first clone the assignments using the `clone-assignment` command.
 
-  The plagiarism check generates a ZIP file located in the assignment's
-  directory. This ZIP file contains multiple JSON files that display the results
-  of the plagiarism check. These results can be analyzed using the report viewer
-  at [https://jplag.github.io/JPlag](https://jplag.github.io/JPlag). 
+  The plagiarism check generates a .jplag file (in ZIP format) located in the assignment's
+  directory. This file contains multiple JSON files that display the results
+  of the plagiarism check. These results can be analyzed using the `view-plagiarism-report` command. 
   ```shell
   gh tutorbot check-plagiarism <root-directory> [--language (cpp|java)] [--report-file <report-file>] [--refresh]
   ```
@@ -125,6 +124,17 @@ TutorBot offers the following range of commands:
   + `--report-file` specifies the base name of the report file.
   + `--refresh` forces a plagiarism check, even if the results file already
     exists.
+
+* View plagiarism report: Launches a local web server to display the results of
+  a plagiarism check in your browser. This command opens the JPlag report
+  viewer, providing an interactive interface to explore detected similarities
+  between submissions, review comparison details, and analyze matched code
+  segments.
+  ```shell
+  gh tutorbot view-plagiarism-report [--report-file <report-file>]
+  ```
+  + `--report-file` specifies the base name of the report file [Default:
+    `./plagiarism-report.jplag`].
 
 * To get help:
   ```shell

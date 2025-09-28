@@ -1,11 +1,9 @@
 ﻿using System.CommandLine;
 using System.Globalization;
-using Microsoft.Extensions.Logging;
 using TutorBot.Domain;
 using TutorBot.Infrastructure;
 using TutorBot.Infrastructure.CollectionExtensions;
 using TutorBot.Infrastructure.OctokitExtensions;
-using TutorBot.Infrastructure.StringExtensions;
 using TutorBot.Infrastructure.TextWriterExtensions;
 using TutorBot.Utility;
 
