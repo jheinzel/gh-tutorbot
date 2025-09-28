@@ -9,14 +9,14 @@ public class App(IServiceProvider serviceProvider)
 
   public async Task RunAsync(string[] args)
   {
-    var rootCommand = new RootCommand();
+    var rootCommand = new RootCommand("TutorBot CLI");
 
     foreach (var command in serviceProvider.GetServices<Command>())
     {
       rootCommand.Add(command);
     }
 
-    await rootCommand.InvokeAsync(args);
+    var parseResult = rootCommand.Parse(args);
+    await parseResult.InvokeAsync();
   }
 }
-

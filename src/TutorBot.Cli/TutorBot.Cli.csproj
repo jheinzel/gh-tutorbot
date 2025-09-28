@@ -12,12 +12,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="ClosedXML" Version="0.104.2" />
-    <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.3" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.0.3" />
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.3" />
+    <PackageReference Include="ClosedXML" Version="0.105.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.9" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.0.9" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.9" />
     <PackageReference Include="Octokit" Version="14.0.0" />
-    <PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
+    <PackageReference Include="System.CommandLine" Version="2.0.0-rc.1.25451.107" />
   </ItemGroup>
 
   <ItemGroup>

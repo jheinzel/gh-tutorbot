@@ -5,6 +5,7 @@ using TutorBot.Domain;
 using TutorBot.Infrastructure;
 using TutorBot.Infrastructure.CollectionExtensions;
 using TutorBot.Infrastructure.OctokitExtensions;
+using TutorBot.Infrastructure.StringExtensions;
 using TutorBot.Infrastructure.TextWriterExtensions;
 using TutorBot.Utility;
 
@@ -15,9 +16,9 @@ internal class ListSubmissionsCommand : Command
   private readonly IGitHubClassroomClient client;
   private readonly ConfigurationHelper configuration;
 
-  private readonly Argument<string> assignmentArgument = new("assignment", "assignment name");
-  private readonly Option<string> classroomOption = new("--classroom", "classroom name");
-  private readonly Option<int?> groupOption = new("--group", "filter group");
+  private readonly Argument<string> assignmentArgument = new("assignment") { Description = "assignment name" };
+  private readonly Option<string> classroomOption = new("--classroom") { Description = "classroom name", Aliases = { "-c" } };
+  private readonly Option<int?> groupOption = new("--group") { Description = "filter group", Aliases = { "-g" } };
 
   private async Task HandleAsync(string assignmentName, string classroomName, int? group)
   {
@@ -96,19 +97,23 @@ internal class ListSubmissionsCommand : Command
     this.client = client;
     this.configuration = configuration;
 
-    AddArgument(assignmentArgument);
+    Add(assignmentArgument);
 
-    classroomOption.AddAlias("-c");
-    classroomOption.SetDefaultValue(configuration.DefaultClassroom);
-    AddOption(classroomOption);
+    classroomOption.DefaultValueFactory = _ => configuration.DefaultClassroom;
+    Options.Add(classroomOption);
 
-    groupOption.AddAlias("-g");
-    groupOption.SetDefaultValue(null);
-    AddOption(groupOption);
+    groupOption.DefaultValueFactory = _ => null;
+    Options.Add(groupOption);
 
-    AddAlias("ls");
+    Aliases.Add("ls");
 
-    this.SetHandler(HandleAsync, assignmentArgument, classroomOption, groupOption);
+    SetAction(async parsedResult =>
+    {
+      var assignmentName = parsedResult.GetRequiredValue(assignmentArgument);
+      var classroomName = parsedResult.GetRequiredValue(classroomOption);
+      var group = parsedResult.GetValue(groupOption);
+      await HandleAsync(assignmentName, classroomName, group);
+    });
   }
 }
 

@@ -12,7 +12,7 @@ internal class ListAssignmentsCommand : Command
   private readonly IGitHubClassroomClient client;
   private readonly ConfigurationHelper configuration;
 
-  private readonly Option<string> classroomOption = new("--classroom", "classroom name");
+  private readonly Option<string> classroomOption = new("--classroom") { Description = "classroom name", Aliases = { "-c" } };
 
   private async Task HandleAsync(string classroomName)
   {
@@ -44,13 +44,16 @@ internal class ListAssignmentsCommand : Command
     this.client = client;
     this.configuration = configuration;
 
-    classroomOption.AddAlias("-c");
-    classroomOption.SetDefaultValue(configuration.DefaultClassroom);
-    AddOption(classroomOption);
+    classroomOption.DefaultValueFactory = _ => configuration.DefaultClassroom;
+    Options.Add(classroomOption);
 
-    AddAlias("la");
+    Aliases.Add("la");
 
-    this.SetHandler(HandleAsync, classroomOption);
+    SetAction(async parsedResult =>
+    {
+      var classroomName = parsedResult.GetRequiredValue(classroomOption);
+      await HandleAsync(classroomName);
+    });
   }
 }
 

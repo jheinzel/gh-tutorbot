@@ -13,8 +13,8 @@ internal class RemoveReviewersCommand : Command
   private readonly IGitHubClassroomClient client;
   private readonly ConfigurationHelper configuration;
 
-  private readonly Argument<string> assignmentArgument = new("assignment", "assignment name");
-  private readonly Option<string> classroomOption = new("--classroom", "classroom name");
+  private readonly Argument<string> assignmentArgument = new("assignment") { Description = "assignment name" };
+  private readonly Option<string> classroomOption = new("--classroom") { Description = "classroom name", Aliases = { "-c" } };
 
   private bool UserAgreesToRemoveReviewers(Assignment assignment)
   {
@@ -64,15 +64,19 @@ internal class RemoveReviewersCommand : Command
     this.client = client;
     this.configuration = configuration;
 
-    AddArgument(assignmentArgument);
+    Add(assignmentArgument);
 
-    classroomOption.AddAlias("-c");
-    classroomOption.SetDefaultValue(configuration.DefaultClassroom);
-    AddOption(classroomOption);
+    classroomOption.DefaultValueFactory = _ => configuration.DefaultClassroom;
+    Options.Add(classroomOption);
 
-    AddAlias("rr");
+    Aliases.Add("rr");
 
-    this.SetHandler(HandleAsync, assignmentArgument, classroomOption);
+    SetAction(async parsedResult =>
+    {
+      var assignmentName = parsedResult.GetRequiredValue(assignmentArgument);
+      var classroomName = parsedResult.GetRequiredValue(classroomOption);
+      await HandleAsync(assignmentName, classroomName);
+    });
   }
 }
 

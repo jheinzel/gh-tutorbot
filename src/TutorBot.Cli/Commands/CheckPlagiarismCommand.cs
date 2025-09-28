@@ -15,10 +15,10 @@ internal class CheckPlagiarismCommand : Command
   private readonly IGitHubClassroomClient client;
   private readonly ConfigurationHelper configuration;
 
-  private readonly Argument<string> rootDirectoryArgument = new("root-directory", "root directory containing submissions");
-  private readonly Option<string> languageOption = new("--language", "language");
-  private readonly Option<string> reportFileOption = new("--report-file", "name of the file in which the comparison results will be stored");
-  private readonly Option<bool> refreshOption = new("--refresh", "redo check although results file exists");
+  private readonly Argument<string> rootDirectoryArgument = new("root-directory") { Description = "root directory containing submissions" };
+  private readonly Option<string> languageOption = new("--language") { Description = "language", Aliases = { "-l" } };
+  private readonly Option<string> reportFileOption = new("--report-file") { Description = "name of the file in which the comparison results will be stored", Aliases = { "-rf" } };
+  private readonly Option<bool> refreshOption = new("--refresh") { Description = "redo check although results file exists", Aliases = { "-r" } };
 
   private async Task HandleAsync(string rootDirectory, string languageOption, string? reportFileOption, bool refreshOption)
   {
@@ -27,6 +27,11 @@ internal class CheckPlagiarismCommand : Command
       if (!Directory.Exists(rootDirectory))
       {
         throw new DomainException($"Error: Root directory \"{rootDirectory}\" does not exist. Clone assignment first.");
+      }
+
+      if (languageOption != "cpp" && languageOption != "java")
+      {
+        throw new DomainException($"Error: Unknown language \"{languageOption}\". Allowed values are 'cpp' and 'java'.");
       }
 
       string reportFile = reportFileOption ?? $"{rootDirectory}/{Constants.DEFAULT_REPORT_FILE}";
@@ -40,7 +45,7 @@ internal class CheckPlagiarismCommand : Command
       else
       {
         resultFileExists = true;
-        Console.WriteLine($"Info: JPlag results file \"{jplugResultFile}\" already exists. Skipping plagiarism check.");
+        Console.WriteLine($"Info: JPlag results file \"{reportFile}\" already exists. Skipping plagiarism check.");
         Console.WriteLine();
       }
 
@@ -120,13 +125,13 @@ internal class CheckPlagiarismCommand : Command
           {
             if (comparision.Similarities is null)
             {
-							throw new DomainException($"Error: Unexpected structure of 'overview.json'. No 'similarity' property in 'top-comparisons' element.");
-						}
+						throw new DomainException($"Error: Unexpected structure of 'overview.json'. No 'similarity' property in 'top-comparisons' element.");
+					}
 
             printer.AddRow($"{comparision.FirstSubmission}",
                            $"{comparision.SecondSubmission}",
                            FormattableString.Invariant($"{comparision.Similarities.Avg*100,10:F1}"),
-													 FormattableString.Invariant($"{comparision.Similarities.Max*100,10:F1}"));
+							 FormattableString.Invariant($"{comparision.Similarities.Max*100,10:F1}"));
           }
 
           printer.Print();
@@ -145,24 +150,27 @@ internal class CheckPlagiarismCommand : Command
     this.client = client;
     this.configuration = configuration;
 
-    AddArgument(rootDirectoryArgument);
+    Add(rootDirectoryArgument);
 
-    languageOption.AddAlias("-l");
-    languageOption.FromAmong("cpp", "java")
-              .SetDefaultValue("cpp");
-    AddOption(languageOption);
+    languageOption.DefaultValueFactory = _ => "java";
+    languageOption.AcceptOnlyFromAmong("cpp", "java");
+    Options.Add(languageOption);
 
-    reportFileOption.AddAlias("-rf");
-    AddOption(reportFileOption);
+    Options.Add(reportFileOption);
 
-    refreshOption.AddAlias("-r");
-    refreshOption.SetDefaultValue(false);
-    AddOption(refreshOption);
+    refreshOption.DefaultValueFactory = _ => false;
+    Options.Add(refreshOption);
 
+    Aliases.Add("cp");
 
-    AddAlias("cp");
-
-    this.SetHandler(HandleAsync, rootDirectoryArgument, languageOption, reportFileOption, refreshOption);
+    SetAction(async parsedResult =>
+    {
+      var rootDirectory = parsedResult.GetRequiredValue(rootDirectoryArgument);
+      var language = parsedResult.GetRequiredValue(languageOption);
+      var reportFile = parsedResult.GetValue(reportFileOption);
+      var refresh = parsedResult.GetValue(refreshOption);
+      await HandleAsync(rootDirectory, language, reportFile, refresh);
+    });
   }
 }
 

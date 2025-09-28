@@ -1,6 +1,5 @@
 ﻿using System.CommandLine;
 using ClosedXML.Excel;
-using Microsoft.Extensions.Logging;
 using TutorBot.Domain;
 using TutorBot.Domain.Exceptions;
 using TutorBot.Infrastructure;
@@ -15,8 +14,8 @@ internal class DownloadAssessmentsCommand : Command
   private readonly IGitHubClassroomClient client;
   private readonly ConfigurationHelper configuration;
 
-  private readonly Argument<string> assignmentArgument = new("assignment", "assignment name");
-  private readonly Option<string> classroomOption = new("--classroom", "classroom name");
+  private readonly Argument<string> assignmentArgument = new("assignment") { Description = "assignment name" };
+  private readonly Option<string> classroomOption = new("--classroom") { Description = "classroom name", Aliases = { "-c" } };
 
   private async Task HandleAsync(string assignmentName, string classroomName)
   {
@@ -91,7 +90,7 @@ internal class DownloadAssessmentsCommand : Command
       worksheet.Columns(1,2).AdjustToContents();
 
       var rangeWithData = worksheet.RangeUsed();
-      var excelTable = rangeWithData.CreateTable();
+      var excelTable = rangeWithData!.CreateTable();
       excelTable.Theme = XLTableTheme.TableStyleLight10;
 
       var assessmentsFileName = string.Format(Constants.ASSESSMENTS_DOWNLOAD_FILE_NAME, assignment.Name);
@@ -111,14 +110,18 @@ internal class DownloadAssessmentsCommand : Command
     this.client = client;
     this.configuration = configuration;
 
-    AddArgument(assignmentArgument);
+    Add(assignmentArgument);
 
-    classroomOption.AddAlias("-c");
-    classroomOption.SetDefaultValue(configuration.DefaultClassroom);
-    AddOption(classroomOption);
+    classroomOption.DefaultValueFactory = _ => configuration.DefaultClassroom;
+    Options.Add(classroomOption);
 
-    AddAlias("da");
+    Aliases.Add("da");
 
-    this.SetHandler(HandleAsync, assignmentArgument, classroomOption);
+    SetAction(async parsedResult =>
+    {
+      var assignmentName = parsedResult.GetRequiredValue(assignmentArgument);
+      var classroomName = parsedResult.GetRequiredValue(classroomOption);
+      await HandleAsync(assignmentName, classroomName);
+    });
   }
 }

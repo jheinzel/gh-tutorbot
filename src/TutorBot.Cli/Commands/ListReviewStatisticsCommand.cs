@@ -14,11 +14,11 @@ internal class ListReviewStatisticsCommand : Command
   private readonly IGitHubClassroomClient client;
   private readonly ConfigurationHelper configuration;
 
-  private readonly Argument<string> assignmentArgument = new("assignment", "assignment name");
-  private readonly Option<string> classroomOption = new("--classroom", "classroom name");
-  private readonly Option<string> orderOption = new("--order-by", "order criteria");
-  private readonly Option<int?> groupOption = new("--group", "filter group");
-  private readonly Option<bool> allReviewersOption = new("--all-reviewers", "include review statistics from non-students");
+  private readonly Argument<string> assignmentArgument = new("assignment") { Description = "assignment name" };
+  private readonly Option<string> classroomOption = new("--classroom") { Description = "classroom name", Aliases = { "-c" } };
+  private readonly Option<string> orderOption = new("--order-by") { Description = "order criteria", Aliases = { "-o" } };
+  private readonly Option<int?> groupOption = new("--group") { Description = "filter group", Aliases = { "-g" } };
+  private readonly Option<bool> allReviewersOption = new("--all-reviewers") { Description = "include review statistics from non-students", Aliases = { "-a" } };
 
   private async Task HandleAsync(string assignmentName, string classroomName, string order, int? group, bool showAllReviewers)
   {
@@ -99,28 +99,32 @@ internal class ListReviewStatisticsCommand : Command
     this.client = client;
     this.configuration = configuration;
 
-    AddArgument(assignmentArgument);
+    Add(assignmentArgument);
 
-    classroomOption.AddAlias("-c");
-    classroomOption.SetDefaultValue(configuration.DefaultClassroom);
-    AddOption(classroomOption);
+    classroomOption.DefaultValueFactory = _ => configuration.DefaultClassroom;
+    Options.Add(classroomOption);
 
-    orderOption.AddAlias("-o");
-    orderOption.FromAmong("reviewer", "comment-length", "comment-length-desc", "review-date", "review-date-desc")
-              .SetDefaultValue("review-date-desc");
-    AddOption(orderOption);
+    orderOption.AcceptOnlyFromAmong("reviewer", "comment-length", "comment-length-desc", "review-date", "review-date-desc");
+    orderOption.DefaultValueFactory = _ => "review-date-desc";
+    Options.Add(orderOption);
 
-    groupOption.AddAlias("-g");
-    groupOption.SetDefaultValue(null);
-    AddOption(groupOption);
+    groupOption.DefaultValueFactory = _ => null;
+    Options.Add(groupOption);
 
-    allReviewersOption.AddAlias("-a");
-    allReviewersOption.SetDefaultValue(false);
-    AddOption(allReviewersOption);
+    allReviewersOption.DefaultValueFactory = _ => false;
+    Options.Add(allReviewersOption);
 
-    AddAlias("lr");
+    Aliases.Add("lr");
 
-    this.SetHandler(HandleAsync, assignmentArgument, classroomOption, orderOption, groupOption, allReviewersOption);
+    SetAction(async parsedResult =>
+    {
+      var assignmentName = parsedResult.GetRequiredValue(assignmentArgument);
+      var classroomName = parsedResult.GetRequiredValue(classroomOption);
+      var order = parsedResult.GetRequiredValue(orderOption);
+      var group = parsedResult.GetValue(groupOption);
+      var showAllReviewers = parsedResult.GetValue(allReviewersOption);
+      await HandleAsync(assignmentName, classroomName, order, group, showAllReviewers);
+    });
   }
 }
 

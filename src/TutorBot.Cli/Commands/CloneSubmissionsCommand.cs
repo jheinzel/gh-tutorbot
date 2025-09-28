@@ -15,9 +15,9 @@ internal class CloneSubmissionsCommand : Command
   private readonly IGitHubClassroomClient client;
   private readonly ConfigurationHelper configuration;
 
-  private readonly Argument<string> assignmentArgument = new("assignment", "assignment name");
-  private readonly Option<string> classroomOption = new("--classroom", "classroom name");
-  private readonly Option<string> directoryOption = new("--directory", "directory repositories will be cloned to");
+  private readonly Argument<string> assignmentArgument = new("assignment") { Description = "assignment name" };
+  private readonly Option<string> classroomOption = new("--classroom") { Description = "classroom name", Aliases = { "-c" } };
+  private readonly Option<string> directoryOption = new("--directory") { Description = "directory repositories will be cloned to", Aliases = { "-d" } };
 
   private async Task HandleAsync(string assignmentName, string classroomName, string? directory)
   {
@@ -78,19 +78,22 @@ internal class CloneSubmissionsCommand : Command
     this.client = client;
     this.configuration = configuration;
 
-    AddArgument(assignmentArgument);
+    Add(assignmentArgument);
 
-    classroomOption.AddAlias("-c");
-    classroomOption.SetDefaultValue(configuration.DefaultClassroom);
-    AddOption(classroomOption);
+    classroomOption.DefaultValueFactory = _ => configuration.DefaultClassroom;
+    Options.Add(classroomOption);
 
-    directoryOption.AddAlias("-d");
-    directoryOption.SetDefaultValue(null);
-    AddOption(directoryOption);
+    Options.Add(directoryOption);
 
-    AddAlias("cs");
+    Aliases.Add("cs");
 
-    this.SetHandler(HandleAsync, assignmentArgument, classroomOption, directoryOption);
+    SetAction(async parsedResult =>
+    {
+      var assignmentName = parsedResult.GetRequiredValue(assignmentArgument);
+      var classroomName = parsedResult.GetRequiredValue(classroomOption);
+      var directory = parsedResult.GetValue(directoryOption);
+      await HandleAsync(assignmentName, classroomName, directory);
+    });
   }
 }
 

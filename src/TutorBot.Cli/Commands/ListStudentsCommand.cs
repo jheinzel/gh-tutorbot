@@ -6,7 +6,7 @@ namespace TutorBot.Commands;
 
 internal class ListStudentsCommand : Command
 {
-  private readonly Option<int?> groupOption = new("--group", "filter group");
+  private readonly Option<int?> groupOption = new("--group") { Description = "filter group", Aliases = { "-g" } };
 
   private async Task HandleAsync(int? group)
   {
@@ -48,13 +48,16 @@ internal class ListStudentsCommand : Command
   public ListStudentsCommand() :
   base("list-students", "List all students")
   {
-    groupOption.AddAlias("-g");
-    groupOption.SetDefaultValue(null);
-    AddOption(groupOption);
+    groupOption.DefaultValueFactory = _ => null;
+    Options.Add(groupOption);
 
-    this.AddAlias("lstud");
+    Aliases.Add("lstud");
 
-    this.SetHandler(HandleAsync, groupOption);
+    SetAction(async parsedResult =>
+    {
+      var group = parsedResult.GetValue(groupOption);
+      await HandleAsync(group);
+    });
   }
 }
 

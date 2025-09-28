@@ -1,5 +1,5 @@
 ﻿using System.CommandLine;
-using Microsoft.Extensions.Logging;
+using System.ComponentModel;
 using TutorBot.Domain;
 using TutorBot.Infrastructure;
 using TutorBot.Infrastructure.CollectionExtensions;
@@ -9,15 +9,14 @@ using TutorBot.Utility;
 
 namespace TutorBot.Commands;
 
-
 internal class AssignReviewersCommand : Command
 {
   private readonly IGitHubClassroomClient client;
   private readonly ConfigurationHelper configuration;
 
-  private readonly Argument<string> assignmentArgument = new("assignment", "assignment name");
-  private readonly Option<string> classroomOption = new("--classroom", "classroom name");
-  private readonly Option<bool> forceOption = new("--force", "force assignment although there are unlinked submissions");
+  private readonly Argument<string> assignmentArgument = new("assignment") { Description = "assignment name" };
+  private readonly Option<string> classroomOption = new("--classroom") { Description = "classroom name", Aliases = { "-c" } };
+  private readonly Option<bool> forceOption = new("--force") { Description = "force assignment although there are unlinked submissions", Aliases = { "-f" } };
 
   private bool UserAgreesToAssignReviewers(Assignment assignment)
   {
@@ -91,19 +90,23 @@ internal class AssignReviewersCommand : Command
     this.client = client;
     this.configuration = configuration;
 
-    AddArgument(assignmentArgument);
+    Add(assignmentArgument);
 
-    classroomOption.AddAlias("-c");
-    classroomOption.SetDefaultValue(configuration.DefaultClassroom);
-    AddOption(classroomOption);
+    classroomOption.DefaultValueFactory = _ => configuration.DefaultClassroom;
+    Options.Add(classroomOption);
 
-    forceOption.AddAlias("-f");
-    forceOption.SetDefaultValue(false);
-    AddOption(forceOption);
+    forceOption.DefaultValueFactory = _ => false;
+    Options.Add(forceOption);
 
-    AddAlias("ar");
+    Aliases.Add("ar");
 
-    this.SetHandler(HandleAsync, assignmentArgument, classroomOption, forceOption);
+    SetAction(async parsedResult =>
+    {
+      var assignmentName = parsedResult.GetRequiredValue(assignmentArgument);
+      var classroomName = parsedResult.GetValue(classroomOption);
+      var force = parsedResult.GetValue(forceOption);
+      await HandleAsync(assignmentName, classroomName!, force);
+    });
   }
 }
 

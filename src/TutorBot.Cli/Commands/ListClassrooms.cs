@@ -36,9 +36,9 @@ internal class ListClassroomsCommand : Command
   {
     this.client = client;
 
-    AddAlias("lc");
+    Aliases.Add("lc");
 
-    this.SetHandler(HandleAsync);
+    SetAction(async _ => await HandleAsync());
   }
 }
 
