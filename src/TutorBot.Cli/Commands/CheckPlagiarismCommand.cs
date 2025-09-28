@@ -35,10 +35,9 @@ internal class CheckPlagiarismCommand : Command
       }
 
       string reportFile = reportFileOption ?? $"{rootDirectory}/{Constants.DEFAULT_REPORT_FILE}";
-      string jplugResultFile = $"{reportFile}.zip";
 
       bool resultFileExists;
-      if (refreshOption || !File.Exists(jplugResultFile))
+      if (refreshOption || !File.Exists(reportFile))
       {
         resultFileExists = await RunJplag(rootDirectory, reportFile, languageOption);
       }
@@ -51,7 +50,7 @@ internal class CheckPlagiarismCommand : Command
 
       if (resultFileExists)
       {
-        await PrintJPlagResults(jplugResultFile);
+        await PrintJPlagResults(reportFile);
       }
     }
     catch (Exception ex)
