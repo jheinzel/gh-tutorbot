@@ -1,5 +1,4 @@
 ﻿using System.CommandLine;
-using Microsoft.Extensions.Logging;
 using TutorBot.Domain;
 using TutorBot.Domain.Exceptions;
 using TutorBot.Infrastructure;

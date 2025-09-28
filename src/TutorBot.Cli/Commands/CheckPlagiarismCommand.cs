@@ -17,7 +17,7 @@ internal class CheckPlagiarismCommand : Command
 
   private readonly Argument<string> rootDirectoryArgument = new("root-directory") { Description = "root directory containing submissions" };
   private readonly Option<string> languageOption = new("--language") { Description = "language", Aliases = { "-l" } };
-  private readonly Option<string> reportFileOption = new("--report-file") { Description = "name of the file in which the comparison results will be stored", Aliases = { "-rf" } };
+  private readonly Option<string> reportFileOption = new("--report-file") { Description = "name of the report file", Aliases = { "-rf" } };
   private readonly Option<bool> refreshOption = new("--refresh") { Description = "redo check although results file exists", Aliases = { "-r" } };
 
   private async Task HandleAsync(string rootDirectory, string languageOption, string? reportFileOption, bool refreshOption)
@@ -76,8 +76,8 @@ internal class CheckPlagiarismCommand : Command
                                  $"       Ensure that the configuration parameter \"{ConfigurationHelper.KEY_JPLAG_JAR_PATH}\" is set appropriately.");
       }
 
-      var jplagArgs = string.Format(Constants.JPLAG_ARGS, language, reportFile, rootDirectory);
-      var javaArgs = $"-jar \"{configuration.JplagJarPath}\" {jplagArgs}";
+      var jplagRunArgs = string.Format(Constants.JPLAG_RUN_ARGS, language, reportFile, rootDirectory);
+      var javaArgs = $"-jar \"{configuration.JplagJarPath}\" {jplagRunArgs}";
 
       var (result, errorResult, exitCode) = await ProcessHelper.RunProcessAsync(configuration.JavaPath, javaArgs);
 
@@ -110,17 +110,17 @@ internal class CheckPlagiarismCommand : Command
     {
       var archive = ZipFile.Open(resultsZipFile, ZipArchiveMode.Read);
 
-      ZipArchiveEntry ? entry = archive.GetEntry("overview.json");
+      ZipArchiveEntry? entry = archive.GetEntry("topComparisons.json");
       if (entry is not null)
       {
         using (var jsonStream = entry.Open())
         {
-          var overviewDocument = await JplagOverviewDocument.FromJsonAsync(jsonStream);
+          var comparisons = await JplagTopComparisonsDocument.FromJsonAsync(jsonStream);
 
           var printer = new TablePrinter();
           printer.AddRow("STUDENT-1", "STUDENT-2", "AVG-SIMILARITY", "MAX-SIMILARITY");
 
-          foreach (var comparision in overviewDocument.TopComparisons)
+          foreach (var comparision in comparisons)
           {
             if (comparision.Similarities is null)
             {
