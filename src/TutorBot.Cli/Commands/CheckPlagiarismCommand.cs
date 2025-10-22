@@ -86,15 +86,13 @@ internal class CheckPlagiarismCommand : Command
       var jplagRunArgs = "";
       if (baseCodeOption is not null)
       {
-        jplagRunArgs = string.Format(Constants.JPLAG_RUN_ARGS_BASE_DIR_PREFIX, baseCodeOption);
+        jplagRunArgs = string.Format(Constants.JPLAG_RUN_ARGS_BASE_DIR_PREFIX, baseCodeOption.TrimEnd(['/', '\\']));
       }
       
       jplagRunArgs += string.Format(Constants.JPLAG_RUN_ARGS, language, reportFile, rootDirectory);
       
       
       var javaArgs = $"-jar \"{configuration.JplagJarPath}\" {jplagRunArgs}";
-      
-      Console.WriteLine(javaArgs);
 
       var (result, errorResult, exitCode) = await ProcessHelper.RunProcessAsync(configuration.JavaPath, javaArgs);
 
