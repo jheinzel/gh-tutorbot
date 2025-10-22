@@ -19,8 +19,9 @@ internal class CheckPlagiarismCommand : Command
   private readonly Option<string> languageOption = new("--language") { Description = "language", Aliases = { "-l" } };
   private readonly Option<string> reportFileOption = new("--report-file") { Description = "name of the report file", Aliases = { "-rf" } };
   private readonly Option<bool> refreshOption = new("--refresh") { Description = "redo check although results file exists", Aliases = { "-r" } };
+  private readonly Option<string> baseCodeOption = new("--base-code") { Description = "Path to the template code directory", Aliases = { "-bc" } };
 
-  private async Task HandleAsync(string rootDirectory, string languageOption, string? reportFileOption, bool refreshOption)
+  private async Task HandleAsync(string rootDirectory, string languageOption, string? reportFileOption, bool refreshOption, string? baseCodeOption)
   {
     try
     {
@@ -36,10 +37,16 @@ internal class CheckPlagiarismCommand : Command
 
       string reportFile = reportFileOption ?? $"{rootDirectory}/{Constants.DEFAULT_REPORT_FILE}";
 
+      if (baseCodeOption is not null
+          && !Directory.Exists(baseCodeOption))
+      {
+        throw new DomainException($"Error: Given BaseCode Directory \"{baseCodeOption}\" does not exist.");
+      }
+
       bool resultFileExists;
       if (refreshOption || !File.Exists(reportFile))
       {
-        resultFileExists = await RunJplag(rootDirectory, reportFile, languageOption);
+        resultFileExists = await RunJplag(rootDirectory, reportFile, languageOption, baseCodeOption);
       }
       else
       {
@@ -59,7 +66,7 @@ internal class CheckPlagiarismCommand : Command
     }
   }
 
-  private async Task<bool> RunJplag(string rootDirectory, string reportFile, string languageOption)
+  private async Task<bool> RunJplag(string rootDirectory, string reportFile, string languageOption, string? baseCodeOption)
   {
     try
     {
@@ -76,7 +83,15 @@ internal class CheckPlagiarismCommand : Command
                                   $"       Ensure that the configuration parameter \"{ConfigurationHelper.KEY_JPLAG_JAR_PATH}\" is set appropriately.");
       }
 
-      var jplagRunArgs = string.Format(Constants.JPLAG_RUN_ARGS, language, reportFile, rootDirectory);
+      var jplagRunArgs = "";
+      if (baseCodeOption is not null)
+      {
+        jplagRunArgs = string.Format(Constants.JPLAG_RUN_ARGS_BASE_DIR_PREFIX, baseCodeOption.TrimEnd(['/', '\\']));
+      }
+      
+      jplagRunArgs += string.Format(Constants.JPLAG_RUN_ARGS, language, reportFile, rootDirectory);
+      
+      
       var javaArgs = $"-jar \"{configuration.JplagJarPath}\" {jplagRunArgs}";
 
       var (result, errorResult, exitCode) = await ProcessHelper.RunProcessAsync(configuration.JavaPath, javaArgs);
@@ -159,6 +174,8 @@ internal class CheckPlagiarismCommand : Command
 
     refreshOption.DefaultValueFactory = _ => false;
     Options.Add(refreshOption);
+    
+    Options.Add(baseCodeOption);
 
     Aliases.Add("cp");
 
@@ -168,7 +185,8 @@ internal class CheckPlagiarismCommand : Command
       var language = parsedResult.GetRequiredValue(languageOption);
       var reportFile = parsedResult.GetValue(reportFileOption);
       var refresh = parsedResult.GetValue(refreshOption);
-      await HandleAsync(rootDirectory, language, reportFile, refresh);
+      var baseCode = parsedResult.GetValue(baseCodeOption);
+      await HandleAsync(rootDirectory, language, reportFile, refresh, baseCode);
     });
   }
 }
