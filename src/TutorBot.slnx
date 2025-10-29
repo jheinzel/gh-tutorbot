@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="../.gitattributes" />
+    <File Path="../.github/workflows/ci.yml" />
+    <File Path="../.gitignore" />
+    <File Path="../LICENSE" />
+    <File Path="../README.md" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="TutorBot.Cli/TutorBot.Cli.csproj" />
+    <Project Path="TutorBot.Tests/TutorBot.Tests.csproj" />
+  </Folder>
+</Solution>

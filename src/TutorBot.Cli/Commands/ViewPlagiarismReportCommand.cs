@@ -80,7 +80,7 @@ internal class ViewPlagiarismReportCommand : Command
 
     SetAction(async parsedResult =>
     {
-      var reportFile = parsedResult.GetValue(reportFileOption);
+      string reportFile = parsedResult.GetValue(reportFileOption)!; // Cannot be null because default value is provided
       await HandleAsync(reportFile);
     });
   }
