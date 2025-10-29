@@ -21,6 +21,7 @@ internal class CheckPlagiarismCommand : Command
   private readonly Option<bool> refreshOption = new("--refresh") { Description = "redo check although results file exists", Aliases = { "-r" } };
   private readonly Option<string> baseCodeOption = new("--base-code") { Description = "Path to the template code directory", Aliases = { "-bc" } };
 
+  private readonly String[] allowedLangs = ["cpp", "java", "c"];
   private async Task HandleAsync(string rootDirectory, string languageOption, string? reportFileOption, bool refreshOption, string? baseCodeOption)
   {
     try
@@ -30,9 +31,9 @@ internal class CheckPlagiarismCommand : Command
         throw new DomainException($"Error: Root directory \"{rootDirectory}\" does not exist. Clone assignment first.");
       }
 
-      if (languageOption != "cpp" && languageOption != "java")
+      if (!allowedLangs.Contains(languageOption.ToLower()))
       {
-        throw new DomainException($"Error: Unknown language \"{languageOption}\". Allowed values are 'cpp' and 'java'.");
+        throw new DomainException($"Error: Unknown language \"{languageOption}\". Allowed values are the following: " + string.Join(", ", allowedLangs));
       }
 
       string reportFile = reportFileOption ?? $"{rootDirectory}/{Constants.DEFAULT_REPORT_FILE}";
@@ -74,6 +75,7 @@ internal class CheckPlagiarismCommand : Command
       {
         "cpp" => "cpp",
         "java" => "java",
+        "c" => "c",
         _ => throw new DomainException($"Error: Unknown language \"{languageOption}\"")
       };
 
@@ -167,7 +169,7 @@ internal class CheckPlagiarismCommand : Command
     Add(rootDirectoryArgument);
 
     languageOption.DefaultValueFactory = _ => "java";
-    languageOption.AcceptOnlyFromAmong("cpp", "java");
+    languageOption.AcceptOnlyFromAmong(allowedLangs);
     Options.Add(languageOption);
 
     Options.Add(reportFileOption);
