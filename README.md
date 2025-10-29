@@ -117,13 +117,14 @@ TutorBot offers the following range of commands:
   directory. This file contains multiple JSON files that display the results
   of the plagiarism check. These results can be analyzed using the `view-plagiarism-report` command. 
   ```shell
-  gh tutorbot check-plagiarism <root-directory> [--language (cpp|java)] [--report-file <report-file>] [--refresh]
+  gh tutorbot check-plagiarism <root-directory> [--language (cpp|java|c)] [--report-file <report-file>] [--refresh] [--base-code <base-code-directory>]
   ```
   + `root-directory` is the path of the directory containing all submissions.
   + `--language` specifies the programming language of the submissions.
   + `--report-file` specifies the base name of the report file.
   + `--refresh` forces a plagiarism check, even if the results file already
     exists.
+  + `--base-code` is the path to the directory containing the template of the submission. It can be used to ignore already provided code from being recognized as plagiarism
 
 * View plagiarism report: Launches a local web server to display the results of
   a plagiarism check in your browser. This command opens the JPlag report
