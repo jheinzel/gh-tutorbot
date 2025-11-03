@@ -232,13 +232,20 @@ public class Assessment
         throw new AssessmentFormatException($"Invalid weight in table row {lines.Count + 1}.");
       }
 
-      var gradings = new double[values.Length - 2];
-      for (int i = 2; i < values.Length; i++)
+      var gradings = new double[values.Length -2];
+      for (int i =2; i < values.Length; i++)
       {
-        if (!double.TryParse(values[i], CultureInfo.InvariantCulture, out gradings[i - 2])
-            || gradings[i - 2] < 0 || gradings[i - 2] > 100)
+        // remove trailing % character if present
+        var number = values[i].Trim();
+        if (number.EndsWith("%"))
         {
-          throw new AssessmentFormatException($"Invalid entry in column {i + 1} of row {lines.Count + 1}.");
+          number = number[..^1].Trim();
+        }
+
+        if (!double.TryParse(number, CultureInfo.InvariantCulture, out gradings[i -2])
+            || gradings[i -2] <0 || gradings[i -2] >100)
+        {
+          throw new AssessmentFormatException($"Invalid entry in column {i +1} of row {lines.Count +1}.");
         }
       }
 
