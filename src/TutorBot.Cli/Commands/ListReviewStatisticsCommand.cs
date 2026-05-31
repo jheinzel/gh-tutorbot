@@ -13,13 +13,14 @@ internal class ListReviewStatisticsCommand : Command
   private readonly IGitHubClassroomClient client;
   private readonly ConfigurationHelper configuration;
 
-  private readonly Argument<string> assignmentArgument = new("assignment") { Description = "assignment name" };
+  private readonly Argument<string> assignmentArgument = new("assignment") { Description = "assignment slug" };
   private readonly Option<string> classroomOption = new("--classroom") { Description = "classroom name", Aliases = { "-c" } };
-  private readonly Option<string> orderOption = new("--order-by") { Description = "order criteria", Aliases = { "-o" } };
+  private readonly Option<string> orgOption = new("--org") { Description = "GitHub organization", Aliases = { "-o" } };
+  private readonly Option<string> orderOption = new("--order-by") { Description = "order criteria", Aliases = { "-ob" } };
   private readonly Option<int?> groupOption = new("--group") { Description = "filter group", Aliases = { "-g" } };
   private readonly Option<bool> allReviewersOption = new("--all-reviewers") { Description = "include review statistics from non-students", Aliases = { "-a" } };
 
-  private async Task HandleAsync(string assignmentName, string classroomName, string order, int? group, bool showAllReviewers)
+  private async Task HandleAsync(string assignmentSlug, string classroomName, string org, string order, int? group, bool showAllReviewers)
   {
     var printer = new TablePrinter();
     printer.AddRow("REVIEWER", "GR.", "OWNER", "#REV.", "#COMM.", "#WORDS", "LASTREVIEWDATE", "REVIEW URL");
@@ -27,10 +28,10 @@ internal class ListReviewStatisticsCommand : Command
     try
     {
       var studentList = await StudentList.FromRoster(Constants.ROSTER_FILE_PATH);
-      var classroom = await client.Classroom.GetByName(classroomName);
+      var classroom = await client.Classroom.GetByName(classroomName, org);
 
       var progress = new ProgressBar("Loading submissions");
-      var parameters = new AssigmentParameters(classroom.Id, assignmentName);
+      var parameters = new AssigmentParameters(classroom.Id, assignmentSlug, ClassroomName: classroomName, Org: org);
       var assignment = await Assignment.FromGitHub(client, studentList, parameters, progress);
       progress.Dispose();
 
@@ -103,6 +104,9 @@ internal class ListReviewStatisticsCommand : Command
     classroomOption.DefaultValueFactory = _ => configuration.DefaultClassroom;
     Options.Add(classroomOption);
 
+    orgOption.DefaultValueFactory = _ => configuration.DefaultOrganization;
+    Options.Add(orgOption);
+
     orderOption.AcceptOnlyFromAmong("reviewer", "comment-length", "comment-length-desc", "review-date", "review-date-desc");
     orderOption.DefaultValueFactory = _ => "review-date-desc";
     Options.Add(orderOption);
@@ -117,12 +121,13 @@ internal class ListReviewStatisticsCommand : Command
 
     SetAction(async parsedResult =>
     {
-      var assignmentName = parsedResult.GetRequiredValue(assignmentArgument);
+      var assignmentSlug = parsedResult.GetRequiredValue(assignmentArgument);
       var classroomName = parsedResult.GetRequiredValue(classroomOption);
+      var org = parsedResult.GetRequiredValue(orgOption);
       var order = parsedResult.GetRequiredValue(orderOption);
       var group = parsedResult.GetValue(groupOption);
       var showAllReviewers = parsedResult.GetValue(allReviewersOption);
-      await HandleAsync(assignmentName, classroomName, order, group, showAllReviewers);
+      await HandleAsync(assignmentSlug, classroomName, org, order, group, showAllReviewers);
     });
   }
 }

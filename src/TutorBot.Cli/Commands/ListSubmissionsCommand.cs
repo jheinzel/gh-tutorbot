@@ -14,11 +14,12 @@ internal class ListSubmissionsCommand : Command
   private readonly IGitHubClassroomClient client;
   private readonly ConfigurationHelper configuration;
 
-  private readonly Argument<string> assignmentArgument = new("assignment") { Description = "assignment name" };
+  private readonly Argument<string> assignmentArgument = new("assignment") { Description = "assignment slug" };
   private readonly Option<string> classroomOption = new("--classroom") { Description = "classroom name", Aliases = { "-c" } };
+  private readonly Option<string> orgOption = new("--org") { Description = "GitHub organization", Aliases = { "-o" } };
   private readonly Option<int?> groupOption = new("--group") { Description = "filter group", Aliases = { "-g" } };
 
-  private async Task HandleAsync(string assignmentName, string classroomName, int? group)
+  private async Task HandleAsync(string assignmentSlug, string classroomName, string org, int? group)
   {
     var printer = new TablePrinter();
     printer.AddRow("STUDENT", "STUD.ID", "Gr.", "REVIEWER(S)", "EFFORT", "ASSESSMENT", "REPOSITORY URL");
@@ -26,10 +27,10 @@ internal class ListSubmissionsCommand : Command
     try
     {
       var studentList = await StudentList.FromRoster(Constants.ROSTER_FILE_PATH);
-      var classroom = await client.Classroom.GetByName(classroomName);
+      var classroom = await client.Classroom.GetByName(classroomName, org);
 
       var progress = new ProgressBar("Loading submissions");
-      var parameters = new AssigmentParameters(classroom.Id, assignmentName, group, LoadAssessments: true);
+      var parameters = new AssigmentParameters(classroom.Id, assignmentSlug, group, ClassroomName: classroomName, Org: org, LoadAssessments: true);
       var assignment = await Assignment.FromGitHub(client, studentList, parameters, progress);
       progress.Dispose();
 
@@ -75,7 +76,7 @@ internal class ListSubmissionsCommand : Command
     }
     else
     {
-      Console.WriteLine($"No submission for this assignment (in the specified group).");
+      Console.WriteLine($"No submission for this assignment slug (in the specified group).");
     }
   }
 
@@ -100,6 +101,9 @@ internal class ListSubmissionsCommand : Command
     classroomOption.DefaultValueFactory = _ => configuration.DefaultClassroom;
     Options.Add(classroomOption);
 
+    orgOption.DefaultValueFactory = _ => configuration.DefaultOrganization;
+    Options.Add(orgOption);
+
     groupOption.DefaultValueFactory = _ => null;
     Options.Add(groupOption);
 
@@ -107,10 +111,11 @@ internal class ListSubmissionsCommand : Command
 
     SetAction(async parsedResult =>
     {
-      var assignmentName = parsedResult.GetRequiredValue(assignmentArgument);
+      var assignmentSlug = parsedResult.GetRequiredValue(assignmentArgument);
       var classroomName = parsedResult.GetRequiredValue(classroomOption);
+      var org = parsedResult.GetRequiredValue(orgOption);
       var group = parsedResult.GetValue(groupOption);
-      await HandleAsync(assignmentName, classroomName, group);
+      await HandleAsync(assignmentSlug, classroomName, org, group);
     });
   }
 }

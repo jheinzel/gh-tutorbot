@@ -7,15 +7,14 @@ public static class CsvParser
   public static async IAsyncEnumerable<List<string>> Parse(Stream stream, bool ignoreFirstLine = false, char separator = ',')
   {
     using var reader = new StreamReader(stream);
-    
-    if (!reader.EndOfStream && ignoreFirstLine)
+
+    if (ignoreFirstLine)
     {
       await reader.ReadLineAsync();
     }
 
-    while (!reader.EndOfStream)
+    while (await reader.ReadLineAsync() is { } line)
     {
-      var line = await reader.ReadLineAsync();
       if (!string.IsNullOrEmpty(line))
       {
         yield return ParseLine(line, separator);

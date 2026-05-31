@@ -15,6 +15,11 @@ public class ConfigurationHelper
 
   public string DefaultClassroom { get => configuration[KEY_DEFAULT_CLASSROOM] ?? DEFAULT_CLASSROOM; }
 
+  public const string KEY_DEFAULT_ORGANIZATION = "default-organization";
+  private const string DEFAULT_ORGANIZATION = "my-organization";
+
+  public string DefaultOrganization { get => configuration[KEY_DEFAULT_ORGANIZATION] ?? DEFAULT_ORGANIZATION; }
+
   public const string KEY_JAVA_PATH = "java-path";
   private const string DEFAULT_JAVA_PATH = "java";
 

@@ -59,39 +59,41 @@ public class StudentList : IStudentList
 
     await foreach (List<string> line in CsvParser.Parse(rosterStream, ignoreFirstLine: true))
     {
-      if (line.Count < 3)
+      if (line.Count < 6)
       {
-        throw new RosterFormatException($"Invalid roster line: \"{line}\"");
+        throw new RosterFormatException($"Invalid roster line: \"{string.Join(",", line)}\"");
       }
 
-      var githubUsername = line[1];
+      var username = line[0].Trim();
+      var firstName = line[1].Trim();
+      var lastName = line[2].Trim();
+      var section = line[4].Trim();
 
-      var identifier = line[0]; // e.g. "Doe John (G9/S999999999)"
-      Match match = Regex.Match(identifier, Constants.STUDENT_DATA_PATTERN);
-
-      if (match.Success)
+      var match = Regex.Match(section, Constants.STUDENT_SECTION_PATTERN);
+      if (!match.Success)
       {
-        var newStudent = new Student
-        (
-          firstName: match.Groups["FirstName"].Value,
-          lastName: match.Groups["LastName"].Value,
-          matNr: match.Groups["MatNr"].Value,
-          groupNr: int.Parse(match.Groups["GroupNr"].Value),
-          gitHubUsername: githubUsername
-        );
-
-        if (string.IsNullOrEmpty(githubUsername))
-        {
-          unlinkedStudents.Add(newStudent);
-        }
-        else if (!students.TryAdd(githubUsername, newStudent))
-        {
-          throw new RosterFileException($"Duplicate GitHub username \"{githubUsername}\" in roster file");
-        }
+        throw new RosterFormatException($"Invalid section/group in roster line: \"{string.Join(",", line)}\"");
       }
-      else
+
+      var groupNr = int.Parse(match.Groups["GroupNr"].Value);
+      var matNr = match.Groups["MatNr"].Value;
+
+      var newStudent = new Student
+      (
+        gitHubUsername: username,
+        lastName: lastName,
+        firstName: firstName,
+        matNr: matNr,
+        groupNr: groupNr
+      );
+
+      if (string.IsNullOrEmpty(username))
       {
-        throw new RosterFormatException($"Invalid student data format in roster line: \"{line}\"");
+        unlinkedStudents.Add(newStudent);
+      }
+      else if (!students.TryAdd(username, newStudent))
+      {
+        throw new RosterFileException($"Duplicate GitHub username \"{username}\" in roster file");
       }
     }
 

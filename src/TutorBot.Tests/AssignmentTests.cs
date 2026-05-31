@@ -45,13 +45,13 @@ public class AssignmentTests
   [Fact]
   public async Task Submission_WithNoRepository_ThrowsException()
   {
-    assignmentClient.GetByName(1, "ue01").Returns(
-      Task.FromResult(new AssignmentDto { Id = 10, Title = "ue01", Accepted = 1, Deadline = DateTime.Now.AddDays(1) }));
+    assignmentClient.GetBySlug("my-org", "my-classroom", "ue01").Returns(
+      Task.FromResult(new AssignmentDto { Id = 10, Title = "ue01", Slug = "ue01", Accepted = 1, Deadline = DateTime.Now.AddDays(1) }));
 
     var submissionDto1 = new SubmissionDto { Id = 100, Students = [new() { Id = 1, Login = "gh-mayr" }] };
     submissionsClient.GetAll(10).Returns(Task.FromResult<IReadOnlyList<SubmissionDto>>([submissionDto1]));
 
-    var parameters = new AssigmentParameters(1, "ue01", LoadAssessments: false);
+    var parameters = new AssigmentParameters(1, "ue01", ClassroomName: "my-classroom", Org: "my-org", LoadAssessments: false);
     var fromGitHubAction = async () => await Assignment.FromGitHub(client, students, parameters);
 
     await fromGitHubAction.Should().ThrowAsync<SubmissionException>();
@@ -62,9 +62,9 @@ public class AssignmentTests
   {
     repositoriesClient.Get(100).Returns(CreateRepository(100, "repo1"));
 
-    var assignmentName = "ue01";
-    assignmentClient.GetByName(1, assignmentName).Returns(
-      Task.FromResult(new AssignmentDto { Id = 10, Title = assignmentName, Accepted = 1, Deadline = DateTime.Now.AddDays(1) }));
+    var assignmentSlug = "ue01";
+    assignmentClient.GetBySlug("my-org", "my-classroom", assignmentSlug).Returns(
+      Task.FromResult(new AssignmentDto { Id = 10, Title = "Uebung 1", Slug = assignmentSlug, Accepted = 1, Deadline = DateTime.Now.AddDays(1) }));
 
     var studentDto1 = new StudentDto { Id = 1, Login = "gh-mayr" };
     var submissionDto1 = new SubmissionDto { Id = 100, Students = [studentDto1], Repository = new RepositoryDto { Id = 100 } };
@@ -72,13 +72,13 @@ public class AssignmentTests
 
     collaboratorClient.GetAll(100).Returns(Task.FromResult<IReadOnlyList<Collaborator>>([]));
 
-    var parameters = new AssigmentParameters(1, "ue01", LoadAssessments: false);
+    var parameters = new AssigmentParameters(1, "ue01", ClassroomName: "my-classroom", Org: "my-org", LoadAssessments: false);
     var assignment = await Assignment.FromGitHub(client, students, parameters);
 
     var expectedOwner = students.LinkedStudents.Single(s => s.GitHubUsername == studentDto1.Login);
 
     assignment.Should().NotBeNull();
-    assignment.Name.Should().Be(assignmentName);
+    assignment.Name.Should().Be("Uebung 1");
     assignment.Submissions.Should().HaveCount(1);
     assignment.Submissions[0].Owner.GitHubUsername.Should().Be(studentDto1.Login);
     assignment.Submissions[0].Owner.LastName.Should().Be(expectedOwner.LastName);
@@ -91,9 +91,9 @@ public class AssignmentTests
   {
     repositoriesClient.Get(100).Returns(CreateRepository(100, "repo1"));
 
-    var assignmentName = "ue01";
-    assignmentClient.GetByName(1, assignmentName).Returns(
-      Task.FromResult(new AssignmentDto { Id = 10, Title = assignmentName, Accepted = 1, Deadline = DateTime.Now.AddDays(1) }));
+    var assignmentSlug = "ue01";
+    assignmentClient.GetBySlug("my-org", "my-classroom", assignmentSlug).Returns(
+      Task.FromResult(new AssignmentDto { Id = 10, Title = "Uebung 1", Slug = assignmentSlug, Accepted = 1, Deadline = DateTime.Now.AddDays(1) }));
 
     var studentDto1 = new StudentDto { Id = 1, Login = "gh-mayr" };
     var submissionDto1 = new SubmissionDto { Id = 100, Students = [studentDto1], Repository = new RepositoryDto { Id = 100 } };
@@ -104,14 +104,14 @@ public class AssignmentTests
     var collaborator1 = new Collaborator("gh-huber", id: 2, "gh-huber@gmail.com", "Huber", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", false, permissions: permissions1, "read");
     collaboratorClient.GetAll(100).Returns(Task.FromResult<IReadOnlyList<Collaborator>>([collaborator1]));
 
-    var parameters = new AssigmentParameters(1, "ue01", LoadAssessments: false);
+    var parameters = new AssigmentParameters(1, "ue01", ClassroomName: "my-classroom", Org: "my-org", LoadAssessments: false);
     var assignment = await Assignment.FromGitHub(client, students, parameters);
 
     var expectedOwner = students.LinkedStudents.Single(s => s.GitHubUsername == studentDto1.Login);
     var expectedReviewer = students.LinkedStudents.Single(s => s.GitHubUsername == reviewerName);
 
     assignment.Should().NotBeNull();
-    assignment.Name.Should().Be(assignmentName);
+    assignment.Name.Should().Be("Uebung 1");
     assignment.Submissions.Should().HaveCount(1);
     assignment.Submissions[0].Reviewers.Should().HaveCount(1);
     assignment.Submissions[0].Reviewers[0].LastName.Should().Be(expectedReviewer.LastName);

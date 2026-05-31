@@ -16,7 +16,9 @@ public static class ExceptionHelper
         break;
 
       case ApiException apiEx:
-        Console.Error.WriteRedLine($"HTTP {(int)apiEx.StatusCode}: {apiEx.Message} ({apiEx.ApiError.DocumentationUrl})");
+        var documentationUrl = apiEx.ApiError?.DocumentationUrl;
+        var documentationSuffix = string.IsNullOrWhiteSpace(documentationUrl) ? string.Empty : $" ({documentationUrl})";
+        Console.Error.WriteRedLine($"HTTP {(int)apiEx.StatusCode}: {apiEx.Message}{documentationSuffix}");
         break;
 
       default:

@@ -8,7 +8,7 @@ namespace TutorBot.Domain;
 
 using ReviewStatistics = IDictionary<(string Owner, string Reviewer), ReviewStatisticsItem>;
 
-public record AssigmentParameters(long ClassroomId, string AssignmentName, int? Group = null, bool LoadAssessments = false);
+public record AssigmentParameters(long ClassroomId, string AssignmentSlug, int? Group = null, string? ClassroomName = null, string? Org = null, bool LoadAssessments = false);
 
 public class Assignment(IGitHubClassroomClient client, string name, DateTimeOffset? deadline, IReadOnlyList<Submission> submissions, IReadOnlyList<UnlinkedSubmission> unlinkedSubmissions)
 {
@@ -16,6 +16,7 @@ public class Assignment(IGitHubClassroomClient client, string name, DateTimeOffs
 
   public string Name { get; init; } = name ?? throw new ArgumentNullException(nameof(name));
   public DateTimeOffset? Deadline { get; init; } = deadline;
+  public string Slug { get; init; } = string.Empty;
 
   public IReadOnlyList<Submission> Submissions { get; init; } = submissions ?? throw new ArgumentNullException(nameof(submissions));
 
@@ -26,68 +27,138 @@ public class Assignment(IGitHubClassroomClient client, string name, DateTimeOffs
     var submissions = new List<Submission>();
     var unlinkedSubmission = new List<UnlinkedSubmission>();
 
-    var assignmentDto = await client.Classroom.Assignment.GetByName(parameters.ClassroomId, parameters.AssignmentName);
-    progress?.Init(assignmentDto.Accepted * 2);
-    var submissionDtos = await client.Classroom.Submissions.GetAll(assignmentDto.Id, progress);
-
-    foreach (var submissionDto in submissionDtos)
+    var assignmentDto = !string.IsNullOrWhiteSpace(parameters.Org) && !string.IsNullOrWhiteSpace(parameters.ClassroomName)
+      ? await client.Classroom.Assignment.GetBySlug(parameters.Org, parameters.ClassroomName, parameters.AssignmentSlug)
+      : await client.Classroom.Assignment.GetBySlug(parameters.ClassroomId, parameters.AssignmentSlug);
+    if (!string.IsNullOrWhiteSpace(parameters.Org) && !string.IsNullOrWhiteSpace(parameters.ClassroomName) && !string.IsNullOrWhiteSpace(assignmentDto.Slug))
     {
-      if (submissionDto.Repository is null)
-      {
-        throw new SubmissionException($"No repository assigned to submission with ID \"{submissionDto.Id}\".");
-      }
+      var classroomPrefix = $"{parameters.ClassroomName}-";
+      var slugPart = $"-{assignmentDto.Slug}-";
 
-      if (submissionDto.Students.Count == 0)
+      var repoCandidates = new List<Repository>();
+      var searchRequest = new SearchRepositoriesRequest($"{classroomPrefix} in:name org:{parameters.Org}")
       {
-        throw new SubmissionException($"No owner assigned assigned to repository \"{submissionDto.Id}\".");
-      }
-      if (submissionDto.Students.Count > 1)
+        PerPage = 100,
+        Page = 1
+      };
+
+      while (true)
       {
-        throw new SubmissionException($"More than one owner assigned to repository \"{submissionDto?.Repository.FullName}\".");
-      }
+        var searchResult = await client.Search.SearchRepo(searchRequest);
+        repoCandidates.AddRange(searchResult.Items);
 
-      if (!students.TryGetValue(submissionDto.Students[0].Login, out var owner))
-      {
-        var repo = await client.Repository.Get(submissionDto.Repository.Id);
-        unlinkedSubmission.Add(new UnlinkedSubmission(repo));
-        progress?.Increment();
-        continue;
-      }
-
-      if (parameters.Group is null || owner.GroupNr == parameters.Group)
-      {
-        var repository = await client.Repository.Get(submissionDto.Repository.Id);
-
-        
-        List<Reviewer> reviewers = await LoadReviewers(client, owner, students, repository);
-
-        var submission = new Submission(client, repository, owner, reviewers);
-        if (parameters.LoadAssessments)
+        if (searchResult.Items.Count < searchRequest.PerPage)
         {
-          await submission.Assessment.Load(client, repository.Id);
+          break;
         }
-        submissions.Add(submission);
+
+        searchRequest.Page++;
       }
 
-      progress?.Increment();
+      var matchingRepos = repoCandidates
+        .GroupBy(r => r.Id)
+        .Select(g => g.First())
+        .Where(r => r.Name.StartsWith(classroomPrefix, StringComparison.OrdinalIgnoreCase)
+                 && r.Name.Contains(slugPart, StringComparison.OrdinalIgnoreCase))
+        .ToList();
+
+      progress?.Init(matchingRepos.Count);
+
+      foreach (var repository in matchingRepos)
+      {
+        var slugIndex = repository.Name.IndexOf(slugPart, StringComparison.OrdinalIgnoreCase);
+        var ownerLogin = slugIndex >= 0 ? repository.Name[(slugIndex + slugPart.Length)..] : string.Empty;
+        if (!students.TryGetValue(ownerLogin, out var owner))
+        {
+          unlinkedSubmission.Add(new UnlinkedSubmission(repository));
+          progress?.Increment();
+          continue;
+        }
+
+        if (parameters.Group is null || owner.GroupNr == parameters.Group)
+        {
+          List<Reviewer> reviewers = await LoadReviewers(client, owner, students, repository);
+
+          var submission = new Submission(client, repository, owner, reviewers);
+          if (parameters.LoadAssessments)
+          {
+            await submission.Assessment.Load(client, repository.Id);
+          }
+          submissions.Add(submission);
+        }
+
+        progress?.Increment();
+      }
+    }
+    else
+    {
+      progress?.Init(assignmentDto.Accepted * 2);
+      var submissionDtos = await client.Classroom.Submissions.GetAll(assignmentDto.Id, progress);
+
+      foreach (var submissionDto in submissionDtos)
+      {
+        if (submissionDto.Repository is null)
+        {
+          throw new SubmissionException($"No repository assigned to submission with ID \"{submissionDto.Id}\".");
+        }
+
+        if (submissionDto.Students.Count == 0)
+        {
+          throw new SubmissionException($"No owner assigned assigned to repository \"{submissionDto.Id}\".");
+        }
+        if (submissionDto.Students.Count > 1)
+        {
+          throw new SubmissionException($"More than one owner assigned to repository \"{submissionDto?.Repository.FullName}\".");
+        }
+
+        if (!students.TryGetValue(submissionDto.Students[0].Login, out var owner))
+        {
+          var repo = await client.Repository.Get(submissionDto.Repository.Id);
+          unlinkedSubmission.Add(new UnlinkedSubmission(repo));
+          progress?.Increment();
+          continue;
+        }
+
+        if (parameters.Group is null || owner.GroupNr == parameters.Group)
+        {
+          var repository = await client.Repository.Get(submissionDto.Repository.Id);
+
+
+          List<Reviewer> reviewers = await LoadReviewers(client, owner, students, repository);
+
+          var submission = new Submission(client, repository, owner, reviewers);
+          if (parameters.LoadAssessments)
+          {
+            await submission.Assessment.Load(client, repository.Id);
+          }
+          submissions.Add(submission);
+        }
+
+        progress?.Increment();
+      }
     }
 
-    return new Assignment(client, assignmentDto.Title, assignmentDto.Deadline, submissions, unlinkedSubmission);
+    var assignment = new Assignment(client, assignmentDto.Title, assignmentDto.Deadline, submissions, unlinkedSubmission)
+    {
+      Slug = assignmentDto.Slug
+    };
+
+    return assignment;
   }
 
   public IReadOnlyList<(Submission, Student)> FindReviewers()
   {
     try
     {
-      var validSubmissions = Submissions.Where(s => s.Assessment.IsValid()).ToList();
-      validSubmissions.Shuffle();
+      var submissions = Submissions.ToList();
+      submissions.Shuffle();
 
       var studentToSubmission = new Dictionary<Student, Submission>();
-      validSubmissions.ForEach(s => studentToSubmission.Add(s.Owner, s));
+      submissions.ForEach(s => studentToSubmission.Add(s.Owner, s));
 
-      var existingAssignments = validSubmissions.Where(s => s.Reviewers.Count > 0).Select(s => (s, studentToSubmission[s.Reviewers[0]]));
+      var existingAssignments = submissions.Where(s => s.Reviewers.Count > 0).Select(s => (s, studentToSubmission[s.Reviewers[0]]));
 
-      var mapping = new EntityMapper<Submission>(validSubmissions, existingAssignments);
+      var mapping = new EntityMapper<Submission>(submissions, existingAssignments);
 
       return mapping.FindUniqueMapping()
                     .Select(pair => (pair.Key, pair.Value.Owner))

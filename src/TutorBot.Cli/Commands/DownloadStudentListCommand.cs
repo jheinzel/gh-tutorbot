@@ -1,11 +1,13 @@
-﻿using System.CommandLine;
+using System.CommandLine;
+using Octokit;
+using TutorBot.Domain.Exceptions;
 using TutorBot.Infrastructure;
 using TutorBot.Infrastructure.OctokitExtensions;
 using TutorBot.Utility;
 
 namespace TutorBot.Commands;
 
-internal class ListAssignmentsCommand : Command
+internal class DownloadStudentListCommand : Command
 {
   private readonly IGitHubClassroomClient client;
   private readonly ConfigurationHelper configuration;
@@ -15,19 +17,18 @@ internal class ListAssignmentsCommand : Command
 
   private async Task HandleAsync(string classroomName, string org)
   {
-    var printer = new TablePrinter();
-    printer.AddRow("SLUG", "NAME", "DEADLINE", "SUBM.");
-
     try
     {
-      var assignments = await client.Classroom.Assignment.GetAll(org, classroomName);
-      foreach (var assignment in assignments)
-      {
-        var deadLineStr = assignment.Deadline is null ? "-" : assignment.Deadline?.LocalDateTime.ToString("yyyy-MM-dd HH:mm");
-        printer.AddRow(assignment.Slug, assignment.Title, deadLineStr, assignment.Accepted.ToString());
-      }
+      var repository = await client.Repository.Get(org, Constants.CLASSROOM_METADATA_REPO_NAME);
+      var contentList = await client.Repository.Content.GetAllContents(repository.Id, $"{classroomName}/students.csv");
+      var studentsContent = contentList.Single().Content;
 
-      printer.Print();
+      File.WriteAllText(Constants.ROSTER_FILE_PATH, studentsContent);
+      Console.WriteLine($"Downloaded student list to \"{Constants.ROSTER_FILE_PATH}\".");
+    }
+    catch (NotFoundException)
+    {
+      throw new DomainException($"Error: Could not find student list at \"https://github.com/{org}/{Constants.CLASSROOM_METADATA_REPO_NAME}/blob/HEAD/{classroomName}/students.csv\".");
     }
     catch (Exception ex)
     {
@@ -35,8 +36,8 @@ internal class ListAssignmentsCommand : Command
     }
   }
 
-  public ListAssignmentsCommand(IGitHubClassroomClient client, ConfigurationHelper configuration) : 
-    base("list-assignments", "List all assignments of a classroom")
+  public DownloadStudentListCommand(IGitHubClassroomClient client, ConfigurationHelper configuration) :
+    base("download-student-list", "Download students.csv from classroom repository")
   {
     this.client = client;
     this.configuration = configuration;
@@ -47,7 +48,7 @@ internal class ListAssignmentsCommand : Command
     orgOption.DefaultValueFactory = _ => configuration.DefaultOrganization;
     Options.Add(orgOption);
 
-    Aliases.Add("la");
+    Aliases.Add("dsl");
 
     SetAction(async parsedResult =>
     {
@@ -57,4 +58,3 @@ internal class ListAssignmentsCommand : Command
     });
   }
 }
-

@@ -40,17 +40,17 @@ TutorBot offers the following range of commands:
 
 * List all classrooms the user is a member of:
   ```shell
-  gh tutorbot list-classrooms
+  gh tutorbot list-classrooms [--org <organization>]
   ```
 
 * List all assignments created in a specific classroom:
   ```shell
-  gh tutorbot list-assignments [--classroom <classroom>]
+  gh tutorbot list-assignments [--classroom <classroom>] [--org <organization>]
   ```
 
 * List all submissions for a specific assignment:
   ```shell
-      gh tutorbot list-submissions <assignment> [--classroom <classroom>] [--group <nr>]
+      gh tutorbot list-submissions <assignment> [--classroom <classroom>] [--org <organization>] [--group <nr>]
   ```
   + `--group`: Filter by group. The group number is specified as a positive
     integer. If omitted, all groups are considered.
@@ -60,14 +60,14 @@ TutorBot offers the following range of commands:
   invitation via email. If there are already reveiwers assigned, the command
   will preserve these assignments and add add the missing ones.
   ```shell
-  gh tutorbot assign-reviewers <assignment> [--classroom <classroom>] [--force]
+  gh tutorbot assign-reviewers <assignment> [--classroom <classroom>] [--org <organization>] [--force]
   ```
   + `--force` allows assigment of reviewers, even if some submissions are not
     yet linked.
 
 * Remove reviewers from an assignment: 
   ```shell
-  gh tutorbot remove-reviewers <assignment> [--classroom <classroom>]
+  gh tutorbot remove-reviewers <assignment> [--classroom <classroom>] [--org <organization>]
   ```
 
 * Clone all repositories of a specific assignment: The target directory for
@@ -76,14 +76,14 @@ TutorBot offers the following range of commands:
   the directory is not empty, the command will fail. This command delegates to
   `gh repo clone`. In case of problems check if this command works correctly. 
   ```shell
-  gh tutorbot clone-submissions <assignment> [--directory <directory>] [--classroom <classroom>]
+  gh tutorbot clone-submissions <assignment> [--directory <directory>] [--classroom <classroom>] [--org <organization>]
   ```
 
 * Download students' self-assessments: Collects self-assessment data from all
   submissions and writes it to a CSV file, named `<assignment>-assessments.csv`,
   placed in the current working directory.
   ```shell
-  gh tutorbot download-assessments <assignment> [--classroom <classroom>]
+  gh tutorbot download-assessments <assignment> [--classroom <classroom>] [--org <organization>]
   ```
 
 * List review statistics: Provides statistical data about the activity of the
@@ -91,6 +91,7 @@ TutorBot offers the following range of commands:
   ```shell
   gh tutorbot list-review-statistics <assignment>
      [--classroom <classroom>] 
+     [--org <organization>]
      [--order-by (reviewer|comment-length[-desc]|review-date[-desc])] 
      [--group <nr>]
      [--all-reviewers]
@@ -143,23 +144,24 @@ TutorBot offers the following range of commands:
   ```
 
 ## Configuration
-* `classroom_roster.csv`: This roster file containing a list of students in a
+* `students.csv`: This roster file containing a list of students in a
   classroom is used primarily to map the GitHub username to the student's ID
-  (matriculation number) and name. The roster file can be downloaded from the
-  classroom page on GitHub as follows: Classroom page → Students → Download.
-  Place this file in your working directory and name it as
-  `classroom_roster.csv`.
+  and name. The expected header is:
+  `username,first_name,last_name,email,section,github_id`.
+  Place this file in your working directory and name it as `students.csv`.
 
 * `appsettings.json`: This configuration file contains general settings for the
   .NET application along with specific settings for TutorBot.
   ```json
   {
     "default-classroom": "my-classroom",
+    "default-organization": "my-organization",
     "java-path": "java",
     "jplag-jar-path": "lib/jplag.jar"
   }
   ```
   + `default-classroom`: The default value for the `--classroom` option.
+  + `default-organization`: The default value for the `--org` option.
   + `java-path`: The path to the Java executable.
   + `jplag-jar-path`: The path to the JPlag JAR file (absolute path or relative
     to the working directory). 

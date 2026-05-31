@@ -1,5 +1,4 @@
 ﻿using System.CommandLine;
-using System.ComponentModel;
 using TutorBot.Domain;
 using TutorBot.Infrastructure;
 using TutorBot.Infrastructure.CollectionExtensions;
@@ -14,8 +13,9 @@ internal class AssignReviewersCommand : Command
   private readonly IGitHubClassroomClient client;
   private readonly ConfigurationHelper configuration;
 
-  private readonly Argument<string> assignmentArgument = new("assignment") { Description = "assignment name" };
+  private readonly Argument<string> assignmentArgument = new("assignment") { Description = "assignment slug" };
   private readonly Option<string> classroomOption = new("--classroom") { Description = "classroom name", Aliases = { "-c" } };
+  private readonly Option<string> orgOption = new("--org") { Description = "GitHub organization", Aliases = { "-o" } };
   private readonly Option<bool> forceOption = new("--force") { Description = "force assignment although there are unlinked submissions", Aliases = { "-f" } };
 
   private bool UserAgreesToAssignReviewers(Assignment assignment)
@@ -35,29 +35,42 @@ internal class AssignReviewersCommand : Command
     return UiHelper.GetUserInput(prompt, answerOptions: new[] { "y", "n" }, defaultAnswer: "n") == "y";
   }
 
-  private async Task HandleAsync(string assignmentName, string classroomName, bool force)
+  private async Task HandleAsync(string assignmentSlug, string classroomName, string org, bool force)
   {
     try
     {
       var studentList = await StudentList.FromRoster(Constants.ROSTER_FILE_PATH);
-      var classroom = await client.Classroom.GetByName(classroomName);
+      var classroom = await client.Classroom.GetByName(classroomName, org);
 
       var progressLoading = new ProgressBar("Loading submissions");
-      var parameters = new AssigmentParameters(classroom.Id, assignmentName, LoadAssessments: true);
+      var parameters = new AssigmentParameters(classroom.Id, assignmentSlug, ClassroomName: classroomName, Org: org, LoadAssessments: true);
       var assignment = await Assignment.FromGitHub(client, studentList, parameters, progressLoading);
       progressLoading.Dispose();
 
       if (assignment.UnlinkedSubmissions.Count == 0 || force)
       {
+        var allSubmissions = assignment.Submissions.ToList();
         var proposedReviewers = assignment.FindReviewers();
+
         if (proposedReviewers.Count == 0)
         {
-          Console.WriteLine($"All submissions in assignment \"{assignmentName}\" have already reviewers assigned.");
+          if (allSubmissions.Count == 0)
+          {
+            Console.WriteLine($"No submissions found in assignment slug \"{assignmentSlug}\".");
+          }
+          else if (allSubmissions.All(s => s.Reviewers.Count > 0))
+          {
+            Console.WriteLine($"All submissions in assignment slug \"{assignmentSlug}\" have already reviewers assigned.");
+          }
+          else
+          {
+            Console.WriteLine($"No additional reviewer assignments could be proposed for assignment slug \"{assignmentSlug}\".");
+          }
         }
         else
         {
           int maxLength = studentList.LinkedStudents.Max(s => s.FullName.Length);
-          Console.WriteLine($"Proposed reviewers for assignment \"{assignmentName}\"");
+          Console.WriteLine($"Proposed reviewers for assignment slug \"{assignmentSlug}\"");
 
           foreach (var (submission, reviewer) in proposedReviewers)
           {
@@ -95,6 +108,9 @@ internal class AssignReviewersCommand : Command
     classroomOption.DefaultValueFactory = _ => configuration.DefaultClassroom;
     Options.Add(classroomOption);
 
+    orgOption.DefaultValueFactory = _ => configuration.DefaultOrganization;
+    Options.Add(orgOption);
+
     forceOption.DefaultValueFactory = _ => false;
     Options.Add(forceOption);
 
@@ -102,10 +118,11 @@ internal class AssignReviewersCommand : Command
 
     SetAction(async parsedResult =>
     {
-      var assignmentName = parsedResult.GetRequiredValue(assignmentArgument);
+      var assignmentSlug = parsedResult.GetRequiredValue(assignmentArgument);
       var classroomName = parsedResult.GetValue(classroomOption);
+      var org = parsedResult.GetRequiredValue(orgOption);
       var force = parsedResult.GetValue(forceOption);
-      await HandleAsync(assignmentName, classroomName!, force);
+      await HandleAsync(assignmentSlug, classroomName!, org, force);
     });
   }
 }

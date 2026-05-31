@@ -14,10 +14,11 @@ internal class DownloadAssessmentsCommand : Command
   private readonly IGitHubClassroomClient client;
   private readonly ConfigurationHelper configuration;
 
-  private readonly Argument<string> assignmentArgument = new("assignment") { Description = "assignment name" };
+  private readonly Argument<string> assignmentArgument = new("assignment") { Description = "assignment slug" };
   private readonly Option<string> classroomOption = new("--classroom") { Description = "classroom name", Aliases = { "-c" } };
+  private readonly Option<string> orgOption = new("--org") { Description = "GitHub organization", Aliases = { "-o" } };
 
-  private async Task HandleAsync(string assignmentName, string classroomName)
+  private async Task HandleAsync(string assignmentSlug, string classroomName, string org)
   {
     void WriteHeader(IXLWorksheet worksheet, int row, IEnumerable<string> exercises)
     {
@@ -55,10 +56,10 @@ internal class DownloadAssessmentsCommand : Command
     try
     {
       var studentList = await StudentList.FromRoster(Constants.ROSTER_FILE_PATH);
-      var classroom = await client.Classroom.GetByName(classroomName);
+      var classroom = await client.Classroom.GetByName(classroomName, org);
 
       var progress = new ProgressBar("Loading submissions");
-      var parameters = new AssigmentParameters(classroom.Id, assignmentName, LoadAssessments: true);
+      var parameters = new AssigmentParameters(classroom.Id, assignmentSlug, ClassroomName: classroomName, Org: org, LoadAssessments: true);
       var assignment = await Assignment.FromGitHub(client, studentList, parameters, progress);
       progress.Dispose();
 
@@ -115,13 +116,17 @@ internal class DownloadAssessmentsCommand : Command
     classroomOption.DefaultValueFactory = _ => configuration.DefaultClassroom;
     Options.Add(classroomOption);
 
+    orgOption.DefaultValueFactory = _ => configuration.DefaultOrganization;
+    Options.Add(orgOption);
+
     Aliases.Add("da");
 
     SetAction(async parsedResult =>
     {
-      var assignmentName = parsedResult.GetRequiredValue(assignmentArgument);
+      var assignmentSlug = parsedResult.GetRequiredValue(assignmentArgument);
       var classroomName = parsedResult.GetRequiredValue(classroomOption);
-      await HandleAsync(assignmentName, classroomName);
+      var org = parsedResult.GetRequiredValue(orgOption);
+      await HandleAsync(assignmentSlug, classroomName, org);
     });
   }
 }

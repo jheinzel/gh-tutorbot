@@ -1,6 +1,5 @@
 ﻿using System.CommandLine;
 using System.IO.Compression;
-using Microsoft.Extensions.Logging;
 using TutorBot.Domain.Exceptions;
 using TutorBot.Domain.JPlag;
 using TutorBot.Infrastructure;

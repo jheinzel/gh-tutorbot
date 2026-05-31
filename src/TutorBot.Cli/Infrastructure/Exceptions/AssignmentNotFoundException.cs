@@ -2,7 +2,7 @@
 
 public class AssignmentNotFoundException : InfrastrucureException
 {
-  public AssignmentNotFoundException(string name) : base($"Assignment with name \"{name}\" does not exist.")
+  public AssignmentNotFoundException(string slug) : base($"Assignment \"{slug}\" does not exist.")
   {
   }
 }

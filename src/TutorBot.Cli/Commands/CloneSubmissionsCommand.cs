@@ -1,6 +1,5 @@
 ﻿using System.CommandLine;
 using System.ComponentModel;
-using Microsoft.Extensions.Logging;
 using TutorBot.Domain;
 using TutorBot.Domain.Exceptions;
 using TutorBot.Infrastructure;
@@ -15,15 +14,16 @@ internal class CloneSubmissionsCommand : Command
   private readonly IGitHubClassroomClient client;
   private readonly ConfigurationHelper configuration;
 
-  private readonly Argument<string> assignmentArgument = new("assignment") { Description = "assignment name" };
+  private readonly Argument<string> assignmentArgument = new("assignment") { Description = "assignment slug" };
   private readonly Option<string> classroomOption = new("--classroom") { Description = "classroom name", Aliases = { "-c" } };
+  private readonly Option<string> orgOption = new("--org") { Description = "GitHub organization", Aliases = { "-o" } };
   private readonly Option<string> directoryOption = new("--directory") { Description = "directory repositories will be cloned to", Aliases = { "-d" } };
 
-  private async Task HandleAsync(string assignmentName, string classroomName, string? directory)
+  private async Task HandleAsync(string assignmentSlug, string classroomName, string org, string? directory)
   {
     try
     {
-      directory ??= assignmentName;
+      directory ??= assignmentSlug;
 
       // check if directory does not exist or is empty
       if (Directory.Exists(directory) && Directory.EnumerateFileSystemEntries(directory).Any())
@@ -32,10 +32,10 @@ internal class CloneSubmissionsCommand : Command
       }
 
       var studentList = await StudentList.FromRoster(Constants.ROSTER_FILE_PATH);
-      var classroom = await client.Classroom.GetByName(classroomName);
+      var classroom = await client.Classroom.GetByName(classroomName, org);
 
       var progress = new ProgressBar("Loading submissions");
-      var parameters = new AssigmentParameters(classroom.Id, assignmentName, LoadAssessments: true);
+      var parameters = new AssigmentParameters(classroom.Id, assignmentSlug, ClassroomName: classroomName, Org: org, LoadAssessments: true);
       var assignment = await Assignment.FromGitHub(client, studentList, parameters, progress);
       progress.Dispose();
 
@@ -83,16 +83,20 @@ internal class CloneSubmissionsCommand : Command
     classroomOption.DefaultValueFactory = _ => configuration.DefaultClassroom;
     Options.Add(classroomOption);
 
+    orgOption.DefaultValueFactory = _ => configuration.DefaultOrganization;
+    Options.Add(orgOption);
+
     Options.Add(directoryOption);
 
     Aliases.Add("cs");
 
     SetAction(async parsedResult =>
     {
-      var assignmentName = parsedResult.GetRequiredValue(assignmentArgument);
+      var assignmentSlug = parsedResult.GetRequiredValue(assignmentArgument);
       var classroomName = parsedResult.GetRequiredValue(classroomOption);
+      var org = parsedResult.GetRequiredValue(orgOption);
       var directory = parsedResult.GetValue(directoryOption);
-      await HandleAsync(assignmentName, classroomName, directory);
+      await HandleAsync(assignmentSlug, classroomName, org, directory);
     });
   }
 }
