@@ -3,7 +3,7 @@
     "gh-tutorbot": {
       "commandName": "Project",
       "commandLineArgs": "view-plagiarism-report ue07",
-      "workingDirectory": "C:\\Users\\p20058\\Documents\\FH\\Lehre\\Tools\\gh-tutorbot\\data\\swe4-vz-2025ss"
+      "workingDirectory": "C:\\Users\\p20058\\Documents\\FH\\Lehre\\Tools\\gh-tutorbot\\data\\classroom50-trial"
     }
   }
 }
