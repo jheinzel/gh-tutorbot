@@ -37,12 +37,12 @@ internal class RemoveReviewersCommand : Command
   {
     try
     {
-      var studentList = await StudentList.FromRoster(Constants.ROSTER_FILE_PATH);
+      var studentList = await StudentList.FromGitHub(client, org, classroomName);
       var classroom = await client.Classroom.GetByName(classroomName, org);
 
       var progressLoading = new ProgressBar("Loading submissions");
       var parameters = new AssigmentParameters(classroom.Id, assignmentSlug, ClassroomName: classroomName, Org: org);
-      var assignment = await Assignment.FromGitHub(client, studentList, parameters, progressLoading);
+      var assignment = await Assignment.FromGitHub(client, studentList, parameters, configuration, progressLoading);
       progressLoading.Dispose();
 
       if (UserAgreesToRemoveReviewers(assignment))

@@ -144,11 +144,6 @@ TutorBot offers the following range of commands:
   ```
 
 ## Configuration
-* `students.csv`: This roster file containing a list of students in a
-  classroom is used primarily to map the GitHub username to the student's ID
-  and name. The expected header is:
-  `username,first_name,last_name,email,section,github_id`.
-  Place this file in your working directory and name it as `students.csv`.
 
 * `appsettings.json`: This configuration file contains general settings for the
   .NET application along with specific settings for TutorBot.
@@ -157,14 +152,23 @@ TutorBot offers the following range of commands:
     "default-classroom": "my-classroom",
     "default-organization": "my-organization",
     "java-path": "java",
-    "jplag-jar-path": "lib/jplag.jar"
+    "jplag-jar-path": "lib/jplag.jar",
+    "template-repo-pattern": ".*template$"
   }
   ```
   + `default-classroom`: The default value for the `--classroom` option.
   + `default-organization`: The default value for the `--org` option.
   + `java-path`: The path to the Java executable.
   + `jplag-jar-path`: The path to the JPlag JAR file (absolute path or relative
-    to the working directory). 
+    to the working directory).
+  + `template-repo-pattern`: A regular expression pattern for identifying template
+    repositories that should be excluded from assignment repositories. Defaults to
+    `.*template$` (repositories ending with "template").
+
+* **Roster file**: The roster is automatically fetched from the Classroom 50 metadata
+  repository at `https://github.com/<org>/classroom50/blob/HEAD/<classroom>/roster.csv`.
+  The expected format is: `username,first_name,last_name,email,section,github_id,role`
+  where `role` should be "student" (teachers and other roles are ignored).
   
 ## Working with TutorBot
 
@@ -172,8 +176,8 @@ TutorBot offers the following range of commands:
    working with. If not, ask the classroom owner to add you as a member with the
    required permissions.
 2. Install GitHub CLI and TutorBot as described above.
-3. Download the student roster file to your working directory. Create the
-   `appsettings.json` configuration file and define your default classroom.
+3. Create the `appsettings.json` configuration file and define your default
+   classroom and organization.
 4. Authenticate with GitHub CLI:
    ```shell
    gh auth login

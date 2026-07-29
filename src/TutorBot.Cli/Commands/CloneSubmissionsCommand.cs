@@ -31,12 +31,12 @@ internal class CloneSubmissionsCommand : Command
         throw new DomainException($"Error: Directory \"{directory}\" already exists and is not empty.");
       }
 
-      var studentList = await StudentList.FromRoster(Constants.ROSTER_FILE_PATH);
+      var studentList = await StudentList.FromGitHub(client, org, classroomName);
       var classroom = await client.Classroom.GetByName(classroomName, org);
 
       var progress = new ProgressBar("Loading submissions");
       var parameters = new AssigmentParameters(classroom.Id, assignmentSlug, ClassroomName: classroomName, Org: org, LoadAssessments: true);
-      var assignment = await Assignment.FromGitHub(client, studentList, parameters, progress);
+      var assignment = await Assignment.FromGitHub(client, studentList, parameters, configuration, progress);
       progress.Dispose();
 
       foreach (var submission in assignment.Submissions.Where(s => s.Assessment.IsValid())

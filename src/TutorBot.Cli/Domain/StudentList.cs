@@ -1,6 +1,9 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
+using Octokit;
 using TutorBot.Domain.Exceptions;
+using TutorBot.Infrastructure;
+using TutorBot.Infrastructure.OctokitExtensions;
 using TutorBot.Utility;
 
 namespace TutorBot.Domain;
@@ -59,24 +62,35 @@ public class StudentList : IStudentList
 
     await foreach (List<string> line in CsvParser.Parse(rosterStream, ignoreFirstLine: true))
     {
-      if (line.Count < 6)
+      if (line.Count < 7)
       {
         throw new RosterFormatException($"Invalid roster line: \"{string.Join(",", line)}\"");
+      }
+
+      var role = line[6].Trim();
+      if (role != "student")
+      {
+        continue;
       }
 
       var username = line[0].Trim();
       var firstName = line[1].Trim();
       var lastName = line[2].Trim();
+      var email = line[3].Trim();
       var section = line[4].Trim();
 
-      var match = Regex.Match(section, Constants.STUDENT_SECTION_PATTERN);
-      if (!match.Success)
+      var emailMatch = Regex.Match(email, Constants.MATNR_FROM_EMAIL_PATTERN);
+      if (!emailMatch.Success)
+      {
+        throw new RosterFormatException($"Invalid email in roster line: \"{string.Join(",", line)}\"");
+      }
+      var matNr = emailMatch.Groups["MatNr"].Value;
+
+      var sectionNr = section.StartsWith('G') ? section[1..] : section;
+      if (!int.TryParse(sectionNr, out var groupNr))
       {
         throw new RosterFormatException($"Invalid section/group in roster line: \"{string.Join(",", line)}\"");
       }
-
-      var groupNr = int.Parse(match.Groups["GroupNr"].Value);
-      var matNr = match.Groups["MatNr"].Value;
 
       var newStudent = new Student
       (
@@ -98,6 +112,23 @@ public class StudentList : IStudentList
     }
 
     return new StudentList(students, unlinkedStudents);
+  }
+
+  public static async Task<IStudentList> FromGitHub(IGitHubClassroomClient client, string org, string classroomName)
+  {
+    try
+    {
+      var repository = await client.Repository.Get(org, Constants.CLASSROOM_METADATA_REPO_NAME);
+      var contentList = await client.Repository.Content.GetAllContents(repository.Id, $"{classroomName}/roster.csv");
+      var rosterContent = contentList.Single().Content;
+
+      using var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(rosterContent));
+      return await FromRoster(stream);
+    }
+    catch (NotFoundException)
+    {
+      throw new DomainException($"Error: Could not find roster at \"https://github.com/{org}/{Constants.CLASSROOM_METADATA_REPO_NAME}/blob/HEAD/{classroomName}/roster.csv\".");
+    }
   }
 
   public IReadOnlyList<Student> LinkedStudents => students.Values.ToList().AsReadOnly();

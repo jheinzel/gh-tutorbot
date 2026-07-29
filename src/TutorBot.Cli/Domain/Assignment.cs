@@ -1,8 +1,10 @@
 ﻿using Octokit;
+using System.Text.RegularExpressions;
 using TutorBot.Domain.Exceptions;
 using TutorBot.Infrastructure;
 using TutorBot.Infrastructure.CollectionExtensions;
 using TutorBot.Infrastructure.OctokitExtensions;
+using TutorBot.Utility;
 
 namespace TutorBot.Domain;
 
@@ -22,7 +24,7 @@ public class Assignment(IGitHubClassroomClient client, string name, DateTimeOffs
 
   public IReadOnlyList<UnlinkedSubmission> UnlinkedSubmissions { get; init; } = unlinkedSubmissions ?? throw new ArgumentNullException(nameof(unlinkedSubmissions));
 
-  public static async Task<Assignment> FromGitHub(IGitHubClassroomClient client, IStudentList students, AssigmentParameters parameters, IProgress? progress = null)
+  public static async Task<Assignment> FromGitHub(IGitHubClassroomClient client, IStudentList students, AssigmentParameters parameters, ConfigurationHelper? configuration = null, IProgress? progress = null)
   {
     var submissions = new List<Submission>();
     var unlinkedSubmission = new List<UnlinkedSubmission>();
@@ -59,7 +61,8 @@ public class Assignment(IGitHubClassroomClient client, string name, DateTimeOffs
         .GroupBy(r => r.Id)
         .Select(g => g.First())
         .Where(r => r.Name.StartsWith(classroomPrefix, StringComparison.OrdinalIgnoreCase)
-                 && r.Name.Contains(slugPart, StringComparison.OrdinalIgnoreCase))
+                 && r.Name.Contains(slugPart, StringComparison.OrdinalIgnoreCase)
+                 && !Regex.IsMatch(r.Name, configuration?.TemplateRepoPattern ?? Constants.TEMPLATE_REPO_PATTERN, RegexOptions.IgnoreCase))
         .ToList();
 
       progress?.Init(matchingRepos.Count);

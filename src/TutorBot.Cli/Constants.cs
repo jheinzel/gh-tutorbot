@@ -5,8 +5,8 @@ internal static class Constants
   public const string APP_NAME = "gh-tutorbot";
 
   public const string DOUBLE_PATTERN = @"(?<number>[+-]?(\d*[.])?\d+)";
-  public const string ROSTER_FILE_PATH = @"./students.csv";
-  public const string STUDENT_SECTION_PATTERN = @"^G(?<GroupNr>\d+)\/(?<MatNr>[^\s\/]+)$";
+  public const string MATNR_FROM_EMAIL_PATTERN = @"^(?<MatNr>[^@]+)@";
+  public const string TEMPLATE_REPO_PATTERN = @".*template$";
   public const string ASSESSMENT_HEADER_ENTRY_PATTERN = $@"\(\s*(?<Value>{DOUBLE_PATTERN})\s*\%\s*\)";
     // "(99.9%)", " xxx (99.9%) xxx", "(99.9 % )", "( 99.9 %)", ...
 
