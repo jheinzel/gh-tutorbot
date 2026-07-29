@@ -19,6 +19,17 @@ public class AssignmentsClient : ApiClient, IAssignmentsClient
     public string Slug { get; init; } = string.Empty;
     public string Name { get; init; } = string.Empty;
     public string Due { get; init; } = string.Empty;
+    public string Mode { get; init; } = "individual";
+    public string Autograder { get; init; } = "default";
+    public bool FeedbackPr { get; init; } = false;
+    public TemplateDto? Template { get; init; }
+  }
+
+  private class TemplateDto
+  {
+    public string Owner { get; init; } = string.Empty;
+    public string Repo { get; init; } = string.Empty;
+    public string Branch { get; init; } = "main";
   }
 
   private class AssignmentsRootDto
@@ -87,16 +98,16 @@ public class AssignmentsClient : ApiClient, IAssignmentsClient
     var root = JsonSerializer.Deserialize<AssignmentsRootDto>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
                ?? new AssignmentsRootDto();
 
-    var classroomPrefix = $"{classroomName}-";
     var repoCandidates = new List<Repository>();
     var page = 1;
     const int perPage = 100;
 
+    // Search for all repos in the classroom directory
     while (true)
     {
       var parameters = new Dictionary<string, string>
       {
-        ["q"] = $"{classroomPrefix} in:name org:{org}",
+        ["q"] = $"{classroomName}/ in:name org:{org}",
         ["per_page"] = perPage.ToString(),
         ["page"] = page.ToString()
       };
@@ -115,7 +126,7 @@ public class AssignmentsClient : ApiClient, IAssignmentsClient
     var repos = repoCandidates
       .GroupBy(r => r.Id)
       .Select(g => g.First())
-      .Where(r => r.Name.StartsWith(classroomPrefix, StringComparison.OrdinalIgnoreCase))
+      .Where(r => r.Name.StartsWith($"{classroomName}/", StringComparison.OrdinalIgnoreCase))
       .ToList();
 
     return root.Assignments
@@ -127,8 +138,8 @@ public class AssignmentsClient : ApiClient, IAssignmentsClient
           deadline = parsedDue;
         }
 
-        var slugPart = $"-{assignment.Slug}-";
-        var accepted = repos.Count(r => r.Name.Contains(slugPart, StringComparison.OrdinalIgnoreCase));
+        var assignmentPrefix = $"{classroomName}/{assignment.Slug}/";
+        var accepted = repos.Count(r => r.Name.StartsWith(assignmentPrefix, StringComparison.OrdinalIgnoreCase));
 
         return new AssignmentDto
         {
@@ -136,7 +147,8 @@ public class AssignmentsClient : ApiClient, IAssignmentsClient
           Title = assignment.Name,
           Slug = assignment.Slug,
           Accepted = accepted,
-          Deadline = deadline
+          Deadline = deadline,
+          TemplateRepoName = assignment.Template?.Repo
         };
       })
       .ToList();

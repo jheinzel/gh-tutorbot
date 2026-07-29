@@ -29,8 +29,4 @@ public class ConfigurationHelper
   private const string DEFAULT_JPLAG_JAR_PATH = @"./lib/jplag.jar";
 
   public string JplagJarPath { get => configuration[KEY_JPLAG_JAR_PATH] ?? DEFAULT_JPLAG_JAR_PATH; }
-
-  public const string KEY_TEMPLATE_REPO_PATTERN = "template-repo-pattern";
-
-  public string TemplateRepoPattern { get => configuration[KEY_TEMPLATE_REPO_PATTERN] ?? Constants.TEMPLATE_REPO_PATTERN; }
 }

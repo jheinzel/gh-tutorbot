@@ -152,8 +152,7 @@ TutorBot offers the following range of commands:
     "default-classroom": "my-classroom",
     "default-organization": "my-organization",
     "java-path": "java",
-    "jplag-jar-path": "lib/jplag.jar",
-    "template-repo-pattern": ".*template$"
+    "jplag-jar-path": "lib/jplag.jar"
   }
   ```
   + `default-classroom`: The default value for the `--classroom` option.
@@ -161,14 +160,16 @@ TutorBot offers the following range of commands:
   + `java-path`: The path to the Java executable.
   + `jplag-jar-path`: The path to the JPlag JAR file (absolute path or relative
     to the working directory).
-  + `template-repo-pattern`: A regular expression pattern for identifying template
-    repositories that should be excluded from assignment repositories. Defaults to
-    `.*template$` (repositories ending with "template").
 
 * **Roster file**: The roster is automatically fetched from the Classroom 50 metadata
   repository at `https://github.com/<org>/classroom50/blob/HEAD/<classroom>/roster.csv`.
   The expected format is: `username,first_name,last_name,email,section,github_id,role`
   where `role` should be "student" (teachers and other roles are ignored).
+
+* **Assignment metadata**: Assignment metadata is read from the Classroom 50 metadata
+  repository at `https://github.com/<org>/classroom50/blob/HEAD/<classroom>/assignments.json`.
+  This file contains assignment definitions including the template repository name, which
+  is used to exclude the template repository from student repositories.
   
 ## Working with TutorBot
 

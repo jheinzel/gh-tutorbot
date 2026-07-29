@@ -34,11 +34,10 @@ public class Assignment(IGitHubClassroomClient client, string name, DateTimeOffs
       : await client.Classroom.Assignment.GetBySlug(parameters.ClassroomId, parameters.AssignmentSlug);
     if (!string.IsNullOrWhiteSpace(parameters.Org) && !string.IsNullOrWhiteSpace(parameters.ClassroomName) && !string.IsNullOrWhiteSpace(assignmentDto.Slug))
     {
-      var classroomPrefix = $"{parameters.ClassroomName}-";
-      var slugPart = $"-{assignmentDto.Slug}-";
+      var assignmentPrefix = $"{parameters.ClassroomName}-{assignmentDto.Slug}-";
 
       var repoCandidates = new List<Repository>();
-      var searchRequest = new SearchRepositoriesRequest($"{classroomPrefix} in:name org:{parameters.Org}")
+      var searchRequest = new SearchRepositoriesRequest($"{assignmentPrefix} in:name org:{parameters.Org}")
       {
         PerPage = 100,
         Page = 1
@@ -60,17 +59,15 @@ public class Assignment(IGitHubClassroomClient client, string name, DateTimeOffs
       var matchingRepos = repoCandidates
         .GroupBy(r => r.Id)
         .Select(g => g.First())
-        .Where(r => r.Name.StartsWith(classroomPrefix, StringComparison.OrdinalIgnoreCase)
-                 && r.Name.Contains(slugPart, StringComparison.OrdinalIgnoreCase)
-                 && !Regex.IsMatch(r.Name, configuration?.TemplateRepoPattern ?? Constants.TEMPLATE_REPO_PATTERN, RegexOptions.IgnoreCase))
+        .Where(r => r.Name.StartsWith(assignmentPrefix, StringComparison.OrdinalIgnoreCase)
+                 && (string.IsNullOrWhiteSpace(assignmentDto.TemplateRepoName) || !r.Name.Equals(assignmentDto.TemplateRepoName, StringComparison.OrdinalIgnoreCase)))
         .ToList();
 
       progress?.Init(matchingRepos.Count);
 
       foreach (var repository in matchingRepos)
       {
-        var slugIndex = repository.Name.IndexOf(slugPart, StringComparison.OrdinalIgnoreCase);
-        var ownerLogin = slugIndex >= 0 ? repository.Name[(slugIndex + slugPart.Length)..] : string.Empty;
+        var ownerLogin = repository.Name[assignmentPrefix.Length..];
         if (!students.TryGetValue(ownerLogin, out var owner))
         {
           unlinkedSubmission.Add(new UnlinkedSubmission(repository));

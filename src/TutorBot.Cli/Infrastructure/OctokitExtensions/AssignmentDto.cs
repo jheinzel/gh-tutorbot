@@ -13,4 +13,5 @@ public class AssignmentDto
 	public string Slug { get; init; } = string.Empty;
 	public int Accepted { get; init; }
 	public DateTimeOffset? Deadline { get; init; }
+	public string? TemplateRepoName { get; init; }
 }

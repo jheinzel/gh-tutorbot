@@ -76,7 +76,7 @@ internal class ListSubmissionsCommand : Command
     }
     else
     {
-      Console.WriteLine($"No submission for this assignment slug (in the specified group).");
+      Console.WriteLine($"No submission for this assignment (in the specified group).");
     }
   }
 

@@ -1,4 +1,4 @@
-﻿namespace TutorBot;
+namespace TutorBot;
 
 internal static class Constants
 {
@@ -6,7 +6,6 @@ internal static class Constants
 
   public const string DOUBLE_PATTERN = @"(?<number>[+-]?(\d*[.])?\d+)";
   public const string MATNR_FROM_EMAIL_PATTERN = @"^(?<MatNr>[^@]+)@";
-  public const string TEMPLATE_REPO_PATTERN = @".*template$";
   public const string ASSESSMENT_HEADER_ENTRY_PATTERN = $@"\(\s*(?<Value>{DOUBLE_PATTERN})\s*\%\s*\)";
     // "(99.9%)", " xxx (99.9%) xxx", "(99.9 % )", "( 99.9 %)", ...
 
