@@ -170,6 +170,15 @@ public class Assignment(IGitHubClassroomClient client, string name, DateTimeOffs
     }
   }
 
+  /// <summary>
+  /// Assigns reviewers to submissions as collaborators, granting read access to the peer's repository.
+  /// 
+  /// Notification behavior:
+  /// - For outside collaborators: GitHub sends an email invitation
+  /// - For organization members: GitHub provides instant access to the repository and sends
+  ///   an in-app notification. Reviewers should check their GitHub notification dashboard
+  ///   for the access notification.
+  /// </summary>
   public async Task AssignReviewers(IEnumerable<(Submission, Student)> reviewers, IProgress? progress = null)
   {
     progress?.Init(reviewers.Count());
@@ -233,10 +242,9 @@ public class Assignment(IGitHubClassroomClient client, string name, DateTimeOffs
   {
     var reviewers = new List<Reviewer>();
 
+    // Load collaborators with read-only access (pull permission)
     var readOnlyCollaborators = (await client.Repository.Collaborator.GetAll(repository.Id))
-                                  .Where(c => c.Permissions.Maintain is not null &&
-                                              c.Permissions.Maintain == false &&
-                                              c.RoleName == Constants.GITHUB_READ_ROLE)
+                                  .Where(c => c.RoleName == Constants.GITHUB_READ_ROLE)
                                   .ToList();
 
     foreach (var collaborator in readOnlyCollaborators.Where(c => c.Login != owner.GitHubUsername))

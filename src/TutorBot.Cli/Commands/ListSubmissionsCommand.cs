@@ -1,4 +1,4 @@
-﻿using System.CommandLine;
+using System.CommandLine;
 using System.Globalization;
 using TutorBot.Domain;
 using TutorBot.Infrastructure;
@@ -9,42 +9,44 @@ using TutorBot.Utility;
 
 namespace TutorBot.Commands;
 
-internal class ListSubmissionsCommand : Command
+internal class ListSubmissionsCommand : ClassroomCommand
 {
-  private readonly IGitHubClassroomClient client;
-  private readonly ConfigurationHelper configuration;
-
   private readonly Argument<string> assignmentArgument = new("assignment") { Description = "assignment slug" };
-  private readonly Option<string> classroomOption = new("--classroom") { Description = "classroom name", Aliases = { "-c" } };
-  private readonly Option<string> orgOption = new("--org") { Description = "GitHub organization", Aliases = { "-o" } };
   private readonly Option<int?> groupOption = new("--group") { Description = "filter group", Aliases = { "-g" } };
 
-  private async Task HandleAsync(string assignmentSlug, string classroomName, string org, int? group)
+  private async Task HandleAsync(string assignmentSlug, string? classroomName, string? org, int? group)
   {
+    ValidateClassroomAndOrg(ref classroomName, ref org);
+
     var printer = new TablePrinter();
     printer.AddRow("STUDENT", "STUD.ID", "Gr.", "REVIEWER(S)", "EFFORT", "ASSESSMENT", "REPOSITORY URL");
 
     try
     {
-      var studentList = await StudentList.FromGitHub(client, org, classroomName);
-      var classroom = await client.Classroom.GetByName(classroomName, org);
+      var studentList = await StudentList.FromGitHub(Client, org, classroomName);
+      var classroom = await Client.Classroom.GetByName(classroomName, org);
 
       var progress = new ProgressBar("Loading submissions");
       var parameters = new AssigmentParameters(classroom.Id, assignmentSlug, group, ClassroomName: classroomName, Org: org, LoadAssessments: true);
-      var assignment = await Assignment.FromGitHub(client, studentList, parameters, configuration, progress);
+      var assignment = await Assignment.FromGitHub(Client, studentList, parameters, Configuration, progress);
       progress.Dispose();
 
       foreach (var submission in assignment.Submissions.OrderBy(s => s.Owner.FullName))
       {
         var reviewers = submission.Reviewers.Select(r => r.FullName).ToStringWithSeparator();
-        var effortInfo = submission.Assessment.State == AssessmentState.Loaded ? FormattableString.Invariant($"{submission.Assessment.Effort,6:F1}") : $"{"   -",-6}";
-        var assessmentInfo = submission.Assessment.State == AssessmentState.Loaded ? FormattableString.Invariant($"{submission.Assessment.Total,10:F1}") : $"{submission.Assessment.State,-10}";
+        var effortStr = submission.Assessment.State == AssessmentState.Loaded ? 
+          FormattableString.Invariant($"{submission.Assessment.Effort,6:F1}") : 
+          "   -  ";
+        var assessmentStr = submission.Assessment.State == AssessmentState.Loaded ? 
+          FormattableString.Invariant($"{submission.Assessment.Total,10:F1}") : 
+          submission.Assessment.State.ToString().PadRight(10);
+
         printer.AddRow(submission.Owner.FullName,
                        submission.Owner.MatNr,
                        submission.Owner.GroupNr.ToString().PadLeft(3),
                        reviewers,
-                       effortInfo,
-                       assessmentInfo,
+                       effortStr,
+                       assessmentStr,
                        submission.RepositoryUrl);
       }
 
@@ -91,18 +93,13 @@ internal class ListSubmissionsCommand : Command
   }
 
   public ListSubmissionsCommand(IGitHubClassroomClient client, ConfigurationHelper configuration) :
-    base("list-submissions", "List all submissions of an assignment")
+    base("list-submissions", "List all submissions of an assignment", client, configuration)
   {
-    this.client = client;
-    this.configuration = configuration;
+    SetupCommonOptionDefaults();
 
     Add(assignmentArgument);
-
-    classroomOption.DefaultValueFactory = _ => configuration.DefaultClassroom;
-    Options.Add(classroomOption);
-
-    orgOption.DefaultValueFactory = _ => configuration.DefaultOrganization;
-    Options.Add(orgOption);
+    Options.Add(ClassroomOption);
+    Options.Add(OrgOption);
 
     groupOption.DefaultValueFactory = _ => null;
     Options.Add(groupOption);
@@ -112,11 +109,10 @@ internal class ListSubmissionsCommand : Command
     SetAction(async parsedResult =>
     {
       var assignmentSlug = parsedResult.GetRequiredValue(assignmentArgument);
-      var classroomName = parsedResult.GetRequiredValue(classroomOption);
-      var org = parsedResult.GetRequiredValue(orgOption);
+      var classroomName = parsedResult.GetValue(ClassroomOption);
+      var org = parsedResult.GetValue(OrgOption);
       var group = parsedResult.GetValue(groupOption);
       await HandleAsync(assignmentSlug, classroomName, org, group);
     });
   }
 }
-

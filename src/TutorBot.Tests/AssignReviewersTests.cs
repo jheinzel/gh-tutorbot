@@ -48,7 +48,7 @@ public class AssignReviewersTests
   {
     var readRequest = new CollaboratorRequest(permission);
     var invitation = new RepositoryInvitation(1, "", repository, null, null, InvitationPermissionType.Read, DateTimeOffset.Now, false, "", "");
-    collaboratorsClient.Add(Arg.Any<long>(), Arg.Any<string>(), Arg.Is<CollaboratorRequest>(r => r.Permission == permission)).Returns(Task.FromResult(invitation));
+    collaboratorsClient.Add(Arg.Any<long>(), Arg.Any<string>(), Arg.Is<CollaboratorRequest>(r => r != null && r.Permission == permission)).Returns(Task.FromResult(invitation));
   }
 
   [Fact]

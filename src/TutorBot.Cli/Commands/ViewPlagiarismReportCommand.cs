@@ -1,4 +1,4 @@
-﻿using System.CommandLine;
+using System.CommandLine;
 using TutorBot.Domain.Exceptions;
 using TutorBot.Infrastructure;
 using TutorBot.Infrastructure.Exceptions;
@@ -7,11 +7,8 @@ using TutorBot.Utility;
 
 namespace TutorBot.Commands;
 
-internal class ViewPlagiarismReportCommand : Command
+internal class ViewPlagiarismReportCommand : ClassroomCommand
 {
-  private readonly IGitHubClassroomClient client;
-  private readonly ConfigurationHelper configuration;
-
   private readonly Option<string> reportFileOption = new("--report-file") { Description = "report file path", Aliases = { "-rf" } };
 
   private async Task HandleAsync(string reportFile)
@@ -39,16 +36,16 @@ internal class ViewPlagiarismReportCommand : Command
     try
     {
 
-      if (!File.Exists(configuration.JplagJarPath))
+      if (!File.Exists(Configuration.JplagJarPath))
       {
-        throw new DomainException($"Error: JPlag jar file \"{configuration.JplagJarPath}\" does not exist. Download JPlag from https://github.com/jplag/JPlag/releases.\n" +
+        throw new DomainException($"Error: JPlag jar file \"{Configuration.JplagJarPath}\" does not exist. Download JPlag from https://github.com/jplag/JPlag/releases.\n" +
                                   $"       Ensure that the configuration parameter \"{ConfigurationHelper.KEY_JPLAG_JAR_PATH}\" is set appropriately.");
       }
 
       var jplagViewArgs = string.Format(Constants.JPLAG_VIEW_ARGS, reportFile);
-      var javaArgs = $"-jar \"{configuration.JplagJarPath}\" {jplagViewArgs}";
+      var javaArgs = $"-jar \"{Configuration.JplagJarPath}\" {jplagViewArgs}";
 
-      var (task, process) = ProcessHelper.RunProcessWithHandleAsync(configuration.JavaPath, javaArgs);
+      var (task, process) = ProcessHelper.RunProcessWithHandleAsync(Configuration.JavaPath, javaArgs);
       Console.WriteLine("Press Ctrl-C to terminate the JPlag server ...");
 
       Console.CancelKeyPress += (sender, e) =>
@@ -62,16 +59,13 @@ internal class ViewPlagiarismReportCommand : Command
     }
     catch (CommandNotFoundException)
     {
-      throw new DomainException($"Error: Java (\"{configuration.JavaPath}\") not found.");
+      throw new DomainException($"Error: Java (\"{Configuration.JavaPath}\") not found.");
     }
   }
 
   public ViewPlagiarismReportCommand(IGitHubClassroomClient client, ConfigurationHelper configuration) :
-    base("view-plagiarism-report", "View plagiarism report")
+    base("view-plagiarism-report", "View plagiarism report", client, configuration)
   {
-    this.client = client;
-    this.configuration = configuration;
-
     reportFileOption.DefaultValueFactory = _ => $"./{Constants.DEFAULT_REPORT_FILE}";
     Options.Add(reportFileOption);
 
@@ -84,4 +78,3 @@ internal class ViewPlagiarismReportCommand : Command
     });
   }
 }
-

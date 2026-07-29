@@ -5,22 +5,18 @@ using TutorBot.Utility;
 
 namespace TutorBot.Commands;
 
-internal class ListAssignmentsCommand : Command
+internal class ListAssignmentsCommand : ClassroomCommand
 {
-  private readonly IGitHubClassroomClient client;
-  private readonly ConfigurationHelper configuration;
-
-  private readonly Option<string> classroomOption = new("--classroom") { Description = "classroom name", Aliases = { "-c" } };
-  private readonly Option<string> orgOption = new("--org") { Description = "GitHub organization", Aliases = { "-o" } };
-
-  private async Task HandleAsync(string classroomName, string org)
+  private async Task HandleAsync(string? classroomName, string? org)
   {
+    ValidateClassroomAndOrg(ref classroomName, ref org);
+
     var printer = new TablePrinter();
     printer.AddRow("SLUG", "NAME", "DEADLINE", "SUBM.");
 
     try
     {
-      var assignments = await client.Classroom.Assignment.GetAll(org, classroomName);
+      var assignments = await Client.Classroom.Assignment.GetAll(org, classroomName);
       foreach (var assignment in assignments)
       {
         var deadLineStr = assignment.Deadline is null ? "-" : assignment.Deadline?.LocalDateTime.ToString("yyyy-MM-dd HH:mm");
@@ -36,23 +32,18 @@ internal class ListAssignmentsCommand : Command
   }
 
   public ListAssignmentsCommand(IGitHubClassroomClient client, ConfigurationHelper configuration) : 
-    base("list-assignments", "List all assignments of a classroom")
+    base("list-assignments", "List all assignments of a classroom", client, configuration)
   {
-    this.client = client;
-    this.configuration = configuration;
-
-    classroomOption.DefaultValueFactory = _ => configuration.DefaultClassroom;
-    Options.Add(classroomOption);
-
-    orgOption.DefaultValueFactory = _ => configuration.DefaultOrganization;
-    Options.Add(orgOption);
+    SetupCommonOptionDefaults();
+    Options.Add(ClassroomOption);
+    Options.Add(OrgOption);
 
     Aliases.Add("la");
 
     SetAction(async parsedResult =>
     {
-      var classroomName = parsedResult.GetRequiredValue(classroomOption);
-      var org = parsedResult.GetRequiredValue(orgOption);
+      var classroomName = parsedResult.GetValue(ClassroomOption);
+      var org = parsedResult.GetValue(OrgOption);
       await HandleAsync(classroomName, org);
     });
   }

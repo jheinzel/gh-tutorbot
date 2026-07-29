@@ -1,4 +1,4 @@
-﻿using System.CommandLine;
+using System.CommandLine;
 using TutorBot.Domain;
 using TutorBot.Infrastructure;
 using TutorBot.Infrastructure.CollectionExtensions;
@@ -8,14 +8,9 @@ using TutorBot.Utility;
 
 namespace TutorBot.Commands;
 
-internal class AssignReviewersCommand : Command
+internal class AssignReviewersCommand : ClassroomCommand
 {
-  private readonly IGitHubClassroomClient client;
-  private readonly ConfigurationHelper configuration;
-
   private readonly Argument<string> assignmentArgument = new("assignment") { Description = "assignment slug" };
-  private readonly Option<string> classroomOption = new("--classroom") { Description = "classroom name", Aliases = { "-c" } };
-  private readonly Option<string> orgOption = new("--org") { Description = "GitHub organization", Aliases = { "-o" } };
   private readonly Option<bool> forceOption = new("--force") { Description = "force assignment although there are unlinked submissions", Aliases = { "-f" } };
 
   private bool UserAgreesToAssignReviewers(Assignment assignment)
@@ -35,16 +30,18 @@ internal class AssignReviewersCommand : Command
     return UiHelper.GetUserInput(prompt, answerOptions: new[] { "y", "n" }, defaultAnswer: "n") == "y";
   }
 
-  private async Task HandleAsync(string assignmentSlug, string classroomName, string org, bool force)
+  private async Task HandleAsync(string assignmentSlug, string? classroomName, string? org, bool force)
   {
+    ValidateClassroomAndOrg(ref classroomName, ref org);
+
     try
     {
-      var studentList = await StudentList.FromGitHub(client, org, classroomName);
-      var classroom = await client.Classroom.GetByName(classroomName, org);
+      var studentList = await StudentList.FromGitHub(Client, org, classroomName);
+      var classroom = await Client.Classroom.GetByName(classroomName, org);
 
       var progressLoading = new ProgressBar("Loading submissions");
       var parameters = new AssigmentParameters(classroom.Id, assignmentSlug, ClassroomName: classroomName, Org: org, LoadAssessments: true);
-      var assignment = await Assignment.FromGitHub(client, studentList, parameters, configuration, progressLoading);
+      var assignment = await Assignment.FromGitHub(Client, studentList, parameters, Configuration, progressLoading);
       progressLoading.Dispose();
 
       if (assignment.UnlinkedSubmissions.Count == 0 || force)
@@ -60,7 +57,7 @@ internal class AssignReviewersCommand : Command
           }
           else if (allSubmissions.All(s => s.Reviewers.Count > 0))
           {
-            Console.WriteLine($"All submissions in assignment slug \"{assignmentSlug}\" have already reviewers assigned.");
+            Console.WriteLine($"All submissions in assignment \"{assignmentSlug}\" have already reviewers assigned.");
           }
           else
           {
@@ -70,7 +67,7 @@ internal class AssignReviewersCommand : Command
         else
         {
           int maxLength = studentList.LinkedStudents.Max(s => s.FullName.Length);
-          Console.WriteLine($"Proposed reviewers for assignment slug \"{assignmentSlug}\"");
+          Console.WriteLine($"Proposed reviewers for assignment \"{assignmentSlug}\"");
 
           foreach (var (submission, reviewer) in proposedReviewers)
           {
@@ -98,18 +95,13 @@ internal class AssignReviewersCommand : Command
   }
 
   public AssignReviewersCommand(IGitHubClassroomClient client, ConfigurationHelper configuration) :
-    base("assign-reviewers", "Assign reviewers to assignments randomly")
+    base("assign-reviewers", "Assign reviewers to assignments randomly", client, configuration)
   {
-    this.client = client;
-    this.configuration = configuration;
+    SetupCommonOptionDefaults();
 
     Add(assignmentArgument);
-
-    classroomOption.DefaultValueFactory = _ => configuration.DefaultClassroom;
-    Options.Add(classroomOption);
-
-    orgOption.DefaultValueFactory = _ => configuration.DefaultOrganization;
-    Options.Add(orgOption);
+    Options.Add(ClassroomOption);
+    Options.Add(OrgOption);
 
     forceOption.DefaultValueFactory = _ => false;
     Options.Add(forceOption);
@@ -119,11 +111,10 @@ internal class AssignReviewersCommand : Command
     SetAction(async parsedResult =>
     {
       var assignmentSlug = parsedResult.GetRequiredValue(assignmentArgument);
-      var classroomName = parsedResult.GetValue(classroomOption);
-      var org = parsedResult.GetRequiredValue(orgOption);
+      var classroomName = parsedResult.GetValue(ClassroomOption);
+      var org = parsedResult.GetValue(OrgOption);
       var force = parsedResult.GetValue(forceOption);
-      await HandleAsync(assignmentSlug, classroomName!, org, force);
+      await HandleAsync(assignmentSlug, classroomName, org, force);
     });
   }
 }
-

@@ -1,4 +1,4 @@
-﻿using System.CommandLine;
+using System.CommandLine;
 using System.ComponentModel;
 using TutorBot.Domain;
 using TutorBot.Domain.Exceptions;
@@ -9,18 +9,15 @@ using TutorBot.Utility;
 
 namespace TutorBot.Commands;
 
-internal class CloneSubmissionsCommand : Command
+internal class CloneSubmissionsCommand : ClassroomCommand
 {
-  private readonly IGitHubClassroomClient client;
-  private readonly ConfigurationHelper configuration;
-
   private readonly Argument<string> assignmentArgument = new("assignment") { Description = "assignment slug" };
-  private readonly Option<string> classroomOption = new("--classroom") { Description = "classroom name", Aliases = { "-c" } };
-  private readonly Option<string> orgOption = new("--org") { Description = "GitHub organization", Aliases = { "-o" } };
   private readonly Option<string> directoryOption = new("--directory") { Description = "directory repositories will be cloned to", Aliases = { "-d" } };
 
-  private async Task HandleAsync(string assignmentSlug, string classroomName, string org, string? directory)
+  private async Task HandleAsync(string assignmentSlug, string? classroomName, string? org, string? directory)
   {
+    ValidateClassroomAndOrg(ref classroomName, ref org);
+
     try
     {
       directory ??= assignmentSlug;
@@ -31,12 +28,12 @@ internal class CloneSubmissionsCommand : Command
         throw new DomainException($"Error: Directory \"{directory}\" already exists and is not empty.");
       }
 
-      var studentList = await StudentList.FromGitHub(client, org, classroomName);
-      var classroom = await client.Classroom.GetByName(classroomName, org);
+      var studentList = await StudentList.FromGitHub(Client, org, classroomName);
+      var classroom = await Client.Classroom.GetByName(classroomName, org);
 
       var progress = new ProgressBar("Loading submissions");
       var parameters = new AssigmentParameters(classroom.Id, assignmentSlug, ClassroomName: classroomName, Org: org, LoadAssessments: true);
-      var assignment = await Assignment.FromGitHub(client, studentList, parameters, configuration, progress);
+      var assignment = await Assignment.FromGitHub(Client, studentList, parameters, Configuration, progress);
       progress.Dispose();
 
       foreach (var submission in assignment.Submissions.Where(s => s.Assessment.IsValid())
@@ -49,7 +46,7 @@ internal class CloneSubmissionsCommand : Command
           var repoFullName = submission.RepositoryFullName;
 
           var (result, errorResult, exitCode) = await ProcessHelper.RunProcessAsync("gh", $"repo clone {repoFullName} {directory}/{localDirName}");
-          
+
           if (exitCode == 0)
           {
             Console.WriteLine($"Cloned repository of \"{ownerName}\"");
@@ -73,19 +70,13 @@ internal class CloneSubmissionsCommand : Command
   }
 
   public CloneSubmissionsCommand(IGitHubClassroomClient client, ConfigurationHelper configuration) : 
-    base("clone-submissions", "Clone all repositories of an assignment")
+    base("clone-submissions", "Clone all repositories of an assignment", client, configuration)
   {
-    this.client = client;
-    this.configuration = configuration;
+    SetupCommonOptionDefaults();
 
     Add(assignmentArgument);
-
-    classroomOption.DefaultValueFactory = _ => configuration.DefaultClassroom;
-    Options.Add(classroomOption);
-
-    orgOption.DefaultValueFactory = _ => configuration.DefaultOrganization;
-    Options.Add(orgOption);
-
+    Options.Add(ClassroomOption);
+    Options.Add(OrgOption);
     Options.Add(directoryOption);
 
     Aliases.Add("cs");
@@ -93,11 +84,10 @@ internal class CloneSubmissionsCommand : Command
     SetAction(async parsedResult =>
     {
       var assignmentSlug = parsedResult.GetRequiredValue(assignmentArgument);
-      var classroomName = parsedResult.GetRequiredValue(classroomOption);
-      var org = parsedResult.GetRequiredValue(orgOption);
+      var classroomName = parsedResult.GetValue(ClassroomOption);
+      var org = parsedResult.GetValue(OrgOption);
       var directory = parsedResult.GetValue(directoryOption);
       await HandleAsync(assignmentSlug, classroomName, org, directory);
     });
   }
 }
-

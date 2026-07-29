@@ -14,6 +14,7 @@ public class AssignmentTests
   private readonly IAssignmentsClient assignmentClient;
   private readonly ISubmissionsClient submissionsClient;
   private readonly IRepoCollaboratorsClient collaboratorClient;
+  private readonly ISearchClient searchClient;
   private readonly IStudentList students;
 
   public AssignmentTests()
@@ -35,6 +36,9 @@ public class AssignmentTests
     collaboratorClient = Substitute.For<IRepoCollaboratorsClient>();
     client.Repository.Collaborator.Returns(collaboratorClient);
 
+    searchClient = Substitute.For<ISearchClient>();
+    client.Search.Returns(searchClient);
+
     students = new StudentList(
     [
       new Student("gh-mayr", "Mayr", "Franz", "S2110307001", 1),
@@ -45,13 +49,14 @@ public class AssignmentTests
   [Fact]
   public async Task Submission_WithNoRepository_ThrowsException()
   {
-    assignmentClient.GetBySlug("my-org", "my-classroom", "ue01").Returns(
+    assignmentClient.GetBySlug(10, "ue01").Returns(
       Task.FromResult(new AssignmentDto { Id = 10, Title = "ue01", Slug = "ue01", Accepted = 1, Deadline = DateTime.Now.AddDays(1) }));
 
     var submissionDto1 = new SubmissionDto { Id = 100, Students = [new() { Id = 1, Login = "gh-mayr" }] };
     submissionsClient.GetAll(10).Returns(Task.FromResult<IReadOnlyList<SubmissionDto>>([submissionDto1]));
 
-    var parameters = new AssigmentParameters(1, "ue01", ClassroomName: "my-classroom", Org: "my-org", LoadAssessments: false);
+    // Use classroomId only, no Org/ClassroomName to avoid SearchRepo call
+    var parameters = new AssigmentParameters(10, "ue01", LoadAssessments: false);
     var fromGitHubAction = async () => await Assignment.FromGitHub(client, students, parameters);
 
     await fromGitHubAction.Should().ThrowAsync<SubmissionException>();
@@ -63,7 +68,7 @@ public class AssignmentTests
     repositoriesClient.Get(100).Returns(CreateRepository(100, "repo1"));
 
     var assignmentSlug = "ue01";
-    assignmentClient.GetBySlug("my-org", "my-classroom", assignmentSlug).Returns(
+    assignmentClient.GetBySlug(10, assignmentSlug).Returns(
       Task.FromResult(new AssignmentDto { Id = 10, Title = "Uebung 1", Slug = assignmentSlug, Accepted = 1, Deadline = DateTime.Now.AddDays(1) }));
 
     var studentDto1 = new StudentDto { Id = 1, Login = "gh-mayr" };
@@ -72,7 +77,8 @@ public class AssignmentTests
 
     collaboratorClient.GetAll(100).Returns(Task.FromResult<IReadOnlyList<Collaborator>>([]));
 
-    var parameters = new AssigmentParameters(1, "ue01", ClassroomName: "my-classroom", Org: "my-org", LoadAssessments: false);
+    // Use classroomId only, no Org/ClassroomName to avoid SearchRepo call
+    var parameters = new AssigmentParameters(10, "ue01", LoadAssessments: false);
     var assignment = await Assignment.FromGitHub(client, students, parameters);
 
     var expectedOwner = students.LinkedStudents.Single(s => s.GitHubUsername == studentDto1.Login);
@@ -92,7 +98,7 @@ public class AssignmentTests
     repositoriesClient.Get(100).Returns(CreateRepository(100, "repo1"));
 
     var assignmentSlug = "ue01";
-    assignmentClient.GetBySlug("my-org", "my-classroom", assignmentSlug).Returns(
+    assignmentClient.GetBySlug(10, assignmentSlug).Returns(
       Task.FromResult(new AssignmentDto { Id = 10, Title = "Uebung 1", Slug = assignmentSlug, Accepted = 1, Deadline = DateTime.Now.AddDays(1) }));
 
     var studentDto1 = new StudentDto { Id = 1, Login = "gh-mayr" };
@@ -100,11 +106,12 @@ public class AssignmentTests
     submissionsClient.GetAll(10).Returns(Task.FromResult<IReadOnlyList<SubmissionDto>>([submissionDto1]));
 
     var reviewerName = "gh-huber";
-    var permissions1 = new CollaboratorPermissions(pull: false, triage: false, push: false, maintain: false, admin: false);
-    var collaborator1 = new Collaborator("gh-huber", id: 2, "gh-huber@gmail.com", "Huber", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", false, permissions: permissions1, "read");
+    var permissions1 = new CollaboratorPermissions(pull: true, triage: false, push: false, maintain: false, admin: false);
+    var collaborator1 = new Collaborator("gh-huber", id: 2, "gh-huber@gmail.com", "Huber", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", false, permissions: permissions1, "pull");
     collaboratorClient.GetAll(100).Returns(Task.FromResult<IReadOnlyList<Collaborator>>([collaborator1]));
 
-    var parameters = new AssigmentParameters(1, "ue01", ClassroomName: "my-classroom", Org: "my-org", LoadAssessments: false);
+    // Use classroomId only, no Org/ClassroomName to avoid SearchRepo call
+    var parameters = new AssigmentParameters(10, "ue01", LoadAssessments: false);
     var assignment = await Assignment.FromGitHub(client, students, parameters);
 
     var expectedOwner = students.LinkedStudents.Single(s => s.GitHubUsername == studentDto1.Login);

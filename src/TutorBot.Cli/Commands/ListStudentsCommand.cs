@@ -1,4 +1,4 @@
-﻿using System.CommandLine;
+using System.CommandLine;
 using TutorBot.Infrastructure;
 using TutorBot.Domain;
 using TutorBot.Infrastructure.OctokitExtensions;
@@ -6,23 +6,20 @@ using TutorBot.Utility;
 
 namespace TutorBot.Commands;
 
-internal class ListStudentsCommand : Command
+internal class ListStudentsCommand : ClassroomCommand
 {
-  private readonly IGitHubClassroomClient client;
-  private readonly ConfigurationHelper configuration;
-
-  private readonly Option<string> classroomOption = new("--classroom") { Description = "classroom name", Aliases = { "-c" } };
-  private readonly Option<string> orgOption = new("--org") { Description = "GitHub organization", Aliases = { "-o" } };
   private readonly Option<int?> groupOption = new("--group") { Description = "filter group", Aliases = { "-g" } };
 
-  private async Task HandleAsync(string classroomName, string org, int? group)
+  private async Task HandleAsync(string? classroomName, string? org, int? group)
   {
+    ValidateClassroomAndOrg(ref classroomName, ref org);
+
     var printer = new TablePrinter();
     printer.AddRow("LASTNAME", "FIRSTNAME", "STUD.ID", "GITHUBNAME", "GROUPNR.");
 
     try
     {
-      var studentList = await StudentList.FromGitHub(client, org, classroomName);
+      var studentList = await StudentList.FromGitHub(Client, org, classroomName);
 
       var filteredlinkedStudents = studentList.LinkedStudents;
       if (group is not null)
@@ -53,16 +50,12 @@ internal class ListStudentsCommand : Command
   }
 
   public ListStudentsCommand(IGitHubClassroomClient client, ConfigurationHelper configuration) :
-  base("list-students", "List all students")
+    base("list-students", "List all students", client, configuration)
   {
-    this.client = client;
-    this.configuration = configuration;
+    SetupCommonOptionDefaults();
 
-    classroomOption.DefaultValueFactory = _ => configuration.DefaultClassroom;
-    Options.Add(classroomOption);
-
-    orgOption.DefaultValueFactory = _ => configuration.DefaultOrganization;
-    Options.Add(orgOption);
+    Options.Add(ClassroomOption);
+    Options.Add(OrgOption);
 
     groupOption.DefaultValueFactory = _ => null;
     Options.Add(groupOption);
@@ -71,11 +64,10 @@ internal class ListStudentsCommand : Command
 
     SetAction(async parsedResult =>
     {
-      var classroomName = parsedResult.GetRequiredValue(classroomOption);
-      var org = parsedResult.GetRequiredValue(orgOption);
+      var classroomName = parsedResult.GetValue(ClassroomOption);
+      var org = parsedResult.GetValue(OrgOption);
       var group = parsedResult.GetValue(groupOption);
       await HandleAsync(classroomName, org, group);
     });
   }
 }
-

@@ -1,4 +1,4 @@
-﻿using System.CommandLine;
+using System.CommandLine;
 using TutorBot.Domain;
 using TutorBot.Domain.Exceptions;
 using TutorBot.Infrastructure;
@@ -8,31 +8,28 @@ using TutorBot.Utility;
 
 namespace TutorBot.Commands;
 
-internal class ListReviewStatisticsCommand : Command
+internal class ListReviewStatisticsCommand : ClassroomCommand
 {
-  private readonly IGitHubClassroomClient client;
-  private readonly ConfigurationHelper configuration;
-
   private readonly Argument<string> assignmentArgument = new("assignment") { Description = "assignment slug" };
-  private readonly Option<string> classroomOption = new("--classroom") { Description = "classroom name", Aliases = { "-c" } };
-  private readonly Option<string> orgOption = new("--org") { Description = "GitHub organization", Aliases = { "-o" } };
   private readonly Option<string> orderOption = new("--order-by") { Description = "order criteria", Aliases = { "-ob" } };
   private readonly Option<int?> groupOption = new("--group") { Description = "filter group", Aliases = { "-g" } };
   private readonly Option<bool> allReviewersOption = new("--all-reviewers") { Description = "include review statistics from non-students", Aliases = { "-a" } };
 
-  private async Task HandleAsync(string assignmentSlug, string classroomName, string org, string order, int? group, bool showAllReviewers)
+  private async Task HandleAsync(string assignmentSlug, string? classroomName, string? org, string order, int? group, bool showAllReviewers)
   {
+    ValidateClassroomAndOrg(ref classroomName, ref org);
+
     var printer = new TablePrinter();
     printer.AddRow("REVIEWER", "GR.", "OWNER", "#REV.", "#COMM.", "#WORDS", "LASTREVIEWDATE", "REVIEW URL");
 
     try
     {
-      var studentList = await StudentList.FromGitHub(client, org, classroomName);
-      var classroom = await client.Classroom.GetByName(classroomName, org);
+      var studentList = await StudentList.FromGitHub(Client, org, classroomName);
+      var classroom = await Client.Classroom.GetByName(classroomName, org);
 
       var progress = new ProgressBar("Loading submissions");
       var parameters = new AssigmentParameters(classroom.Id, assignmentSlug, ClassroomName: classroomName, Org: org);
-      var assignment = await Assignment.FromGitHub(client, studentList, parameters, configuration, progress);
+      var assignment = await Assignment.FromGitHub(Client, studentList, parameters, Configuration, progress);
       progress.Dispose();
 
       var progressStatistics = new ProgressBar("Loading statistics ");
@@ -94,18 +91,13 @@ internal class ListReviewStatisticsCommand : Command
   }
 
   public ListReviewStatisticsCommand(IGitHubClassroomClient client, ConfigurationHelper configuration) :
-    base("list-review-statistics", "Display summary of reviewers' activity")
+    base("list-review-statistics", "Display summary of reviewers' activity", client, configuration)
   {
-    this.client = client;
-    this.configuration = configuration;
+    SetupCommonOptionDefaults();
 
     Add(assignmentArgument);
-
-    classroomOption.DefaultValueFactory = _ => configuration.DefaultClassroom;
-    Options.Add(classroomOption);
-
-    orgOption.DefaultValueFactory = _ => configuration.DefaultOrganization;
-    Options.Add(orgOption);
+    Options.Add(ClassroomOption);
+    Options.Add(OrgOption);
 
     orderOption.AcceptOnlyFromAmong("reviewer", "comment-length", "comment-length-desc", "review-date", "review-date-desc");
     orderOption.DefaultValueFactory = _ => "review-date-desc";
@@ -122,8 +114,8 @@ internal class ListReviewStatisticsCommand : Command
     SetAction(async parsedResult =>
     {
       var assignmentSlug = parsedResult.GetRequiredValue(assignmentArgument);
-      var classroomName = parsedResult.GetRequiredValue(classroomOption);
-      var org = parsedResult.GetRequiredValue(orgOption);
+      var classroomName = parsedResult.GetValue(ClassroomOption);
+      var org = parsedResult.GetValue(OrgOption);
       var order = parsedResult.GetRequiredValue(orderOption);
       var group = parsedResult.GetValue(groupOption);
       var showAllReviewers = parsedResult.GetValue(allReviewersOption);
@@ -131,4 +123,3 @@ internal class ListReviewStatisticsCommand : Command
     });
   }
 }
-

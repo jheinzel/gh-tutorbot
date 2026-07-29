@@ -9,8 +9,8 @@ internal static class Constants
   public const string ASSESSMENT_HEADER_ENTRY_PATTERN = $@"\(\s*(?<Value>{DOUBLE_PATTERN})\s*\%\s*\)";
     // "(99.9%)", " xxx (99.9%) xxx", "(99.9 % )", "( 99.9 %)", ...
 
-  public const string GITHUB_READ_ROLE = "read";
-  public const string GITHUB_WRITE_ROLE = "write";
+  public const string GITHUB_READ_ROLE = "pull";
+  public const string GITHUB_WRITE_ROLE = "push";
   public const string CLASSROOM_METADATA_REPO_NAME = "classroom50";
 
   public const string PAGE_KEY = "page";

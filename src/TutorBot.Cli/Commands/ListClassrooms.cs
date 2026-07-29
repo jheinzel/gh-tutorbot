@@ -1,25 +1,22 @@
-﻿using System.CommandLine;
+using System.CommandLine;
 using TutorBot.Infrastructure;
 using TutorBot.Infrastructure.OctokitExtensions;
 using TutorBot.Utility;
 
 namespace TutorBot.Commands;
 
-internal class ListClassroomsCommand : Command
+internal class ListClassroomsCommand : ClassroomCommand
 {
-  private readonly IGitHubClassroomClient client;
-  private readonly ConfigurationHelper configuration;
-
-  private readonly Option<string> orgOption = new("--org") { Description = "GitHub organization", Aliases = { "-o" } };
-
-  private async Task HandleAsync(string org)
+  private async Task HandleAsync(string? org)
   {
+    ValidateOrg(ref org);
+
     var printer = new TablePrinter();
     printer.AddRow("ID", "NAME", "URL");
 
     try
     {
-      var classrooms = await client.Classroom.GetAll(org);
+      var classrooms = await Client.Classroom.GetAll(org);
       foreach (var classroom in classrooms)
       {
         printer.AddRow(classroom.Id.ToString(), classroom.Name, classroom.Url);
@@ -34,21 +31,17 @@ internal class ListClassroomsCommand : Command
   }
 
   public ListClassroomsCommand(IGitHubClassroomClient client, ConfigurationHelper configuration) :
-  base("list-classrooms", "List all classrooms")
+    base("list-classrooms", "List all classrooms", client, configuration)
   {
-    this.client = client;
-    this.configuration = configuration;
-
-    orgOption.DefaultValueFactory = _ => this.configuration.DefaultOrganization;
-    Options.Add(orgOption);
+    OrgOption.DefaultValueFactory = _ => Configuration.DefaultOrganization;
+    Options.Add(OrgOption);
 
     Aliases.Add("lc");
 
     SetAction(async parsedResult =>
     {
-      var org = parsedResult.GetRequiredValue(orgOption);
+      var org = parsedResult.GetValue(OrgOption);
       await HandleAsync(org);
     });
   }
 }
-

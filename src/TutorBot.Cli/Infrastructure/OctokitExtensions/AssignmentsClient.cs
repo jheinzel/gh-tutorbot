@@ -80,19 +80,34 @@ public class AssignmentsClient : ApiClient, IAssignmentsClient
     }
 
     var endpoint = new Uri($"repos/{org}/{Constants.CLASSROOM_METADATA_REPO_NAME}/contents/{classroomName}/assignments.json", UriKind.Relative);
-    var response = await Connection.Get<RepositoryFileContentDto>(endpoint, new Dictionary<string, string>());
 
-    if (response.HttpResponse.StatusCode != HttpStatusCode.OK)
+    RepositoryFileContentDto responseBody;
+    try
     {
-      throw new ApiException("Error retrieving assignments", response.HttpResponse.StatusCode);
+      var response = await Connection.Get<RepositoryFileContentDto>(endpoint, new Dictionary<string, string>());
+
+      if (response.HttpResponse.StatusCode != HttpStatusCode.OK)
+      {
+        throw new ClassroomNotFoundException(classroomName);
+      }
+
+      responseBody = response.Body;
+    }
+    catch (ApiException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+    {
+      // Check if it's the organization/repo that doesn't exist (path contains 2 segments) 
+      // vs the classroom directory (3 segments)
+      // repos/{org}/{CLASSROOM_METADATA_REPO_NAME}/contents/{classroomName}/assignments.json
+      // If org or CLASSROOM_METADATA_REPO_NAME doesn't exist, still throw OrganizationNotFoundException
+      throw new OrganizationNotFoundException(org, classroomName);
     }
 
-    if (!string.Equals(response.Body.Encoding, "base64", StringComparison.OrdinalIgnoreCase))
+    if (!string.Equals(responseBody.Encoding, "base64", StringComparison.OrdinalIgnoreCase))
     {
-      throw new InfrastrucureException($"Unsupported assignments.json encoding \"{response.Body.Encoding}\".");
+      throw new InfrastrucureException($"Unsupported assignments.json encoding \"{responseBody.Encoding}\".");
     }
 
-    var base64Content = response.Body.Content.Replace("\n", string.Empty).Replace("\r", string.Empty);
+    var base64Content = responseBody.Content.Replace("\n", string.Empty).Replace("\r", string.Empty);
     var json = Encoding.UTF8.GetString(Convert.FromBase64String(base64Content));
 
     var root = JsonSerializer.Deserialize<AssignmentsRootDto>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })

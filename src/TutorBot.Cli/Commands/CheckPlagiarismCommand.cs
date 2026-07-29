@@ -1,4 +1,4 @@
-﻿using System.CommandLine;
+using System.CommandLine;
 using System.IO.Compression;
 using TutorBot.Domain.Exceptions;
 using TutorBot.Domain.JPlag;
@@ -9,11 +9,8 @@ using TutorBot.Utility;
 
 namespace TutorBot.Commands;
 
-internal class CheckPlagiarismCommand : Command
+internal class CheckPlagiarismCommand : ClassroomCommand
 {
-  private readonly IGitHubClassroomClient client;
-  private readonly ConfigurationHelper configuration;
-
   private readonly Argument<string> rootDirectoryArgument = new("root-directory") { Description = "root directory containing submissions" };
   private readonly Option<string> languageOption = new("--language") { Description = "language", Aliases = { "-l" } };
   private readonly Option<string> reportFileOption = new("--report-file") { Description = "name of the report file", Aliases = { "-rf" } };
@@ -78,9 +75,9 @@ internal class CheckPlagiarismCommand : Command
         _ => throw new DomainException($"Error: Unknown language \"{languageOption}\"")
       };
 
-      if (!File.Exists(configuration.JplagJarPath))
+      if (!File.Exists(Configuration.JplagJarPath))
       {
-        throw new DomainException($"Error: JPlag jar file \"{configuration.JplagJarPath}\" does not exist. Download JPlag from https://github.com/jplag/JPlag/releases.\n" +
+        throw new DomainException($"Error: JPlag jar file \"{Configuration.JplagJarPath}\" does not exist. Download JPlag from https://github.com/jplag/JPlag/releases.\n" +
                                   $"       Ensure that the configuration parameter \"{ConfigurationHelper.KEY_JPLAG_JAR_PATH}\" is set appropriately.");
       }
 
@@ -89,13 +86,13 @@ internal class CheckPlagiarismCommand : Command
       {
         jplagRunArgs = string.Format(Constants.JPLAG_RUN_ARGS_BASE_DIR_PREFIX, baseCodeOption.TrimEnd(['/', '\\']));
       }
-      
-      jplagRunArgs += string.Format(Constants.JPLAG_RUN_ARGS, language, reportFile, rootDirectory);
-      
-      
-      var javaArgs = $"-jar \"{configuration.JplagJarPath}\" {jplagRunArgs}";
 
-      var (result, errorResult, exitCode) = await ProcessHelper.RunProcessAsync(configuration.JavaPath, javaArgs);
+      jplagRunArgs += string.Format(Constants.JPLAG_RUN_ARGS, language, reportFile, rootDirectory);
+
+
+      var javaArgs = $"-jar \"{Configuration.JplagJarPath}\" {jplagRunArgs}";
+
+      var (result, errorResult, exitCode) = await ProcessHelper.RunProcessAsync(Configuration.JavaPath, javaArgs);
 
       if (exitCode == 0)
       {
@@ -116,7 +113,7 @@ internal class CheckPlagiarismCommand : Command
     }
     catch (CommandNotFoundException)
     {
-      throw new DomainException($"Error: Java (\"{configuration.JavaPath}\") not found.");
+      throw new DomainException($"Error: Java (\"{Configuration.JavaPath}\") not found.");
     }
   }
 
@@ -140,13 +137,13 @@ internal class CheckPlagiarismCommand : Command
           {
             if (comparision.Similarities is null)
             {
-						throw new DomainException($"Error: Unexpected structure of 'overview.json'. No 'similarity' property in 'top-comparisons' element.");
-					}
+              throw new DomainException($"Error: Unexpected structure of 'overview.json'. No 'similarity' property in 'top-comparisons' element.");
+            }
 
             printer.AddRow($"{comparision.FirstSubmission}",
                            $"{comparision.SecondSubmission}",
                            FormattableString.Invariant($"{comparision.Similarities.Avg*100,10:F1}"),
-							 FormattableString.Invariant($"{comparision.Similarities.Max*100,10:F1}"));
+                           FormattableString.Invariant($"{comparision.Similarities.Max*100,10:F1}"));
           }
 
           printer.Print();
@@ -160,11 +157,8 @@ internal class CheckPlagiarismCommand : Command
   }
 
   public CheckPlagiarismCommand(IGitHubClassroomClient client, ConfigurationHelper configuration) :
-    base("check-plagiarism", "Check for plagiarism")
+    base("check-plagiarism", "Check for plagiarism", client, configuration)
   {
-    this.client = client;
-    this.configuration = configuration;
-
     Add(rootDirectoryArgument);
 
     languageOption.DefaultValueFactory = _ => "java";
@@ -175,7 +169,7 @@ internal class CheckPlagiarismCommand : Command
 
     refreshOption.DefaultValueFactory = _ => false;
     Options.Add(refreshOption);
-    
+
     Options.Add(baseCodeOption);
 
     Aliases.Add("cp");
@@ -191,4 +185,3 @@ internal class CheckPlagiarismCommand : Command
     });
   }
 }
-
