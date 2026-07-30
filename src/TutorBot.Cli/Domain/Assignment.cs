@@ -170,49 +170,57 @@ public class Assignment(IGitHubClassroomClient client, string name, DateTimeOffs
     }
   }
 
-  /// <summary>
-  /// Assigns reviewers to submissions as collaborators, granting read access to the peer's repository.
-  /// 
-  /// Notification behavior:
-  /// - For outside collaborators: GitHub sends an email invitation
-  /// - For organization members: GitHub provides instant access to the repository and sends
-  ///   an in-app notification. Reviewers should check their GitHub notification dashboard
-  ///   for the access notification.
-  /// </summary>
   public async Task AssignReviewers(IEnumerable<(Submission, Student)> reviewers, IProgress? progress = null)
   {
     progress?.Init(reviewers.Count());
-    var readRequest = new CollaboratorRequest(Constants.GITHUB_READ_ROLE);
 
     foreach (var (submission, reviewer) in reviewers)
     {
-      RepositoryInvitation? invitation = await client.Repository.Collaborator.Add(submission.RepositoryId, reviewer.GitHubUsername, readRequest);
-      submission.Reviewers.Add(new Reviewer(reviewer, invitation?.Id));
+      var org = GetRepositoryOrganization(submission.RepositoryFullName);
+      var teamName = GetReviewerTeamName(submission.RepositoryName);
+      var reviewerTeam = await GetOrCreateReviewerTeam(org, teamName);
+
+      await client.Organization.Team.AddOrEditMembership(reviewerTeam.Id,
+                                                         reviewer.GitHubUsername,
+                                                         new UpdateTeamMembership(TeamRole.Member));
+
+      await client.Organization.Team.AddOrUpdateTeamRepositoryPermissions(org,
+                                                                          reviewerTeam.Slug,
+                                                                          org,
+                                                                          submission.RepositoryName,
+                                                                          Constants.GITHUB_TEAM_READ_PERMISSION);
+
+      var pullRequestUrl = $"https://github.com/{org}/{submission.RepositoryName}/pull/{Constants.FEEDBACK_PULLREQUEST_ID}";
+      var notificationComment = string.Format(Constants.REVIEWER_NOTIFICATION_COMMENT,
+                                              reviewer.GitHubUsername,
+                                              submission.RepositoryUrl,
+                                              pullRequestUrl);
+      await client.Issue.Comment.Create(org,
+                                        submission.RepositoryName,
+                                        Constants.FEEDBACK_PULLREQUEST_ID,
+                                        notificationComment);
+
+      submission.Reviewers.Add(new Reviewer(reviewer));
       progress?.Increment();
     }
   }
 
   public async Task RemoveReviewers(IProgress? progress = null)
   {
-    progress?.Init(Submissions.Count );
+    progress?.Init(Submissions.Count);
 
     foreach (var submission in Submissions)
     {
-      foreach (var reviewer in submission.Reviewers)
+      var org = GetRepositoryOrganization(submission.RepositoryFullName);
+      var teamName = GetReviewerTeamName(submission.RepositoryName);
+      var reviewerTeam = await FindReviewerTeam(org, teamName);
+      if (reviewerTeam is not null)
       {
-        if (reviewer.IsInvitationPending)
-        {
-          await client.Repository.Invitation.Delete(submission.RepositoryId, reviewer.InvitationId!.Value);
-        }
-        else
-        {
-          await client.Repository.Collaborator.Delete(submission.RepositoryId, reviewer.GitHubUsername);
-        }
-
-        progress?.Increment();
+        await client.Organization.Team.Delete(reviewerTeam.Id);
       }
 
       submission.Reviewers.Clear();
+      progress?.Increment();
     }
   }
 
@@ -241,37 +249,116 @@ public class Assignment(IGitHubClassroomClient client, string name, DateTimeOffs
   private static async Task<List<Reviewer>> LoadReviewers(IGitHubClassroomClient client, Student owner, IStudentList students, Repository repository)
   {
     var reviewers = new List<Reviewer>();
+    var reviewerNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-    // Load collaborators with read-only access (pull permission)
+    var org = GetRepositoryOrganization(repository.FullName);
+    var teamName = GetReviewerTeamName(repository.Name);
+    var reviewerTeam = await FindReviewerTeam(client, org, teamName);
+    if (reviewerTeam is not null)
+    {
+      var members = await client.Organization.Team.GetAllMembers(reviewerTeam.Id);
+      foreach (var member in members.Where(m => !string.IsNullOrWhiteSpace(m.Login) && m.Login != owner.GitHubUsername))
+      {
+        if (students.TryGetValue(member.Login, out var reviewer) && reviewerNames.Add(reviewer.GitHubUsername))
+        {
+          reviewers.Add(new Reviewer(reviewer));
+        }
+      }
+    }
+
+    // Backward compatibility for existing direct collaborator/invitation based reviewer assignments.
     var readOnlyCollaborators = (await client.Repository.Collaborator.GetAll(repository.Id))
-                                  .Where(c => c.RoleName == Constants.GITHUB_READ_ROLE)
+                                  .Where(c => IsReadPermission(c.RoleName))
                                   .ToList();
 
-    foreach (var collaborator in readOnlyCollaborators.Where(c => c.Login != owner.GitHubUsername))
+    foreach (var collaborator in readOnlyCollaborators.Where(c => !string.IsNullOrWhiteSpace(c.Login) && c.Login != owner.GitHubUsername))
     {
-      if (students.TryGetValue(collaborator.Login, out var reviewer))
-      {
-        reviewers.Add(new Reviewer(reviewer));
-      }
-      else
-      {
-        throw new SubmissionException($"No student assigned to reviewer \"{collaborator.Login}\".");
-      }
+      AddReviewer(students, reviewers, reviewerNames, collaborator.Login);
     }
 
     var invitations = (await client.Repository.Invitation.GetAllForRepository(repository.Id)).ToList();
-    foreach (var invitation in invitations.Where(i => i.Permissions == Constants.GITHUB_READ_ROLE))
+    foreach (var invitation in invitations.Where(i => IsReadPermission(i.Permissions.StringValue) &&
+                                                      i.Invitee is not null &&
+                                                      !string.IsNullOrWhiteSpace(i.Invitee.Login)))
     {
-      if (students.TryGetValue(invitation.Invitee.Login, out var reviewer))
-      {
-        reviewers.Add(new Reviewer(reviewer, invitation.Id));
-      }
-      else
-      {
-        throw new SubmissionException($"No student assigned to reviewer \"{invitation.Invitee.Login}\".");
-      }
+      AddReviewer(students, reviewers, reviewerNames, invitation.Invitee.Login, invitation.Id);
     }
 
     return reviewers;
+  }
+
+  private static bool IsReadPermission(string? permission)
+  {
+    return string.Equals(permission, Constants.GITHUB_READ_ROLE, StringComparison.OrdinalIgnoreCase) ||
+           string.Equals(permission, Constants.GITHUB_TEAM_READ_PERMISSION, StringComparison.OrdinalIgnoreCase);
+  }
+
+  private async Task<Team> GetOrCreateReviewerTeam(string org, string teamName)
+  {
+    var existingTeam = await FindReviewerTeam(org, teamName);
+    if (existingTeam is not null)
+    {
+      return existingTeam;
+    }
+
+    var newTeam = new NewTeam(teamName)
+    {
+      Privacy = TeamPrivacy.Closed
+    };
+
+    try
+    {
+      return await client.Organization.Team.Create(org, newTeam);
+    }
+    catch (ApiValidationException)
+    {
+      var concurrentTeam = await FindReviewerTeam(org, teamName);
+      if (concurrentTeam is not null)
+      {
+        return concurrentTeam;
+      }
+
+      throw;
+    }
+  }
+
+  private async Task<Team?> FindReviewerTeam(string org, string teamName)
+  {
+    return await FindReviewerTeam(client, org, teamName);
+  }
+
+  private static async Task<Team?> FindReviewerTeam(IGitHubClassroomClient client, string org, string teamName)
+  {
+    var teams = await client.Organization.Team.GetAll(org);
+    return teams.SingleOrDefault(t => string.Equals(t.Name, teamName, StringComparison.OrdinalIgnoreCase));
+  }
+
+  private static void AddReviewer(IStudentList students, IList<Reviewer> reviewers, ISet<string> reviewerNames, string reviewerLogin, long? invitationId = null)
+  {
+    if (!students.TryGetValue(reviewerLogin, out var reviewer))
+    {
+      throw new SubmissionException($"No student assigned to reviewer \"{reviewerLogin}\".");
+    }
+
+    if (reviewerNames.Add(reviewer.GitHubUsername))
+    {
+      reviewers.Add(new Reviewer(reviewer, invitationId));
+    }
+  }
+
+  private static string GetReviewerTeamName(string repositoryName)
+  {
+    return $"{repositoryName}-reviewers";
+  }
+
+  private static string GetRepositoryOrganization(string repositoryFullName)
+  {
+    var parts = repositoryFullName.Split('/', StringSplitOptions.RemoveEmptyEntries);
+    if (parts.Length < 2)
+    {
+      throw new SubmissionException($"Invalid repository full name \"{repositoryFullName}\".");
+    }
+
+    return parts[0];
   }
 }

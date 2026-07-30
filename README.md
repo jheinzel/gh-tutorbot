@@ -56,16 +56,21 @@ TutorBot offers the following range of commands:
     integer. If omitted, all groups are considered.
 
 * Assign reviewers to an assignment randomly. Each submission will have one
-  reviewer who gains read access to the submission repository and receives an
-  invitation via email. If there are already reveiwers assigned, the command
-  will preserve these assignments and add add the missing ones.
+  reviewer. Reviewer access is managed via a repository-specific team named
+  `<student-repo>-reviewers`: the team is created if needed, the reviewer is
+  added to the team, and the team receives read access to the repository. In
+  addition, TutorBot posts a notification comment on the feedback pull request
+  and explicitly mentions the reviewer.
+  If there are already reviewers assigned, the command preserves these assignments
+  and adds the missing ones.
   ```shell
   gh tutorbot assign-reviewers <assignment> [--classroom <classroom>] [--org <organization>] [--force]
   ```
   + `--force` allows assigment of reviewers, even if some submissions are not
     yet linked.
 
-* Remove reviewers from an assignment: 
+* Remove reviewers from an assignment: Removes the `<student-repo>-reviewers`
+  teams from the assignment repositories, which also removes reviewer access.
   ```shell
   gh tutorbot remove-reviewers <assignment> [--classroom <classroom>] [--org <organization>]
   ```

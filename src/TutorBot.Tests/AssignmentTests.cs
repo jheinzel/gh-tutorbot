@@ -14,6 +14,8 @@ public class AssignmentTests
   private readonly IAssignmentsClient assignmentClient;
   private readonly ISubmissionsClient submissionsClient;
   private readonly IRepoCollaboratorsClient collaboratorClient;
+  private readonly IOrganizationsClient organizationsClient;
+  private readonly ITeamsClient teamsClient;
   private readonly ISearchClient searchClient;
   private readonly IStudentList students;
 
@@ -35,6 +37,15 @@ public class AssignmentTests
 
     collaboratorClient = Substitute.For<IRepoCollaboratorsClient>();
     client.Repository.Collaborator.Returns(collaboratorClient);
+
+    organizationsClient = Substitute.For<IOrganizationsClient>();
+    client.Organization.Returns(organizationsClient);
+
+    teamsClient = Substitute.For<ITeamsClient>();
+    organizationsClient.Team.Returns(teamsClient);
+
+    teamsClient.GetAll(Arg.Any<string>()).Returns(Task.FromResult<IReadOnlyList<Team>>([]));
+    teamsClient.GetAllMembers(Arg.Any<long>()).Returns(Task.FromResult<IReadOnlyList<User>>([]));
 
     searchClient = Substitute.For<ISearchClient>();
     client.Search.Returns(searchClient);
@@ -107,7 +118,7 @@ public class AssignmentTests
 
     var reviewerName = "gh-huber";
     var permissions1 = new CollaboratorPermissions(pull: true, triage: false, push: false, maintain: false, admin: false);
-    var collaborator1 = new Collaborator("gh-huber", id: 2, "gh-huber@gmail.com", "Huber", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", false, permissions: permissions1, "pull");
+    var collaborator1 = new Collaborator("gh-huber", id: 2, "gh-huber@gmail.com", "Huber", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", false, permissions: permissions1, "read");
     collaboratorClient.GetAll(100).Returns(Task.FromResult<IReadOnlyList<Collaborator>>([collaborator1]));
 
     // Use classroomId only, no Org/ClassroomName to avoid SearchRepo call

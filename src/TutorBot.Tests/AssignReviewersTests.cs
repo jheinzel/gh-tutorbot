@@ -12,6 +12,10 @@ public class AssignReviewersTests
   private readonly IRepositoriesClient repositoriesClient;
   private readonly IRepositoryContentsClient repositoryContentsClient;
   private readonly IRepoCollaboratorsClient repoCollaboratorsClient;
+  private readonly IOrganizationsClient organizationsClient;
+  private readonly ITeamsClient teamsClient;
+  private readonly IIssuesClient issuesClient;
+  private readonly IIssueCommentsClient issueCommentsClient;
 
   const string assessmentString = """
       # Erfüllungsgrad
@@ -33,6 +37,37 @@ public class AssignReviewersTests
     repoCollaboratorsClient = Substitute.For<IRepoCollaboratorsClient>();
     client.Repository.Collaborator.Returns(repoCollaboratorsClient);
 
+    organizationsClient = Substitute.For<IOrganizationsClient>();
+    client.Organization.Returns(organizationsClient);
+
+    teamsClient = Substitute.For<ITeamsClient>();
+    organizationsClient.Team.Returns(teamsClient);
+
+    teamsClient.GetAll(Arg.Any<string>()).Returns(Task.FromResult<IReadOnlyList<Team>>([]));
+    teamsClient.Create(Arg.Any<string>(), Arg.Any<NewTeam>()).Returns(ci =>
+    {
+      var org = ci.ArgAt<string>(0);
+      var newTeam = ci.ArgAt<NewTeam>(1);
+      var permissions = new TeamRepositoryPermissions(false, false, false, false, false);
+      var orgEntity = new Organization();
+      return Task.FromResult(new Team("", "", 1, "", newTeam.Name, $"{newTeam.Name.ToLowerInvariant()}", "", TeamPrivacy.Closed, "", permissions, 0, 0, orgEntity, null, ""));
+    });
+
+    teamsClient.AddOrEditMembership(Arg.Any<long>(), Arg.Any<string>(), Arg.Any<UpdateTeamMembership>())
+               .Returns(Task.FromResult(new TeamMembershipDetails(TeamRole.Member, MembershipState.Active)));
+    teamsClient.AddOrUpdateTeamRepositoryPermissions(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>())
+               .Returns(Task.CompletedTask);
+    teamsClient.Delete(Arg.Any<long>()).Returns(Task.CompletedTask);
+    teamsClient.GetAllMembers(Arg.Any<long>()).Returns(Task.FromResult<IReadOnlyList<User>>([]));
+
+    issuesClient = Substitute.For<IIssuesClient>();
+    client.Issue.Returns(issuesClient);
+
+    issueCommentsClient = Substitute.For<IIssueCommentsClient>();
+    issuesClient.Comment.Returns(issueCommentsClient);
+    issueCommentsClient.Create(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<long>(), Arg.Any<string>())
+                       .Returns(Task.FromResult<IssueComment>(null!));
+
     repositoryContentsClient = Substitute.For<IRepositoryContentsClient>();
     client.Repository.Content.Returns(repositoryContentsClient);
   }
@@ -42,13 +77,6 @@ public class AssignReviewersTests
     var encodedContent = Convert.ToBase64String(Encoding.UTF8.GetBytes(assessmentString));
     RepositoryContent reopContent = new("", "", "", 0, ContentType.File, "", "", "", "", "", encodedContent, "", "");
     contentClient.GetAllContents(Arg.Any<long>(), Arg.Any<string>()).Returns(Task.FromResult<IReadOnlyList<RepositoryContent>>([reopContent]));
-  }
-
-  private static void AddCollaborator(IRepoCollaboratorsClient collaboratorsClient, Repository repository, string permission)
-  {
-    var readRequest = new CollaboratorRequest(permission);
-    var invitation = new RepositoryInvitation(1, "", repository, null, null, InvitationPermissionType.Read, DateTimeOffset.Now, false, "", "");
-    collaboratorsClient.Add(Arg.Any<long>(), Arg.Any<string>(), Arg.Is<CollaboratorRequest>(r => r != null && r.Permission == permission)).Returns(Task.FromResult(invitation));
   }
 
   [Fact]
