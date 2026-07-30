@@ -9,8 +9,8 @@ internal static class Constants
   public const string ASSESSMENT_HEADER_ENTRY_PATTERN = $@"\(\s*(?<Value>{DOUBLE_PATTERN})\s*\%\s*\)";
     // "(99.9%)", " xxx (99.9%) xxx", "(99.9 % )", "( 99.9 %)", ...
 
-  public const string GITHUB_READ_ROLE = "pull";
-  public const string GITHUB_WRITE_ROLE = "push";
+  public const string GITHUB_READ_ROLE = "read";
+  public const string GITHUB_WRITE_ROLE = "write";
   public const string CLASSROOM_METADATA_REPO_NAME = "classroom50";
 
   public const string PAGE_KEY = "page";
@@ -25,6 +25,10 @@ internal static class Constants
   public const string JPLAG_RUN_ARGS = "--language={0} --result-file=\"{1}\" --mode=RUN \"{2}\""; // {0} = language, {1} = report file, {2} = root directory
   public const string JPLAG_RUN_ARGS_BASE_DIR_PREFIX = "--base-code=\"{0}\" "; // {0} = template directory
   public const string JPLAG_VIEW_ARGS = "--result-file=\"{0}\" --mode=VIEW\""; // {0} = report file
+
+  public const string JVM_OPTIONS = "--enable-native-access=ALL-UNNAMED";
+  public const string JVM_JAR_RUN_ARGS = "{0} -jar \"{1}\" {2}"; // {0} = JVM options, {1} = jar path, {2} = tool args
+
   public const string DEFAULT_REPORT_FILE = "plagiarism-report.jplag";
 
   public const int MAX_PROGESSBAR_LENGTH = 50;
