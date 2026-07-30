@@ -22,7 +22,7 @@ internal static class Constants
   public const string ASSESSMENTS_DOWNLOAD_FILE_NAME = "{0}-assessments.xlsx"; // {0} = assignment name
   public const string EFFORT_PREFIX = "Aufwand"; // {0} = assignment name
   public const int FEEDBACK_PULLREQUEST_ID = 1;
-  public const string REVIEWER_NOTIFICATION_COMMENT = "@{0}: Sie haben jetzt Leserechte auf [dieses Repository]({1}). Bitte fügen Sie Ihre Review als Kommentare zu diesem Pull-Requests hinzu: {2}."; // {0} = reviewer login, {1} = repository URL, {2} = feedback PR URL
+  public const string REVIEWER_NOTIFICATION_COMMENT = "@{0}: Sie haben jetzt Leserechte auf [dieses Repository]({1}). Bitte fügen Sie Ihre Review als Kommentare zu [diesem Pull-Request]({2}) hinzu."; // {0} = reviewer login, {1} = repository URL, {2} = feedback PR URL
 
   public const string JPLAG_RUN_ARGS = "--language={0} --result-file=\"{1}\" --mode=RUN \"{2}\""; // {0} = language, {1} = report file, {2} = root directory
   public const string JPLAG_RUN_ARGS_BASE_DIR_PREFIX = "--base-code=\"{0}\" "; // {0} = template directory
