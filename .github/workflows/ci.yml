@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 env:
-  DOTNET_VERSION: "9.0.x"
+  DOTNET_VERSION: "10.0.x"
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -32,9 +32,9 @@ jobs:
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
       - name: dotnet restore
-        run: dotnet restore src/TutorBot.sln
+        run: dotnet restore src/TutorBot.slnx
       - name: dotnet build
-        run: dotnet build src/TutorBot.sln
+        run: dotnet build src/TutorBot.slnx
       - name: dotnet test
         run: dotnet test src/TutorBot.Tests/TutorBot.Tests.csproj --no-restore --verbosity normal
 
@@ -46,9 +46,9 @@ jobs:
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
       - name: dotnet restore
-        run: dotnet restore src/TutorBot.sln
+        run: dotnet restore src/TutorBot.slnx
       - name: dotnet build
-        run: dotnet build src/TutorBot.sln
+        run: dotnet build src/TutorBot.slnx
       - name: dotnet publish
         run: |
           dotnet publish src/TutorBot.Cli/TutorBot.Cli.csproj --configuration Release --self-contained --runtime win-x64 -p:PublishSingleFile=true --output dist/win-x64 -p:IncludeNativeLibrariesForSelfExtract=true
