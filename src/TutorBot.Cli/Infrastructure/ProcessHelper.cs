@@ -27,6 +27,7 @@ public static class ProcessHelper
   {
     void AppendLine(StringBuilder sb, string? line)
     {
+      if (line is null) return;
       if (sb.Length > 0) sb.AppendLine();
       sb.Append(line);
     }
@@ -55,15 +56,15 @@ public static class ProcessHelper
       process.OutputDataReceived += (sender, args) => AppendLine(output, args.Data);
       process.ErrorDataReceived += (sender, args) => AppendLine(error, args.Data);
 
-      process.Exited += (sender, args) =>
-      {
-        tcs.SetResult(new ProcessResult(output.ToString(), error.ToString(), process.ExitCode));
-        process.Dispose();
-      };
-
       process.Start();
       process.BeginOutputReadLine();
       process.BeginErrorReadLine();
+      _ = Task.Run(async () =>
+      {
+        await process.WaitForExitAsync().ConfigureAwait(false);
+        tcs.SetResult(new ProcessResult(output.ToString(), error.ToString(), process.ExitCode));
+        process.Dispose();
+      });
 
       return new ProcessHandle(tcs.Task, process);
     }

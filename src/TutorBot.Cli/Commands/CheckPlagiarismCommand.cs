@@ -21,6 +21,12 @@ internal class CheckPlagiarismCommand : ClassroomCommand
   {
     try
     {
+      // Normalize relative paths (e.g. ".\\folder" or "./folder") to absolute paths so Directory.Exists works
+      if (!string.IsNullOrWhiteSpace(rootDirectory))
+      {
+        rootDirectory = Path.GetFullPath(rootDirectory.TrimEnd('\\', '/'));
+      }
+
       if (!Directory.Exists(rootDirectory))
       {
         throw new DomainException($"Error: Root directory \"{rootDirectory}\" does not exist. Clone assignment first.");
@@ -31,12 +37,16 @@ internal class CheckPlagiarismCommand : ClassroomCommand
         throw new DomainException($"Error: Unknown language \"{languageOption}\". Allowed values are the following: " + string.Join(", ", allowedLangs));
       }
 
-      string reportFile = reportFileOption ?? $"{rootDirectory}/{Constants.DEFAULT_REPORT_FILE}";
+      string reportFile = reportFileOption ?? Path.Combine(rootDirectory, Constants.DEFAULT_REPORT_FILE);
 
-      if (baseCodeOption is not null
-          && !Directory.Exists(baseCodeOption))
+      if (baseCodeOption is not null)
+      {
+        // normalize base code path as well
+        baseCodeOption = Path.GetFullPath(baseCodeOption.TrimEnd('\\', '/'));
+        if (!Directory.Exists(baseCodeOption))
       {
         throw new DomainException($"Error: Given BaseCode Directory \"{baseCodeOption}\" does not exist.");
+      }
       }
 
       var resultFileExists = await RunJplag(rootDirectory, reportFile, languageOption, baseCodeOption);
@@ -100,8 +110,8 @@ internal class CheckPlagiarismCommand : ClassroomCommand
       }
       else
       {
-        File.WriteAllText($"{rootDirectory}/jplag.log", result);
-        File.WriteAllText($"{rootDirectory}/jplag.log", errorResult);
+        File.WriteAllText($"{rootDirectory}/jplag.log", errorResult);   // For some unknown reason the output of the standard output stream
+        File.WriteAllText($"{rootDirectory}/jplag-errors.log", result); // and the standard error stream are mixed up.
         Console.WriteLine($"JPlag finished with errors. See \"{rootDirectory}/jplag.log\" and \"{rootDirectory}/jplag-errors.log\" for details.");
         Console.WriteLine();
       }
