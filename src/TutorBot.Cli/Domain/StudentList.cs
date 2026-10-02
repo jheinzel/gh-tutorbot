@@ -68,6 +68,11 @@ public class StudentList : IStudentList
       }
 
       var role = line[6].Trim();
+      if (string.IsNullOrWhiteSpace(role))
+      {
+        role = "student";
+      }
+
       if (role != "student")
       {
         continue;
