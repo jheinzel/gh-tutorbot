@@ -23,7 +23,7 @@ public class StudentList : IStudentList
 
   private static IDictionary<string, Student> ToDictionary(IEnumerable<Student> students)
   {
-    var dictionary = new Dictionary<string, Student>();
+    var dictionary = new Dictionary<string, Student>(StringComparer.OrdinalIgnoreCase);
     foreach (var student in students)
     {
       dictionary.Add(student.GitHubUsername, student);
@@ -57,7 +57,7 @@ public class StudentList : IStudentList
 
   public static async Task<IStudentList> FromRoster(Stream rosterStream)
   {
-    var students = new Dictionary<string, Student>();
+    var students = new Dictionary<string, Student>(StringComparer.OrdinalIgnoreCase);
     var unlinkedStudents = new List<Student>();
 
     await foreach (List<string> line in CsvParser.Parse(rosterStream, ignoreFirstLine: true))

@@ -104,6 +104,32 @@ public class AssignmentTests
   }
 
   [Fact]
+  public async Task AssignmentWithLowercaseRepositoryOwner_MatchesMixedCaseStudentUsername()
+  {
+    const string assignmentPrefix = "classroom-ue01-";
+    var repo = CreateRepository(100, $"{assignmentPrefix}gh-mayr");
+    repositoriesClient.Get(100).Returns(repo);
+    assignmentClient.GetBySlug("swo3", "classroom", "ue01").Returns(
+      Task.FromResult(new AssignmentDto { Id = 10, Title = "Uebung 1", Slug = "ue01", Accepted = 1, Deadline = DateTime.Now.AddDays(1) }));
+
+    searchClient.SearchRepo(Arg.Any<SearchRepositoriesRequest>()).Returns(
+      Task.FromResult(new SearchRepositoryResult(1, false, [repo])));
+    collaboratorClient.GetAll(100).Returns(Task.FromResult<IReadOnlyList<Collaborator>>([]));
+
+    var mixedCaseStudents = new StudentList(
+    [
+      new Student("GH-Mayr", "Mayr", "Franz", "S2110307001", 1)
+    ]);
+    var parameters = new AssigmentParameters(10, "ue01", ClassroomName: "classroom", Org: "swo3", LoadAssessments: false);
+
+    var assignment = await Assignment.FromGitHub(client, mixedCaseStudents, parameters);
+
+    assignment.Submissions.Should().ContainSingle();
+    assignment.Submissions[0].Owner.GitHubUsername.Should().Be("GH-Mayr");
+    assignment.UnlinkedSubmissions.Should().BeEmpty();
+  }
+
+  [Fact]
   public async Task SimpleAssignment_With_Reviewers_IsLoadedCorrectly()
   {
     repositoriesClient.Get(100).Returns(CreateRepository(100, "repo1"));

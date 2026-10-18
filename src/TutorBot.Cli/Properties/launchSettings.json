@@ -2,8 +2,8 @@
   "profiles": {
     "gh-tutorbot": {
       "commandName": "Project",
-      "commandLineArgs": "check-plagiarism ue01",
-      "workingDirectory": "C:\\Users\\P20058\\Documents\\FH\\Lehre\\Tools\\gh-tutorbot\\data\\test-lva"
+      "commandLineArgs": "list-submissions ue01",
+      "workingDirectory": "C:\\Users\\P20058\\Documents\\FH\\Lehre\\Tools\\gh-tutorbot\\data\\swj3-bb-2026ss"
     }
   }
 }
