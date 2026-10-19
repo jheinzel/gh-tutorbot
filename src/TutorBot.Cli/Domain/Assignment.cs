@@ -306,10 +306,14 @@ public class Assignment(IGitHubClassroomClient client, string name, DateTimeOffs
       Privacy = TeamPrivacy.Closed
     };
 
+    var authenticatedUser = await client.User.Current();
+    Team createdTeam;
+
     try
     {
-      return await client.Organization.Team.Create(org, newTeam);
+      createdTeam = await client.Organization.Team.Create(org, newTeam);
     }
+    // Another caller may create the team after the initial lookup; recheck before rethrowing.
     catch (ApiValidationException)
     {
       var concurrentTeam = await FindReviewerTeam(org, teamName);
@@ -320,6 +324,9 @@ public class Assignment(IGitHubClassroomClient client, string name, DateTimeOffs
 
       throw;
     }
+
+    await client.Organization.Team.RemoveMembership(createdTeam.Id, authenticatedUser.Login);
+    return createdTeam;
   }
 
   private async Task<Team?> FindReviewerTeam(string org, string teamName)

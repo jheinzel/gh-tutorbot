@@ -43,18 +43,28 @@ public class AssignReviewersTests
     teamsClient = Substitute.For<ITeamsClient>();
     organizationsClient.Team.Returns(teamsClient);
 
-    teamsClient.GetAll(Arg.Any<string>()).Returns(Task.FromResult<IReadOnlyList<Team>>([]));
+    var createdTeams = new List<Team>();
+    teamsClient.GetAll(Arg.Any<string>()).Returns(_ => Task.FromResult<IReadOnlyList<Team>>(createdTeams));
     teamsClient.Create(Arg.Any<string>(), Arg.Any<NewTeam>()).Returns(ci =>
     {
       var org = ci.ArgAt<string>(0);
       var newTeam = ci.ArgAt<NewTeam>(1);
       var permissions = new TeamRepositoryPermissions(false, false, false, false, false);
       var orgEntity = new Organization();
-      return Task.FromResult(new Team("", "", 1, "", newTeam.Name, $"{newTeam.Name.ToLowerInvariant()}", "", TeamPrivacy.Closed, "", permissions, 0, 0, orgEntity, null, ""));
+      var team = new Team("", "", 1, "", newTeam.Name, $"{newTeam.Name.ToLowerInvariant()}", "", TeamPrivacy.Closed, "", permissions, 0, 0, orgEntity, null, "");
+      createdTeams.Add(team);
+      return Task.FromResult(team);
     });
+
+    var userClient = Substitute.For<IUsersClient>();
+    client.User.Returns(userClient);
+    var authenticatedUser = new User();
+    typeof(User).GetProperty(nameof(User.Login))!.SetValue(authenticatedUser, "org-owner");
+    userClient.Current().Returns(Task.FromResult(authenticatedUser));
 
     teamsClient.AddOrEditMembership(Arg.Any<long>(), Arg.Any<string>(), Arg.Any<UpdateTeamMembership>())
                .Returns(Task.FromResult(new TeamMembershipDetails(TeamRole.Member, MembershipState.Active)));
+    teamsClient.RemoveMembership(Arg.Any<long>(), Arg.Any<string>()).Returns(Task.FromResult(true));
     teamsClient.AddOrUpdateTeamRepositoryPermissions(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>())
                .Returns(Task.CompletedTask);
     teamsClient.Delete(Arg.Any<long>()).Returns(Task.CompletedTask);
@@ -268,6 +278,7 @@ public class AssignReviewersTests
     await assignment.AssignReviewers(reviewers);
 
     ReviewerAssignmentShouldBeCorrect(assignment);
+    await teamsClient.Received(1).RemoveMembership(1, "org-owner");
   }
 
   private static Repository CreateRepository(int id, string repoName)
