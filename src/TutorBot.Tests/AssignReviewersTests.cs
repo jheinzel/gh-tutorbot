@@ -137,7 +137,8 @@ public class AssignReviewersTests
 
     IList<(Submission Submission, Student Reviewer)> reviewers = assignment.FindReviewers().ToList();
     reviewers.Should().HaveCount(2);
-    reviewers[0].Submission.Owner.Should().BeEquivalentTo(reviewers[1].Reviewer);
+    reviewers.Should().ContainSingle(r => ReferenceEquals(r.Submission, submissions[0]) && ReferenceEquals(r.Reviewer, students[1]));
+    reviewers.Should().ContainSingle(r => ReferenceEquals(r.Submission, submissions[1]) && ReferenceEquals(r.Reviewer, students[0]));
   }
 
   [Theory]
