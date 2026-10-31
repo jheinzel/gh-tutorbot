@@ -12,9 +12,19 @@ using ReviewStatistics = IDictionary<(string Owner, string Reviewer), ReviewStat
 
 public record AssigmentParameters(long ClassroomId, string AssignmentSlug, int? Group = null, string? ClassroomName = null, string? Org = null, bool LoadAssessments = false);
 
-public class Assignment(IGitHubClassroomClient client, string name, DateTimeOffset? deadline, IReadOnlyList<Submission> submissions, IReadOnlyList<UnlinkedSubmission> unlinkedSubmissions)
+public class Assignment(IGitHubClassroomClient client,
+                        string name,
+                        DateTimeOffset? deadline,
+                        IReadOnlyList<Submission> submissions,
+                        IReadOnlyList<UnlinkedSubmission> unlinkedSubmissions,
+                        string? metadataOrg = null,
+                        string? metadataClassroomName = null,
+                        ReviewerAssignmentsFile? reviewerAssignments = null)
 {
   private readonly IGitHubClassroomClient client = client ?? throw new ArgumentNullException(nameof(client));
+  private ReviewerAssignmentsFile reviewerAssignmentsDocument = reviewerAssignments ?? new();
+  private readonly string? metadataOrg = metadataOrg;
+  private readonly string? metadataClassroomName = metadataClassroomName;
 
   public string Name { get; init; } = name ?? throw new ArgumentNullException(nameof(name));
   public DateTimeOffset? Deadline { get; init; } = deadline;
@@ -32,6 +42,12 @@ public class Assignment(IGitHubClassroomClient client, string name, DateTimeOffs
     var assignmentDto = !string.IsNullOrWhiteSpace(parameters.Org) && !string.IsNullOrWhiteSpace(parameters.ClassroomName)
       ? await client.Classroom.Assignment.GetBySlug(parameters.Org, parameters.ClassroomName, parameters.AssignmentSlug)
       : await client.Classroom.Assignment.GetBySlug(parameters.ClassroomId, parameters.AssignmentSlug);
+    var reviewerAssignments = !string.IsNullOrWhiteSpace(parameters.Org) &&
+                              !string.IsNullOrWhiteSpace(parameters.ClassroomName) &&
+                              !string.IsNullOrWhiteSpace(assignmentDto.Slug)
+      ? await client.Classroom.ReviewerAssignments.Get(parameters.Org, parameters.ClassroomName, assignmentDto.Slug)
+      : new ReviewerAssignmentsFile { AssignmentSlug = assignmentDto.Slug };
+
     if (!string.IsNullOrWhiteSpace(parameters.Org) && !string.IsNullOrWhiteSpace(parameters.ClassroomName) && !string.IsNullOrWhiteSpace(assignmentDto.Slug))
     {
       var assignmentPrefix = $"{parameters.ClassroomName}-{assignmentDto.Slug}-";
@@ -67,6 +83,7 @@ public class Assignment(IGitHubClassroomClient client, string name, DateTimeOffs
 
       foreach (var repository in matchingRepos)
       {
+        
         var ownerLogin = repository.Name[assignmentPrefix.Length..];
         if (!students.TryGetValue(ownerLogin, out var owner))
         {
@@ -77,7 +94,7 @@ public class Assignment(IGitHubClassroomClient client, string name, DateTimeOffs
 
         if (parameters.Group is null || owner.GroupNr == parameters.Group)
         {
-          List<Reviewer> reviewers = await LoadReviewers(client, owner, students, repository);
+          List<Reviewer> reviewers = LoadReviewers(owner, students, repository, reviewerAssignments);
 
           var submission = new Submission(client, repository, owner, reviewers);
           if (parameters.LoadAssessments)
@@ -124,7 +141,7 @@ public class Assignment(IGitHubClassroomClient client, string name, DateTimeOffs
           var repository = await client.Repository.Get(submissionDto.Repository.Id);
 
 
-          List<Reviewer> reviewers = await LoadReviewers(client, owner, students, repository);
+          List<Reviewer> reviewers = LoadReviewers(owner, students, repository, reviewerAssignments);
 
           var submission = new Submission(client, repository, owner, reviewers);
           if (parameters.LoadAssessments)
@@ -138,7 +155,14 @@ public class Assignment(IGitHubClassroomClient client, string name, DateTimeOffs
       }
     }
 
-    var assignment = new Assignment(client, assignmentDto.Title, assignmentDto.Deadline, submissions, unlinkedSubmission)
+    var assignment = new Assignment(client,
+                                    assignmentDto.Title,
+                                    assignmentDto.Deadline,
+                                    submissions,
+                                    unlinkedSubmission,
+                                    parameters.Org,
+                                    parameters.ClassroomName,
+                                    reviewerAssignments)
     {
       Slug = assignmentDto.Slug
     };
@@ -203,6 +227,8 @@ public class Assignment(IGitHubClassroomClient client, string name, DateTimeOffs
       submission.Reviewers.Add(new Reviewer(reviewer));
       progress?.Increment();
     }
+
+    await SaveReviewerAssignments();
   }
 
   public async Task RemoveReviewers(IProgress? progress = null)
@@ -222,6 +248,36 @@ public class Assignment(IGitHubClassroomClient client, string name, DateTimeOffs
       submission.Reviewers.Clear();
       progress?.Increment();
     }
+
+    await SaveReviewerAssignments();
+  }
+
+  private async Task SaveReviewerAssignments()
+  {
+    if (string.IsNullOrWhiteSpace(metadataOrg) ||
+        string.IsNullOrWhiteSpace(metadataClassroomName) ||
+        string.IsNullOrWhiteSpace(Slug))
+    {
+      return;
+    }
+
+    var repositories = new Dictionary<string, List<string>>(reviewerAssignmentsDocument.Repositories, StringComparer.OrdinalIgnoreCase);
+    foreach (var submission in Submissions)
+    {
+      repositories[submission.RepositoryFullName] = submission.Reviewers
+        .Select(reviewer => reviewer.GitHubUsername)
+        .Distinct(StringComparer.OrdinalIgnoreCase)
+        .ToList();
+    }
+
+    var updatedReviewerAssignments = new ReviewerAssignmentsFile
+    {
+      AssignmentSlug = Slug,
+      Repositories = repositories
+    };
+
+    await client.Classroom.ReviewerAssignments.Save(metadataOrg, metadataClassroomName, updatedReviewerAssignments);
+    reviewerAssignmentsDocument = updatedReviewerAssignments;
   }
 
   public async Task<ReviewStatistics> GetReviewStatistics(IProgress? progress = null)
@@ -246,51 +302,21 @@ public class Assignment(IGitHubClassroomClient client, string name, DateTimeOffs
     return reviewStats;
   }
 
-  private static async Task<List<Reviewer>> LoadReviewers(IGitHubClassroomClient client, Student owner, IStudentList students, Repository repository)
+  private static List<Reviewer> LoadReviewers(Student owner, IStudentList students, Repository repository, ReviewerAssignmentsFile reviewerAssignments)
   {
     var reviewers = new List<Reviewer>();
     var reviewerNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-    var org = GetRepositoryOrganization(repository.FullName);
-    var teamName = GetReviewerTeamName(repository.Name);
-    var reviewerTeam = await FindReviewerTeam(client, org, teamName);
-    if (reviewerTeam is not null)
+    if (reviewerAssignments.Repositories.TryGetValue(repository.FullName, out var reviewerLogins))
     {
-      var members = await client.Organization.Team.GetAllMembers(reviewerTeam.Id);
-      foreach (var member in members.Where(m => !string.IsNullOrWhiteSpace(m.Login) && m.Login != owner.GitHubUsername))
+      foreach (var reviewerLogin in reviewerLogins.Where(login => !string.IsNullOrWhiteSpace(login) &&
+                                                                   !string.Equals(login, owner.GitHubUsername, StringComparison.OrdinalIgnoreCase)))
       {
-        if (students.TryGetValue(member.Login, out var reviewer) && reviewerNames.Add(reviewer.GitHubUsername))
-        {
-          reviewers.Add(new Reviewer(reviewer));
-        }
+        AddReviewer(students, reviewers, reviewerNames, reviewerLogin);
       }
     }
 
-    // Backward compatibility for existing direct collaborator/invitation based reviewer assignments.
-    var readOnlyCollaborators = (await client.Repository.Collaborator.GetAll(repository.Id))
-                                  .Where(c => IsReadPermission(c.RoleName))
-                                  .ToList();
-
-    foreach (var collaborator in readOnlyCollaborators.Where(c => !string.IsNullOrWhiteSpace(c.Login) && c.Login != owner.GitHubUsername))
-    {
-      AddReviewer(students, reviewers, reviewerNames, collaborator.Login);
-    }
-
-    var invitations = (await client.Repository.Invitation.GetAllForRepository(repository.Id)).ToList();
-    foreach (var invitation in invitations.Where(i => IsReadPermission(i.Permissions.StringValue) &&
-                                                      i.Invitee is not null &&
-                                                      !string.IsNullOrWhiteSpace(i.Invitee.Login)))
-    {
-      AddReviewer(students, reviewers, reviewerNames, invitation.Invitee.Login, invitation.Id);
-    }
-
     return reviewers;
-  }
-
-  private static bool IsReadPermission(string? permission)
-  {
-    return string.Equals(permission, Constants.GITHUB_READ_ROLE, StringComparison.OrdinalIgnoreCase) ||
-           string.Equals(permission, Constants.GITHUB_TEAM_READ_PERMISSION, StringComparison.OrdinalIgnoreCase);
   }
 
   private async Task<Team> GetOrCreateReviewerTeam(string org, string teamName)
@@ -340,7 +366,7 @@ public class Assignment(IGitHubClassroomClient client, string name, DateTimeOffs
     return teams.SingleOrDefault(t => string.Equals(t.Name, teamName, StringComparison.OrdinalIgnoreCase));
   }
 
-  private static void AddReviewer(IStudentList students, IList<Reviewer> reviewers, ISet<string> reviewerNames, string reviewerLogin, long? invitationId = null)
+  private static void AddReviewer(IStudentList students, IList<Reviewer> reviewers, ISet<string> reviewerNames, string reviewerLogin)
   {
     if (!students.TryGetValue(reviewerLogin, out var reviewer))
     {
@@ -349,7 +375,7 @@ public class Assignment(IGitHubClassroomClient client, string name, DateTimeOffs
 
     if (reviewerNames.Add(reviewer.GitHubUsername))
     {
-      reviewers.Add(new Reviewer(reviewer, invitationId));
+      reviewers.Add(new Reviewer(reviewer));
     }
   }
 

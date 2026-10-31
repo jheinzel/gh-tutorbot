@@ -12,6 +12,7 @@ public class AssignmentTests
   private readonly IRepositoriesClient repositoriesClient;
   private readonly IClassroomsClient classroomsClient;
   private readonly IAssignmentsClient assignmentClient;
+  private readonly IReviewerAssignmentsClient reviewerAssignmentsClient;
   private readonly ISubmissionsClient submissionsClient;
   private readonly IRepoCollaboratorsClient collaboratorClient;
   private readonly IOrganizationsClient organizationsClient;
@@ -28,6 +29,11 @@ public class AssignmentTests
 
     classroomsClient = Substitute.For<IClassroomsClient>();
     client.Classroom.Returns(classroomsClient);
+
+    reviewerAssignmentsClient = Substitute.For<IReviewerAssignmentsClient>();
+    classroomsClient.ReviewerAssignments.Returns(reviewerAssignmentsClient);
+    reviewerAssignmentsClient.Get(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>())
+                              .Returns(call => Task.FromResult(new ReviewerAssignmentsFile { AssignmentSlug = call.ArgAt<string>(2) }));
 
     assignmentClient = Substitute.For<IAssignmentsClient>();
     classroomsClient.Assignment.Returns(assignmentClient);
@@ -132,34 +138,35 @@ public class AssignmentTests
   [Fact]
   public async Task SimpleAssignment_With_Reviewers_IsLoadedCorrectly()
   {
-    repositoriesClient.Get(100).Returns(CreateRepository(100, "repo1"));
-
+    var repository = CreateRepository(100, "classroom-ue01-gh-mayr");
     var assignmentSlug = "ue01";
-    assignmentClient.GetBySlug(10, assignmentSlug).Returns(
+    assignmentClient.GetBySlug("swo3", "classroom", assignmentSlug).Returns(
       Task.FromResult(new AssignmentDto { Id = 10, Title = "Uebung 1", Slug = assignmentSlug, Accepted = 1, Deadline = DateTime.Now.AddDays(1) }));
-
-    var studentDto1 = new StudentDto { Id = 1, Login = "gh-mayr" };
-    var submissionDto1 = new SubmissionDto { Id = 100, Students = [studentDto1], Repository = new RepositoryDto { Id = 100 } };
-    submissionsClient.GetAll(10).Returns(Task.FromResult<IReadOnlyList<SubmissionDto>>([submissionDto1]));
+    searchClient.SearchRepo(Arg.Any<SearchRepositoriesRequest>()).Returns(
+      Task.FromResult(new SearchRepositoryResult(1, false, [repository])));
 
     var reviewerName = "gh-huber";
-    var permissions1 = new CollaboratorPermissions(pull: true, triage: false, push: false, maintain: false, admin: false);
-    var collaborator1 = new Collaborator("gh-huber", id: 2, "gh-huber@gmail.com", "Huber", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", false, permissions: permissions1, "read");
-    collaboratorClient.GetAll(100).Returns(Task.FromResult<IReadOnlyList<Collaborator>>([collaborator1]));
+    reviewerAssignmentsClient.Get("swo3", "classroom", assignmentSlug).Returns(
+      Task.FromResult(new ReviewerAssignmentsFile
+      {
+        AssignmentSlug = assignmentSlug,
+        Repositories = new(StringComparer.OrdinalIgnoreCase) { [repository.FullName] = [reviewerName] }
+      }));
 
-    // Use classroomId only, no Org/ClassroomName to avoid SearchRepo call
-    var parameters = new AssigmentParameters(10, "ue01", LoadAssessments: false);
+    var parameters = new AssigmentParameters(10, assignmentSlug, ClassroomName: "classroom", Org: "swo3", LoadAssessments: false);
     var assignment = await Assignment.FromGitHub(client, students, parameters);
 
-    var expectedOwner = students.LinkedStudents.Single(s => s.GitHubUsername == studentDto1.Login);
+    var expectedOwner = students.LinkedStudents.Single(s => s.GitHubUsername == "gh-mayr");
     var expectedReviewer = students.LinkedStudents.Single(s => s.GitHubUsername == reviewerName);
 
     assignment.Should().NotBeNull();
     assignment.Name.Should().Be("Uebung 1");
-    assignment.Submissions.Should().HaveCount(1);
-    assignment.Submissions[0].Reviewers.Should().HaveCount(1);
+    assignment.Submissions.Should().ContainSingle();
+    assignment.Submissions[0].Owner.GitHubUsername.Should().Be(expectedOwner.GitHubUsername);
+    assignment.Submissions[0].Reviewers.Should().ContainSingle();
     assignment.Submissions[0].Reviewers[0].LastName.Should().Be(expectedReviewer.LastName);
     assignment.Submissions[0].Reviewers[0].FirstName.Should().Be(expectedReviewer.FirstName);
+    await collaboratorClient.DidNotReceive().GetAll(repository.Id);
   }
 
   private static Repository CreateRepository(int id, string repoName)

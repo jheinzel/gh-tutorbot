@@ -14,15 +14,19 @@ public class ClassroomsClient : ApiClient, IClassroomsClient
   }
 
   private IAssignmentsClient assignmentsClient;
+  private IReviewerAssignmentsClient reviewerAssignmentsClient;
   private ISubmissionsClient submissionsClient;
 
   public ClassroomsClient(IApiConnection apiConnection) : base(apiConnection)
   {
     assignmentsClient = new AssignmentsClient(new ApiConnection(Connection));
+    reviewerAssignmentsClient = new ReviewerAssignmentsClient(new RepositoryContentsClient(new ApiConnection(Connection)));
     submissionsClient = new SubmissionsClient(new ApiConnection(Connection));
   }
 
   public IAssignmentsClient Assignment => assignmentsClient;
+
+  public IReviewerAssignmentsClient ReviewerAssignments => reviewerAssignmentsClient;
 
   public ISubmissionsClient Submissions => submissionsClient;
 

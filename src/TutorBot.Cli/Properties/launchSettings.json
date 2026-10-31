@@ -3,7 +3,7 @@
     "gh-tutorbot": {
       "commandName": "Project",
       "commandLineArgs": "list-submissions ue01",
-      "workingDirectory": "C:\\Users\\P20058\\Documents\\FH\\Lehre\\Tools\\gh-tutorbot\\data\\swj3-bb-2026ss"
+      "workingDirectory": "C:\\Users\\P20058\\Documents\\FH\\Lehre\\Tools\\gh-tutorbot\\data\\test-lva"
     }
   }
 }

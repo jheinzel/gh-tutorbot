@@ -12,10 +12,13 @@ public class AssignReviewersTests
   private readonly IRepositoriesClient repositoriesClient;
   private readonly IRepositoryContentsClient repositoryContentsClient;
   private readonly IRepoCollaboratorsClient repoCollaboratorsClient;
+  private readonly IClassroomsClient classroomsClient;
+  private readonly IReviewerAssignmentsClient reviewerAssignmentsClient;
   private readonly IOrganizationsClient organizationsClient;
   private readonly ITeamsClient teamsClient;
   private readonly IIssuesClient issuesClient;
   private readonly IIssueCommentsClient issueCommentsClient;
+  private readonly List<ReviewerAssignmentsFile> savedReviewerAssignments = [];
 
   const string assessmentString = """
       # Erfüllungsgrad
@@ -36,6 +39,17 @@ public class AssignReviewersTests
 
     repoCollaboratorsClient = Substitute.For<IRepoCollaboratorsClient>();
     client.Repository.Collaborator.Returns(repoCollaboratorsClient);
+
+    classroomsClient = Substitute.For<IClassroomsClient>();
+    client.Classroom.Returns(classroomsClient);
+    reviewerAssignmentsClient = Substitute.For<IReviewerAssignmentsClient>();
+    classroomsClient.ReviewerAssignments.Returns(reviewerAssignmentsClient);
+    reviewerAssignmentsClient.Save(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<ReviewerAssignmentsFile>())
+                              .Returns(call =>
+                              {
+                                savedReviewerAssignments.Add(call.ArgAt<ReviewerAssignmentsFile>(2));
+                                return Task.CompletedTask;
+                              });
 
     organizationsClient = Substitute.For<IOrganizationsClient>();
     client.Organization.Returns(organizationsClient);
@@ -114,7 +128,7 @@ public class AssignReviewersTests
     {
       new(client, repository, students[0], emptyReviewerList)
     };
-    foreach (var s in submissions) await s.Assessment.Load(client, repository.Id);
+    foreach (var s in submissions) await s.Assessment.Load(client, s.RepositoryId);
 
     var unlinkedSubmissions = new List<UnlinkedSubmission>();
 
@@ -254,19 +268,28 @@ public class AssignReviewersTests
     var students = CreateStudentList(3);
     var emptyReviewerList = new List<Reviewer>();
 
-    var repository = CreateRepository(100, "repo1");
-
     AddContent(repositoryContentsClient, assessmentString);
 
     var submissions = new List<Submission>();
     for (int i = 0; i < 3; i++)
     {
+      var repository = CreateRepository(100 + i, $"repo{i + 1}");
       submissions.Add(new Submission(client, repository, students[i], emptyReviewerList));
     }
-    foreach (var s in submissions) await s.Assessment.Load(client, repository.Id);
+    foreach (var s in submissions) await s.Assessment.Load(client, s.RepositoryId);
 
     var unlinkedSubmissions = new List<UnlinkedSubmission>();
-    var assignment = new Assignment(client, "ue01", DateTime.Now.AddDays(1), submissions, unlinkedSubmissions);
+    var assignment = new Assignment(client,
+                                    "ue01",
+                                    DateTime.Now.AddDays(1),
+                                    submissions,
+                                    unlinkedSubmissions,
+                                    "swo3",
+                                    "classroom",
+                                    new ReviewerAssignmentsFile { AssignmentSlug = "ue01" })
+    {
+      Slug = "ue01"
+    };
 
     var reviewers = new List<(Submission, Student)>
     {
@@ -278,7 +301,19 @@ public class AssignReviewersTests
     await assignment.AssignReviewers(reviewers);
 
     ReviewerAssignmentShouldBeCorrect(assignment);
-    await teamsClient.Received(1).RemoveMembership(1, "org-owner");
+    await teamsClient.Received(3).RemoveMembership(1, "org-owner");
+    savedReviewerAssignments.Should().ContainSingle();
+    savedReviewerAssignments[0].Repositories.Should().BeEquivalentTo(new Dictionary<string, List<string>>
+    {
+      ["swo3/repo1"] = ["gh-student-2"],
+      ["swo3/repo2"] = ["gh-student-3"],
+      ["swo3/repo3"] = ["gh-student-1"]
+    });
+
+    await assignment.RemoveReviewers();
+
+    savedReviewerAssignments.Should().HaveCount(2);
+    savedReviewerAssignments[1].Repositories.Should().OnlyContain(entry => entry.Value.Count == 0);
   }
 
   private static Repository CreateRepository(int id, string repoName)

@@ -6,5 +6,6 @@ public interface IClassroomsClient
   Task<ClassroomDto> GetById(long classroomId);
   Task<ClassroomDto> GetByName(string classroomName, string? org = null);
   IAssignmentsClient Assignment { get; }
+  IReviewerAssignmentsClient ReviewerAssignments { get; }
   ISubmissionsClient Submissions { get; }
 }
