@@ -219,10 +219,17 @@ public class Assignment(IGitHubClassroomClient client,
                                               reviewer.GitHubUsername,
                                               submission.RepositoryUrl,
                                               pullRequestUrl);
-      await client.Issue.Comment.Create(org,
-                                        submission.RepositoryName,
-                                        Constants.FEEDBACK_PULLREQUEST_ID,
-                                        notificationComment);
+      try
+      {
+        await client.Issue.Comment.Create(org,
+                                          submission.RepositoryName,
+                                          Constants.FEEDBACK_PULLREQUEST_ID,
+                                          notificationComment);
+      }
+      catch (NotFoundException)
+      {
+        Console.Error.WriteLine($"Warning: Repository \"{submission.RepositoryFullName}\" for \"{submission.Owner.FullName}\" has no feedback pull request.");
+      }
 
       submission.Reviewers.Add(new Reviewer(reviewer));
       progress?.Increment();

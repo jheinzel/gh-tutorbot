@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Net;
+using System.Text;
 using FluentAssertions;
 using Octokit;
 using TutorBot.Domain;
@@ -314,6 +315,47 @@ public class AssignReviewersTests
 
     savedReviewerAssignments.Should().HaveCount(2);
     savedReviewerAssignments[1].Repositories.Should().OnlyContain(entry => entry.Value.Count == 0);
+  }
+
+  [Fact]
+  public async Task AssignReviewers_WhenFeedbackPullRequestDoesNotExist_StillSavesReviewerAssignments()
+  {
+    issueCommentsClient.Create(Arg.Any<string>(), "repo2", Arg.Any<long>(), Arg.Any<string>())
+                       .Returns<Task<IssueComment>>(_ => throw new NotFoundException("Not found", HttpStatusCode.NotFound));
+
+    var students = CreateStudentList(3);
+    var submissions = Enumerable.Range(0, 3)
+      .Select(i => new Submission(client, CreateRepository(100 + i, $"repo{i + 1}"), students[i], []))
+      .ToList();
+    var assignment = new Assignment(client,
+                                    "ue01",
+                                    DateTime.Now.AddDays(1),
+                                    submissions,
+                                    [],
+                                    "swo3",
+                                    "classroom",
+                                    new ReviewerAssignmentsFile { AssignmentSlug = "ue01" })
+    {
+      Slug = "ue01"
+    };
+    var reviewers = submissions.Select((submission, i) => (submission, students[(i + 1) % students.Count])).ToList();
+    var originalError = Console.Error;
+    using var warningOutput = new StringWriter();
+    Console.SetError(warningOutput);
+
+    try
+    {
+      await assignment.AssignReviewers(reviewers);
+    }
+    finally
+    {
+      Console.SetError(originalError);
+    }
+
+    ReviewerAssignmentShouldBeCorrect(assignment);
+    savedReviewerAssignments.Should().ContainSingle();
+    savedReviewerAssignments[0].Repositories.Should().HaveCount(3);
+    warningOutput.ToString().Should().Contain($"Repository \"swo3/repo2\" for \"{students[1].FullName}\" has no feedback pull request.");
   }
 
   private static Repository CreateRepository(int id, string repoName)
