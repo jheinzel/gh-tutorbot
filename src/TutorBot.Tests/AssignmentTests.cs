@@ -1,7 +1,9 @@
-﻿using FluentAssertions;
+﻿using System.Net;
+using FluentAssertions;
 using Octokit;
 using TutorBot.Domain;
 using TutorBot.Domain.Exceptions;
+using TutorBot.Infrastructure;
 using TutorBot.Infrastructure.OctokitExtensions;
 
 namespace TutorBot.Tests;
@@ -167,6 +169,27 @@ public class AssignmentTests
     assignment.Submissions[0].Reviewers[0].LastName.Should().Be(expectedReviewer.LastName);
     assignment.Submissions[0].Reviewers[0].FirstName.Should().Be(expectedReviewer.FirstName);
     await collaboratorClient.DidNotReceive().GetAll(repository.Id);
+  }
+
+  [Fact]
+  public async Task SubmissionWithoutFeedbackPullRequest_DoesNotStopStatisticsLoading()
+  {
+    var pullRequestsClient = Substitute.For<IPullRequestsClient>();
+    repositoriesClient.PullRequest.Returns(pullRequestsClient);
+    var pullRequestReviewsClient = Substitute.For<IPullRequestReviewsClient>();
+    pullRequestsClient.Review.Returns(pullRequestReviewsClient);
+    pullRequestReviewsClient.GetAll(100, 1)
+                            .Returns<Task<IReadOnlyList<PullRequestReview>>>(_ => throw new NotFoundException("Not found", HttpStatusCode.NotFound));
+
+    var owner = students.LinkedStudents.Single(s => s.GitHubUsername == "gh-mayr");
+    var submission = new Submission(client, CreateRepository(100, "repo1"), owner, []);
+    var reviewStats = new Dictionary<(string Owner, string Reviewer), ReviewStatisticsItem>();
+    var progress = Substitute.For<IProgress>();
+
+    await submission.AddReviewStatistics(reviewStats, progress);
+
+    reviewStats.Should().BeEmpty();
+    progress.Received(1).WriteLine(Arg.Is<string>(message => message.Contains($"Repository \"swo3/repo1\" for \"{owner.FullName}\" has no feedback pull request.")), Console.Error);
   }
 
   private static Repository CreateRepository(int id, string repoName)

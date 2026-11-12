@@ -228,7 +228,8 @@ public class Assignment(IGitHubClassroomClient client,
       }
       catch (NotFoundException)
       {
-        Console.Error.WriteLine($"Warning: Repository \"{submission.RepositoryFullName}\" for \"{submission.Owner.FullName}\" has no feedback pull request.");
+        var warning = $"Warning: Repository \"{submission.RepositoryFullName}\" for \"{submission.Owner.FullName}\" has no feedback pull request.";
+        progress.WriteLineAndRedrawProgress(warning, Console.Error);
       }
 
       submission.Reviewers.Add(new Reviewer(reviewer));
@@ -302,7 +303,7 @@ public class Assignment(IGitHubClassroomClient client,
 
     foreach (var submission in Submissions)
     {
-      await submission.AddReviewStatistics(reviewStats);
+      await submission.AddReviewStatistics(reviewStats, progress);
       progress?.Increment();
     }
 

@@ -1,4 +1,5 @@
 ﻿using Octokit;
+using TutorBot.Infrastructure;
 using TutorBot.Infrastructure.OctokitExtensions;
 using TutorBot.Infrastructure.StringExtensions;
 
@@ -21,41 +22,49 @@ public class Submission(IGitHubClassroomClient client, Repository repository, St
 
   public Assessment Assessment { get; private set; } = new Assessment();
 
-  public async Task AddReviewStatistics(ReviewStatistics reviewStats)
+  public async Task AddReviewStatistics(ReviewStatistics reviewStats, IProgress? progress = null)
   {
-    var reviews = await client.Repository.PullRequest.Review.GetAll(RepositoryId, Constants.FEEDBACK_PULLREQUEST_ID);
-    foreach (var review in reviews)
+    try
     {
-      if (!reviewStats.TryGetValue((Owner.GitHubUsername, review.User.Login), out Domain.ReviewStatisticsItem? stats))
+      var reviews = await client.Repository.PullRequest.Review.GetAll(RepositoryId, Constants.FEEDBACK_PULLREQUEST_ID);
+      foreach (var review in reviews)
       {
-        stats = new Domain.ReviewStatisticsItem();
-        reviewStats.Add((Owner.GitHubUsername, review.User.Login), stats);
+        if (!reviewStats.TryGetValue((Owner.GitHubUsername, review.User.Login), out Domain.ReviewStatisticsItem? stats))
+        {
+          stats = new Domain.ReviewStatisticsItem();
+          reviewStats.Add((Owner.GitHubUsername, review.User.Login), stats);
+        }
+
+        var reviewDate = review.SubmittedAt;
+        if (stats.LastReviewDate is null || reviewDate > stats.LastReviewDate)
+        {
+          stats.LastReviewDate = reviewDate;
+        }
+
+        stats.NumReviews++;
+        stats.NumWords += review.Body.WordCount();
       }
 
-      var reviewDate = review.SubmittedAt;
-      if (stats.LastReviewDate is null || reviewDate > stats.LastReviewDate)
+      var comments = await client.Repository.PullRequest.ReviewComment.GetAll(RepositoryId, Constants.FEEDBACK_PULLREQUEST_ID);
+      foreach (var comment in comments)
       {
-        stats.LastReviewDate = reviewDate;
+        if (!reviewStats.TryGetValue((Owner.GitHubUsername, comment.User.Login), out Domain.ReviewStatisticsItem? stats))
+        {
+          stats = new Domain.ReviewStatisticsItem();
+          reviewStats.Add((Owner.GitHubUsername, comment.User.Login), stats);
+        }
+
+        stats.NumComments++;
+        stats.NumWords += comment.Body.WordCount();
       }
 
-      stats.NumReviews++;
-      stats.NumWords += review.Body.WordCount();
+      reviewStats.Remove((Owner.GitHubUsername, Owner.GitHubUsername));
     }
-
-    var comments = await client.Repository.PullRequest.ReviewComment.GetAll(RepositoryId, Constants.FEEDBACK_PULLREQUEST_ID);
-    foreach (var comment in comments)
+    catch (NotFoundException)
     {
-      if (!reviewStats.TryGetValue((Owner.GitHubUsername, comment.User.Login), out Domain.ReviewStatisticsItem? stats))
-      {
-        stats = new Domain.ReviewStatisticsItem();
-        reviewStats.Add((Owner.GitHubUsername, comment.User.Login), stats);
-      }
-
-      stats.NumComments++;
-      stats.NumWords += comment.Body.WordCount();
+      var warning = $"Warning: Repository \"{RepositoryFullName}\" for \"{Owner.FullName}\" has no feedback pull request.";
+      progress.WriteLineAndRedrawProgress(warning, Console.Error);
     }
-
-    reviewStats.Remove((Owner.GitHubUsername, Owner.GitHubUsername));
   }
 }
 
