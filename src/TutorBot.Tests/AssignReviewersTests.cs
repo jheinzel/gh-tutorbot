@@ -313,8 +313,104 @@ public class AssignReviewersTests
 
     await assignment.RemoveReviewers();
 
+    await teamsClient.Received(3).Delete(1);
     savedReviewerAssignments.Should().HaveCount(2);
-    savedReviewerAssignments[1].Repositories.Should().OnlyContain(entry => entry.Value.Count == 0);
+    savedReviewerAssignments[1].Repositories.Should().BeEmpty();
+    submissions.Should().OnlyContain(submission => submission.Reviewers.Count == 0);
+  }
+
+  [Fact]
+  public async Task RemoveReviewers_CleansUnlinkedAndMissingRepositoriesAndCanBeRepeated()
+  {
+    var students = CreateStudentList(2);
+    var submission = new Submission(client, CreateRepository(1, "repo1"), students[0], [new Reviewer(students[1])]);
+    var unlinked = new UnlinkedSubmission(CreateRepository(2, "repo2"));
+    var document = new ReviewerAssignmentsFile
+    {
+      AssignmentSlug = "ue01",
+      Repositories = new(StringComparer.OrdinalIgnoreCase)
+      {
+        ["swo3/repo1"] = ["gh-student-2"],
+        ["swo3/repo2"] = ["unknown-reviewer"],
+        ["swo3/repo3"] = []
+      }
+    };
+    var assignment = new Assignment(client, "ue01", null, [submission], [unlinked], "swo3", "classroom", document) { Slug = "ue01" };
+    var teams = new[] { CreateTeam(1, "repo1-reviewers"), CreateTeam(2, "repo2-reviewers"), CreateTeam(3, "repo3-reviewers"), CreateTeam(4, "other-reviewers") };
+    teamsClient.GetAll("swo3").Returns(Task.FromResult<IReadOnlyList<Team>>(teams), Task.FromResult<IReadOnlyList<Team>>([]));
+
+    await assignment.RemoveReviewers();
+    await assignment.RemoveReviewers();
+
+    await teamsClient.Received(1).Delete(1);
+    await teamsClient.Received(1).Delete(2);
+    await teamsClient.Received(1).Delete(3);
+    await teamsClient.DidNotReceive().Delete(4);
+    await repoCollaboratorsClient.DidNotReceiveWithAnyArgs().Delete(default, default!);
+    savedReviewerAssignments.Should().ContainSingle();
+    savedReviewerAssignments[0].Repositories.Should().BeEmpty();
+    submission.Reviewers.Should().BeEmpty();
+  }
+
+  [Fact]
+  public async Task RemoveReviewers_WhenTeamDeletionFails_PreservesAssignmentsForRetry()
+  {
+    var students = CreateStudentList(2);
+    var submission = new Submission(client, CreateRepository(1, "repo1"), students[0], [new Reviewer(students[1])]);
+    var document = new ReviewerAssignmentsFile
+    {
+      AssignmentSlug = "ue01",
+      Repositories = new(StringComparer.OrdinalIgnoreCase) { ["swo3/repo1"] = ["gh-student-2"] }
+    };
+    var assignment = new Assignment(client, "ue01", null, [submission], [], "swo3", "classroom", document) { Slug = "ue01" };
+    teamsClient.GetAll("swo3").Returns(Task.FromResult<IReadOnlyList<Team>>([CreateTeam(1, "repo1-reviewers")]));
+    teamsClient.Delete(1).Returns<Task>(_ => throw new InvalidOperationException("delete failed"));
+
+    var act = () => assignment.RemoveReviewers();
+
+    await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("delete failed");
+    savedReviewerAssignments.Should().BeEmpty();
+    submission.Reviewers.Should().ContainSingle();
+  }
+
+  [Theory]
+  [InlineData(true)]
+  [InlineData(false)]
+  public async Task RemoveReviewers_WhenDeletionReturnsNotFound_ChecksWhetherTeamStillExists(bool teamStillExists)
+  {
+    var students = CreateStudentList(2);
+    var submission = new Submission(client, CreateRepository(1, "repo1"), students[0], [new Reviewer(students[1])]);
+    var document = new ReviewerAssignmentsFile
+    {
+      AssignmentSlug = "ue01",
+      Repositories = new(StringComparer.OrdinalIgnoreCase) { ["swo3/repo1"] = ["gh-student-2"] }
+    };
+    var assignment = new Assignment(client, "ue01", null, [submission], [], "swo3", "classroom", document) { Slug = "ue01" };
+    var team = CreateTeam(1, "repo1-reviewers");
+    teamsClient.GetAll("swo3").Returns(Task.FromResult<IReadOnlyList<Team>>([team]),
+                                       Task.FromResult<IReadOnlyList<Team>>(teamStillExists ? [team] : []));
+    teamsClient.Delete(1).Returns<Task>(_ => throw new NotFoundException("Not found", HttpStatusCode.NotFound));
+
+    var act = () => assignment.RemoveReviewers();
+
+    if (teamStillExists)
+    {
+      await act.Should().ThrowAsync<NotFoundException>();
+      savedReviewerAssignments.Should().BeEmpty();
+      submission.Reviewers.Should().ContainSingle();
+    }
+    else
+    {
+      await act.Should().NotThrowAsync();
+      savedReviewerAssignments.Should().ContainSingle().Which.Repositories.Should().BeEmpty();
+      submission.Reviewers.Should().BeEmpty();
+    }
+  }
+
+  private static Team CreateTeam(long id, string name)
+  {
+    var permissions = new TeamRepositoryPermissions(false, false, false, false, false);
+    return new Team("", "", id, "", name, name, "", TeamPrivacy.Closed, "", permissions, 0, 0, new Organization(), null, "");
   }
 
   [Fact]

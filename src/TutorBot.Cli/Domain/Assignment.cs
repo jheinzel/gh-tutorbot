@@ -10,7 +10,7 @@ namespace TutorBot.Domain;
 
 using ReviewStatistics = IDictionary<(string Owner, string Reviewer), ReviewStatisticsItem>;
 
-public record AssigmentParameters(long ClassroomId, string AssignmentSlug, int? Group = null, string? ClassroomName = null, string? Org = null, bool LoadAssessments = false);
+public record AssigmentParameters(long ClassroomId, string AssignmentSlug, int? Group = null, string? ClassroomName = null, string? Org = null, bool LoadAssessments = false, bool LoadReviewers = true);
 
 public class Assignment(IGitHubClassroomClient client,
                         string name,
@@ -94,7 +94,7 @@ public class Assignment(IGitHubClassroomClient client,
 
         if (parameters.Group is null || owner.GroupNr == parameters.Group)
         {
-          List<Reviewer> reviewers = LoadReviewers(owner, students, repository, reviewerAssignments);
+          var reviewers = parameters.LoadReviewers ? LoadReviewers(owner, students, repository, reviewerAssignments) : [];
 
           var submission = new Submission(client, repository, owner, reviewers);
           if (parameters.LoadAssessments)
@@ -141,7 +141,7 @@ public class Assignment(IGitHubClassroomClient client,
           var repository = await client.Repository.Get(submissionDto.Repository.Id);
 
 
-          List<Reviewer> reviewers = LoadReviewers(owner, students, repository, reviewerAssignments);
+          var reviewers = parameters.LoadReviewers ? LoadReviewers(owner, students, repository, reviewerAssignments) : [];
 
           var submission = new Submission(client, repository, owner, reviewers);
           if (parameters.LoadAssessments)
@@ -241,23 +241,64 @@ public class Assignment(IGitHubClassroomClient client,
 
   public async Task RemoveReviewers(IProgress? progress = null)
   {
-    progress?.Init(Submissions.Count);
+    var repositories = Submissions.Select(s => s.RepositoryFullName)
+      .Concat(UnlinkedSubmissions.Select(s => s.RepositoryFullName))
+      .Concat(reviewerAssignmentsDocument.Repositories.Keys)
+      .Distinct(StringComparer.OrdinalIgnoreCase)
+      .ToList();
+
+    var repositoriesByOrg = repositories.Select(fullName =>
+    {
+      var parts = fullName.Split('/');
+      if (parts.Length != 2 || parts.Any(string.IsNullOrWhiteSpace) ||
+          (!string.IsNullOrWhiteSpace(metadataOrg) && !string.Equals(parts[0], metadataOrg, StringComparison.OrdinalIgnoreCase)))
+      {
+        throw new SubmissionException($"Invalid repository full name \"{fullName}\" in reviewer assignments.");
+      }
+      return (Org: parts[0], Name: parts[1]);
+    }).GroupBy(repository => repository.Org, StringComparer.OrdinalIgnoreCase).ToList();
+
+    progress?.Init(repositories.Count);
+    foreach (var group in repositoriesByOrg)
+    {
+      var teams = await client.Organization.Team.GetAll(group.Key);
+      foreach (var repository in group)
+      {
+        var teamName = GetReviewerTeamName(repository.Name);
+        var reviewerTeam = teams.SingleOrDefault(t => string.Equals(t.Name, teamName, StringComparison.OrdinalIgnoreCase));
+        if (reviewerTeam is not null)
+        {
+          try
+          {
+            await client.Organization.Team.Delete(reviewerTeam.Id);
+          }
+          catch (NotFoundException)
+          {
+            if (await FindReviewerTeam(group.Key, teamName) is not null)
+            {
+              throw;
+            }
+          }
+        }
+
+        progress?.Increment();
+      }
+    }
+
+    if (reviewerAssignmentsDocument.Repositories.Count > 0 &&
+        !string.IsNullOrWhiteSpace(metadataOrg) &&
+        !string.IsNullOrWhiteSpace(metadataClassroomName) &&
+        !string.IsNullOrWhiteSpace(Slug))
+    {
+      var emptyAssignments = new ReviewerAssignmentsFile { AssignmentSlug = Slug };
+      await client.Classroom.ReviewerAssignments.Save(metadataOrg, metadataClassroomName, emptyAssignments);
+      reviewerAssignmentsDocument = emptyAssignments;
+    }
 
     foreach (var submission in Submissions)
     {
-      var org = GetRepositoryOrganization(submission.RepositoryFullName);
-      var teamName = GetReviewerTeamName(submission.RepositoryName);
-      var reviewerTeam = await FindReviewerTeam(org, teamName);
-      if (reviewerTeam is not null)
-      {
-        await client.Organization.Team.Delete(reviewerTeam.Id);
-      }
-
       submission.Reviewers.Clear();
-      progress?.Increment();
     }
-
-    await SaveReviewerAssignments();
   }
 
   private async Task SaveReviewerAssignments()

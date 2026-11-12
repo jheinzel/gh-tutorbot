@@ -12,20 +12,8 @@ internal class RemoveReviewersCommand : ClassroomCommand
 
   private bool UserAgreesToRemoveReviewers(Assignment assignment)
   {
-    var numWithAssignedReviewers = assignment.Submissions.Count(s => s.Reviewers.Count > 0);
-    var numValid = assignment.Submissions.Count(s => s.Assessment.IsValid());
-    var numUnlinked = assignment.UnlinkedSubmissions.Count;
-
-    if (numWithAssignedReviewers > 0)
-    {
-      var prompt = $"Remove reviewers from {numWithAssignedReviewers} submissions in assignment \"{assignment.Name}\"? (y/N)? ";
-      return UiHelper.GetUserInput(prompt, answerOptions: new[] { "y", "n" }, defaultAnswer: "n") == "y";
-    }
-    else
-    {
-      Console.WriteLine($"No reviewers assigned to submissions in assignment \"{assignment.Name}\".");
-      return false;
-    }
+    var prompt = $"Remove reviewer assignments and reviewer teams for assignment \"{assignment.Name}\"? (y/N)? ";
+    return UiHelper.GetUserInput(prompt, answerOptions: new[] { "y", "n" }, defaultAnswer: "n") == "y";
   }
 
   private async Task HandleAsync(string assignmentSlug, string? classroomName, string? org)
@@ -37,10 +25,12 @@ internal class RemoveReviewersCommand : ClassroomCommand
       var studentList = await StudentList.FromGitHub(Client, org, classroomName);
       var classroom = await Client.Classroom.GetByName(classroomName, org);
 
-      var progressLoading = new ProgressBar("Loading submissions");
-      var parameters = new AssigmentParameters(classroom.Id, assignmentSlug, ClassroomName: classroomName, Org: org);
-      var assignment = await Assignment.FromGitHub(Client, studentList, parameters, Configuration, progressLoading);
-      progressLoading.Dispose();
+      var parameters = new AssigmentParameters(classroom.Id, assignmentSlug, ClassroomName: classroomName, Org: org, LoadReviewers: false);
+      Assignment assignment;
+      using (var progressLoading = new ProgressBar("Loading submissions"))
+      {
+        assignment = await Assignment.FromGitHub(Client, studentList, parameters, Configuration, progressLoading);
+      }
 
       if (UserAgreesToRemoveReviewers(assignment))
       {

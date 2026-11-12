@@ -172,6 +172,56 @@ public class AssignmentTests
   }
 
   [Fact]
+  public async Task AssignmentForRemoval_DoesNotRequireReviewerToBeInStudentList()
+  {
+    var repository = CreateRepository(100, "classroom-ue01-gh-mayr");
+    assignmentClient.GetBySlug("swo3", "classroom", "ue01").Returns(
+      Task.FromResult(new AssignmentDto { Id = 10, Title = "Uebung 1", Slug = "ue01" }));
+    searchClient.SearchRepo(Arg.Any<SearchRepositoriesRequest>()).Returns(
+      Task.FromResult(new SearchRepositoryResult(1, false, [repository])));
+    reviewerAssignmentsClient.Get("swo3", "classroom", "ue01").Returns(Task.FromResult(new ReviewerAssignmentsFile
+    {
+      AssignmentSlug = "ue01",
+      Repositories = new(StringComparer.OrdinalIgnoreCase) { [repository.FullName] = ["unknown-reviewer"] }
+    }));
+
+    var parameters = new AssigmentParameters(10, "ue01", ClassroomName: "classroom", Org: "swo3", LoadReviewers: false);
+    var assignment = await Assignment.FromGitHub(client, students, parameters);
+
+    assignment.Submissions.Should().ContainSingle().Which.Reviewers.Should().BeEmpty();
+  }
+
+  [Fact]
+  public async Task RemoveReviewers_WhenAssignmentsFileIsMissing_DeletesTeamsForDiscoveredRepositories()
+  {
+    var linked = CreateRepository(100, "classroom-ue01-gh-mayr");
+    var unlinked = CreateRepository(101, "classroom-ue01-unknown");
+    assignmentClient.GetBySlug("swo3", "classroom", "ue01").Returns(
+      Task.FromResult(new AssignmentDto { Id = 10, Title = "Uebung 1", Slug = "ue01" }));
+    searchClient.SearchRepo(Arg.Any<SearchRepositoriesRequest>()).Returns(
+      Task.FromResult(new SearchRepositoryResult(2, false, [linked, unlinked])));
+    var contents = Substitute.For<IRepositoryContentsClient>();
+    contents.GetAllContents("swo3", "classroom50", "classroom/reviewers/ue01.json")
+      .Returns<Task<IReadOnlyList<RepositoryContent>>>(_ => throw new NotFoundException("Not found", HttpStatusCode.NotFound));
+    classroomsClient.ReviewerAssignments.Returns(new ReviewerAssignmentsClient(contents));
+    var permissions = new TeamRepositoryPermissions(false, false, false, false, false);
+    var linkedTeam = new Team("", "", 1, "", "linked", "classroom-ue01-gh-mayr-reviewers", "", TeamPrivacy.Closed, "", permissions, 0, 0, new Organization(), null, "");
+    var unlinkedTeam = new Team("", "", 2, "", "unlinked", "classroom-ue01-unknown-reviewers", "", TeamPrivacy.Closed, "", permissions, 0, 0, new Organization(), null, "");
+    teamsClient.GetAll("swo3").Returns(Task.FromResult<IReadOnlyList<Team>>([linkedTeam, unlinkedTeam]));
+    var parameters = new AssigmentParameters(10, "ue01", ClassroomName: "classroom", Org: "swo3", LoadReviewers: false);
+
+    var assignment = await Assignment.FromGitHub(client, students, parameters);
+    await assignment.RemoveReviewers();
+
+    assignment.Submissions.Should().ContainSingle();
+    assignment.UnlinkedSubmissions.Should().ContainSingle();
+    await teamsClient.Received(1).Delete(1);
+    await teamsClient.Received(1).Delete(2);
+    await contents.DidNotReceiveWithAnyArgs().CreateFile(default!, default!, default!, default!);
+    await contents.DidNotReceiveWithAnyArgs().UpdateFile(default!, default!, default!, default!);
+  }
+
+  [Fact]
   public async Task SubmissionWithoutFeedbackPullRequest_DoesNotStopStatisticsLoading()
   {
     var pullRequestsClient = Substitute.For<IPullRequestsClient>();

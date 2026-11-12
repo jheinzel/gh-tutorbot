@@ -69,8 +69,12 @@ TutorBot offers the following range of commands:
   + `--force` allows assigment of reviewers, even if some submissions are not
     yet linked.
 
-* Remove reviewers from an assignment: Removes the `<student-repo>-reviewers`
-  teams from the assignment repositories, which also removes reviewer access.
+* Remove reviewers from an assignment: Removes its repository entries from the
+  reviewers JSON file and deletes the `<student-repo>-reviewers` teams, revoking
+  the read access granted through those teams. Other sources of access (such as
+  direct collaborator access or other teams) are not changed. The command can be
+  run again to finish cleanup after an interruption. If the reviewers JSON file
+  is missing, it still removes reviewer teams for discovered assignment repositories.
   ```shell
   gh tutorbot remove-reviewers <assignment> [--classroom <classroom>] [--org <organization>]
   ```
