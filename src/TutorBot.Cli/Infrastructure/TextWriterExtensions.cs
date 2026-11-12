@@ -2,18 +2,20 @@
 
 public static class TextWriteExtensions 
 {
-  public static void WriteColoredLine(this TextWriter writer, ConsoleColor color, string format, params object?[] args)
+  extension(TextWriter writer)
   {
-    Console.ForegroundColor = ConsoleColor.Red;
-    writer.WriteLine(format, args);
-    Console.ResetColor();
+    public void WriteColoredLine(ConsoleColor color, string format, params object?[] args)
+    {
+      Console.ForegroundColor = ConsoleColor.Red;
+      writer.WriteLine(format, args);
+      Console.ResetColor();
+    }
+
+    public void WriteRedLine(string format, params object?[] args) => writer.WriteColoredLine(ConsoleColor.Red, format, args);
+
+    public void WriteGreenLine(string format, params object?[] args) => writer.WriteColoredLine(ConsoleColor.Green, format, args);
+
+    public void WriteBlueLine(string format, params object?[] args) => writer.WriteColoredLine(ConsoleColor.Blue, format, args);
   }
-
-
-  public static void WriteRedLine(this TextWriter writer, string format, params object?[] args) => WriteColoredLine(writer, ConsoleColor.Red, format, args);
-
-  public static void WriteGreenLine(this TextWriter writer, string format, params object?[] args) => WriteColoredLine(writer, ConsoleColor.Green, format, args);
-
-  public static void WriteBlueLine(this TextWriter writer, string format, params object?[] args) => WriteColoredLine(writer, ConsoleColor.Blue, format, args);
 
 }

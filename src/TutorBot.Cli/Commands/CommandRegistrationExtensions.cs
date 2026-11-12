@@ -6,15 +6,18 @@ namespace TutorBot.Commands;
 
 public static class CommandRegistrationExtensions
 {
-  public static void RegisterCommands(this IServiceCollection services, Assembly assembly)
+  extension(IServiceCollection services)
   {
-    var commandType = typeof(Command);
-    var commandImplementations = assembly.GetTypes()
-        .Where(t => t.IsClass && !t.IsAbstract && commandType.IsAssignableFrom(t));
-
-    foreach (var implementationType in commandImplementations)
+    public void RegisterCommands(Assembly assembly)
     {
-      services.AddSingleton(commandType, implementationType);
+      var commandType = typeof(Command);
+      var commandImplementations = assembly.GetTypes()
+          .Where(t => t.IsClass && !t.IsAbstract && commandType.IsAssignableFrom(t));
+
+      foreach (var implementationType in commandImplementations)
+      {
+        services.AddSingleton(commandType, implementationType);
+      }
     }
   }
 }
