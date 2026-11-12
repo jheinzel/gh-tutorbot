@@ -77,11 +77,12 @@ TutorBot offers the following range of commands:
 
 * Clone all repositories of a specific assignment: The target directory for
   cloned repositories can be specified. If omitted, the current working
-  directory is used. The directory is created if it does not exist. However, if
-  the directory is not empty, the command will fail. This command delegates to
-  `gh repo clone`. In case of problems check if this command works correctly. 
+  directory is used. Repositories can be filtered by group number. The directory
+  is created if it does not exist. However, if the directory is not empty, the
+  command will fail. This command delegates to `gh repo clone`. In case of
+  problems check if this command works correctly.
   ```shell
-  gh tutorbot clone-submissions <assignment> [--directory <directory>] [--classroom <classroom>] [--org <organization>]
+  gh tutorbot clone-submissions <assignment> [--directory <directory>] [--group-nr <group>] [--classroom <classroom>] [--org <organization>]
   ```
 
 * Download students' self-assessments: Collects self-assessment data from all

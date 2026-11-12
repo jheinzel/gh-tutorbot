@@ -13,8 +13,9 @@ internal class CloneSubmissionsCommand : ClassroomCommand
 {
   private readonly Argument<string> assignmentArgument = new("assignment") { Description = "assignment slug" };
   private readonly Option<string> directoryOption = new("--directory") { Description = "directory repositories will be cloned to", Aliases = { "-d" } };
+  private readonly Option<int?> groupOption = new("--group-nr") { Description = "filter group", Aliases = { "-g" } };
 
-  private async Task HandleAsync(string assignmentSlug, string? classroomName, string? org, string? directory)
+  private async Task HandleAsync(string assignmentSlug, string? classroomName, string? org, string? directory, int? group)
   {
     ValidateClassroomAndOrg(ref classroomName, ref org);
 
@@ -32,7 +33,7 @@ internal class CloneSubmissionsCommand : ClassroomCommand
       var classroom = await Client.Classroom.GetByName(classroomName, org);
 
       var progress = new ProgressBar("Loading submissions");
-      var parameters = new AssigmentParameters(classroom.Id, assignmentSlug, ClassroomName: classroomName, Org: org, LoadAssessments: true);
+      var parameters = new AssigmentParameters(classroom.Id, assignmentSlug, Group: group, ClassroomName: classroomName, Org: org, LoadAssessments: true);
       var assignment = await Assignment.FromGitHub(Client, studentList, parameters, Configuration, progress);
       progress.Dispose();
 
@@ -78,6 +79,8 @@ internal class CloneSubmissionsCommand : ClassroomCommand
     Options.Add(ClassroomOption);
     Options.Add(OrgOption);
     Options.Add(directoryOption);
+    groupOption.DefaultValueFactory = _ => null;
+    Options.Add(groupOption);
 
     Aliases.Add("cs");
 
@@ -87,7 +90,8 @@ internal class CloneSubmissionsCommand : ClassroomCommand
       var classroomName = parsedResult.GetValue(ClassroomOption);
       var org = parsedResult.GetValue(OrgOption);
       var directory = parsedResult.GetValue(directoryOption);
-      await HandleAsync(assignmentSlug, classroomName, org, directory);
+      var group = parsedResult.GetValue(groupOption);
+      await HandleAsync(assignmentSlug, classroomName, org, directory, group);
     });
   }
 }
