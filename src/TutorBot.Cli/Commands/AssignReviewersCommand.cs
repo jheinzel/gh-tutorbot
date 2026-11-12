@@ -46,22 +46,23 @@ internal class AssignReviewersCommand : ClassroomCommand
 
       if (assignment.UnlinkedSubmissions.Count == 0 || force)
       {
-        var allSubmissions = assignment.Submissions.ToList();
-        var proposedReviewers = assignment.FindReviewers();
+        var validSubmissions = assignment.Submissions.Where(s => s.Assessment.IsValid()).ToList();
+        var unassignedSubmissions = validSubmissions.Where(s => s.Reviewers.Count == 0).ToList();
+        var proposedReviewers = assignment.FindReviewersForValidUnassignedSubmissions();
 
         if (proposedReviewers.Count == 0)
         {
-          if (allSubmissions.Count == 0)
+          if (validSubmissions.Count == 0)
           {
-            Console.WriteLine($"No submissions found in assignment slug \"{assignmentSlug}\".");
+            Console.WriteLine($"No valid submissions found in assignment slug \"{assignmentSlug}\".");
           }
-          else if (allSubmissions.All(s => s.Reviewers.Count > 0))
+          else if (unassignedSubmissions.Count == 0)
           {
-            Console.WriteLine($"All submissions in assignment \"{assignmentSlug}\" have already reviewers assigned.");
+            Console.WriteLine($"All valid submissions in assignment \"{assignmentSlug}\" already have reviewers assigned.");
           }
           else
           {
-            Console.WriteLine($"No additional reviewer assignments could be proposed for assignment slug \"{assignmentSlug}\".");
+            Console.WriteLine($"No additional reviewer assignments could be proposed for assignment \"{assignmentSlug}\".");
           }
         }
         else

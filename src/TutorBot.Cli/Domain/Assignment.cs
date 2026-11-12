@@ -172,9 +172,20 @@ public class Assignment(IGitHubClassroomClient client,
 
   public IReadOnlyList<(Submission, Student)> FindReviewers()
   {
+    return FindReviewers(Submissions);
+  }
+
+  public IReadOnlyList<(Submission, Student)> FindReviewersForValidUnassignedSubmissions()
+  {
+    var submissions = Submissions.Where(s => s.Assessment.IsValid() && s.Reviewers.Count == 0);
+    return FindReviewers(submissions);
+  }
+
+  private IReadOnlyList<(Submission, Student)> FindReviewers(IEnumerable<Submission> submissionsToAssign)
+  {
     try
     {
-      var submissions = Submissions.ToList();
+      var submissions = submissionsToAssign.ToList();
       submissions.Shuffle();
 
       var studentToSubmission = new Dictionary<Student, Submission>();

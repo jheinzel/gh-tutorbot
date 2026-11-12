@@ -224,6 +224,27 @@ public class AssignReviewersTests
     ReviewerAssignmentShouldBeCorrect(assignment);
   }
 
+  [Fact]
+  public async Task ReviewerAssignmentForValidUnassignedSubmissions_IgnoresInvalidAndAlreadyAssignedSubmissions()
+  {
+    var students = CreateStudentList(4);
+    var submissions = students.Select((student, i) =>
+      new Submission(client, CreateRepository(100 + i, $"repo{i + 1}"), student,
+        i == 0 ? [new Reviewer(students[1])] : [])).ToList();
+    AddContent(repositoryContentsClient, assessmentString);
+    foreach (var submission in submissions.Take(3))
+    {
+      await submission.Assessment.Load(client, submission.RepositoryId);
+    }
+
+    var assignment = new Assignment(client, "ue01", DateTime.Now.AddDays(1), submissions, []);
+
+    var reviewers = assignment.FindReviewersForValidUnassignedSubmissions();
+
+    reviewers.Should().HaveCount(2);
+    reviewers.Should().OnlyContain(pair => submissions.Skip(1).Take(2).Contains(pair.Item1));
+  }
+
   [Theory]
   [InlineData(5)]
   [InlineData(10)]
